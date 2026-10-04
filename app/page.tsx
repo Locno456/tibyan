@@ -116,10 +116,25 @@ export default function HomePage() {
 
       let data: AskResponse
       try {
+        // سياق المحادثة حتى هذه اللحظة — يجعل الردود مترابطة بدل أن تكون منفصلة
+        const history = thread
+          .slice(-8)
+          .map((m) =>
+            m.role === "user"
+              ? { role: "user", text: m.question }
+              : {
+                  role: "model",
+                  text: (m.response?.purpleCards?.[0]?.explanation || "")
+                    .replace(/^⚠️[\s\S]*?— القالب المحلي —\n/, "")
+                    .slice(0, 1000),
+                }
+          )
+          .filter((t) => t.text && t.text.trim())
+
         const res = await fetch("/api/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question, persona }),
+          body: JSON.stringify({ question, persona, history }),
         })
         const json = await res.json()
         if (!res.ok || !json || json.error) throw new Error(json?.error || `HTTP ${res.status}`)
@@ -152,7 +167,7 @@ export default function HomePage() {
       setThread((t) => [...t, { id: uid(), role: "tibyan", response: data }])
       scrollToBottom()
     },
-    [pending, persona, scrollToBottom]
+    [pending, persona, scrollToBottom, thread]
   )
 
   const isEmpty = thread.length === 0 && !pending
