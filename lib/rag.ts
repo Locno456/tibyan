@@ -9,6 +9,7 @@
 
 import verifiedTexts from '../data/verified_texts.json'
 import quranFull from '../data/quran_full.json'
+import hadithSahihayn from '../data/hadith_sahihayn.json'
 import { buildSourceUrl } from './sourceLinks'
 
 export interface RetrievedChunk {
@@ -117,7 +118,26 @@ function buildIndex(): { docs: IndexedDoc[]; idf: Record<string, number>; avgdl:
     docs.push({ payload, norm, freq, dl: terms.length || 1 })
   }
 
-  // 2) النصوص المنتقاة (نتجاوز آيات القرآن المكررة لأن المصحف الكامل هو المرجع)
+  // 2) الصحيحان (البخاري + مسلم) — المتن حرفي، المستوى A، مع الحكم والترقيم للتوثيق
+  for (const h of hadithSahihayn as any[]) {
+    const payload: RetrievedChunk["payload"] = {
+      id: `hadith-${h.id}`,
+      type: "hadith",
+      level: "A",
+      text: h.t,
+      source: `${h.col} - ${h.bk} - حديث ${h.num}`,
+      source_url: buildSourceUrl({ type: "hadith", text: h.t }),
+      grade: h.g || "صحيح",
+      title: h.bk,
+    }
+    const norm = normalizeArabic(h.t)
+    const terms = analyze(norm)
+    const freq: Record<string, number> = {}
+    for (const t of terms) freq[t] = (freq[t] || 0) + 1
+    docs.push({ payload, norm, freq, dl: terms.length || 1 })
+  }
+
+  // 3) النصوص المنتقاة (نتجاوز آيات القرآن المكررة لأن المصحف الكامل هو المرجع)
   for (const d of verifiedTexts as any[]) {
     if (d.type === "quran" && d.surah && d.ayah && seenAyah.has(`${d.surah}:${d.ayah}`)) continue
     const payload: RetrievedChunk["payload"] = {
@@ -316,8 +336,12 @@ export function getTextsByType(type: string): any[] {
 }
 
 /** عدد النصوص المفهرسة (لأغراض التشخيص/الصحة). */
-export function getIndexStats(): { total: number; quran: number; curated: number } {
+export function getIndexStats(): { total: number; quran: number; hadith: number; curated: number } {
   let quran = 0
-  for (const d of INDEX.docs) if (d.payload.type === "quran") quran++
-  return { total: INDEX.docs.length, quran, curated: INDEX.docs.length - quran }
+  let hadith = 0
+  for (const d of INDEX.docs) {
+    if (d.payload.type === "quran") quran++
+    else if (d.payload.type === "hadith") hadith++
+  }
+  return { total: INDEX.docs.length, quran, hadith, curated: INDEX.docs.length - quran - hadith }
 }
