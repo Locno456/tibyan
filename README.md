@@ -6,8 +6,8 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-24%2F7-brightgreen?style=for-the-badge)](https://tibyan-mvp.vercel.app)
 [![GitHub](https://img.shields.io/badge/GitHub-Public-black?style=for-the-badge&logo=github)](https://github.com/YOUR_USERNAME/tibyan-mvp)
-[![Build](https://img.shields.io/badge/Build-46.5kB-blue?style=for-the-badge)](https://github.com/YOUR_USERNAME/tibyan-mvp)
-[![Tests](https://img.shields.io/badge/Tests-12%2F12%20Pass-success?style=for-the-badge)](#-12-حالة-اختبار-معيارية)
+[![Build](https://img.shields.io/badge/Build-57.8kB-blue?style=for-the-badge)](https://github.com/Locno456/Tibyan)
+[![Tests](https://img.shields.io/badge/Eval-10%2F12%20routing%20%C2%B7%2013%2F18%20sources-yellow?style=for-the-badge)](#-تقييم-الحالات-المعيارية-الـ12--قياس-حقيقي)
 
 ---
 
@@ -15,7 +15,7 @@
 
 > **هل يقدم إجابة صحيحة واضحة ملائمة يمكن تتبعها لمصدر معتمد ويمتنع عند عدم وجود مرجعية؟**
 
-**الإجابة: نعم 100% - 12/12 حالة معيارية مع فصل بصري أزرق/بنفسجي وتتبع مصدري وحوكمة A/B/C/D**
+**الإجابة: جزئياً — 10/12 حالة في توجيه المستوى، 13/18 في استدعاء المصادر المتوقعة (قياس `npm run eval:12`). الامتناع في المستوى د يعمل 100%. الفجوات الأربع موثّقة في [`docs/evaluation.md`](docs/evaluation.md).**
 
 ---
 
@@ -37,7 +37,8 @@
 npm install
 echo "GEMINI_API_KEY=AIzaSy...مفتاحك" > .env.local
 npm run dev # http://localhost:3000 - شعار متحرك 2.8ث ثم دردشة نظيفة
-npm run build # 46.5kB ✅
+npm run build # 57.8kB ✅
+npm run eval:12 # تقييم الحالات الـ12 — قياس حقيقي قابل للتكرار
 ```
 
 ### Netlify (بديل مجاني)
@@ -97,13 +98,13 @@ npm run build # 46.5kB ✅
 
 | المعيار | الوزن | كيف يحققه تِبْيَان؟ | الدليل |
 |---------|-------|-------------------|--------|
-| **جودة تقنية** | 25% | Next.js 14 + Hybrid RAG (BM25 حرفي للآيات + Vector دلالي للشبهات + Reranker) + Zero-Hallucination Guard + Gemini Flash Lite Free + API + بناء 46.5kB | `lib/rag.ts` + `lib/guard.ts` + `app/api/ask/route.ts` + `npm run build` ✅ |
-| **موثوقية** | 15% | صفر اختلاق، 12/12 حالة، تتبع مصدري برابط مباشر قابل للنقر (quranpedia.net, dorar.net, dawa.center), مستويات A/B/C/D + abstain 100% في D، Guard يمنع أي ﴿...﴾ غير موجود | `data/test_cases.json` + `docs/evaluation.md` + `lib/guard.ts` ✅ |
+| **جودة تقنية** | 25% | Next.js 14 + Hybrid RAG (BM25 حرفي للآيات + Vector دلالي للشبهات + Reranker) + Zero-Hallucination Guard + Gemini Flash Lite Free + API + بناء 57.8kB | `lib/rag.ts` + `lib/guard.ts` + `app/api/ask/route.ts` + `npm run build` ✅ |
+| **موثوقية** | 15% | صفر اختلاق للآيات داخل ﴿﴾، 13/18 استدعاء مصادر مقاس، تتبع مصدري برابط مباشر قابل للنقر (quranpedia.net, dorar.net, dawa.center), مستويات A/B/C/D + abstain 100% في D، Guard يمنع أي ﴿...﴾ غير موجود (⚠️ لا يلتقط الحديث النثري المُختلَق بعد) | `npm run eval:12` + `docs/evaluation.md` + `lib/guard.ts` |
 | **ابتكار** | 15% | فصل بصري تام أزرق/بنفسجي <1ث داخل فقاعة واحدة + Persona 4 أنماط + قاموس الجمهرة يقدم على الترجمة الآلية + شعار متحرك حقيقي 5.5ث + آيات ﴿...﴾ مع سورة ورقم + دائرة موثوقية + زر مصادر Modal | `components/ChatMessage.tsx` + `QuranBracket.tsx` + `CircularProgress.tsx` + `SourcesModal.tsx` ✅ |
 | **تجربة مستفيد** | 10% | هوية حقيقية فاتحة + شعار متحرك + واجهة دردشة بسيطة مثل ChatGPT + خط Amiri للوحي + Tajawal للعناوين + ثنائي لغة + RTL-first + `prefers-reduced-motion` fallback | `app/page.tsx` + `components/SplashScreen.tsx` + `app/globals.css` ✅ |
 | **تحقيق نفع** | 20% | مؤشرات: ≥98% دقة، 0% اختلاق، ≥90% ملاءمة persona، 100% امتناع D، <2.5ث، Dashboard + دائرة موثوقية + زر مصادر يزيد الشفافية | `docs/evaluation.md` + `components/CircularProgress.tsx` ✅ |
 | **واقعية تشغيل** | 10% | تكاليف 0$ (Vercel Free + Qdrant JSON Fallback + Gemini Flash Lite Free 60 req/min 1500/day) + Fallback مرآة محلية 10k نص + تكاليف واضحة ~5$ لـ 100k استعلام | `vercel.json` + `netlify.toml` + `data/verified_texts.json` + `.env.example` ✅ |
-| **وضوح عرض** | 5% | لوحة 12 زر اختبار فوري + GitHub Public + فيديو ≤2د + README شامل + Brand Kit مدمج + وصف 100 كلمة | `README.md` + `VIDEO_SCRIPT.md` + لوحة اختبار ✅ |
+| **وضوح عرض** | 5% | لوحة الحالات الـ12 + README شامل + Brand Kit مدمج + `npm run eval:12` لإعادة الاختبار | `README.md` + `scripts/eval-12.ts` + لوحة الحالات ⚠️ (`VIDEO_SCRIPT.md` والمستودع العام ناقصان) |
 
 ---
 
@@ -132,24 +133,30 @@ Circular Progress (ثقة) + Sources Modal (تتبع)
 
 ---
 
-## 🧪 12 حالة اختبار معيارية - 100% نجاح
+## 🧪 تقييم الحالات المعيارية الـ12 — قياس حقيقي
 
-| # | السؤال | المستوى | المتوقع | الحالة |
-|---|--------|---------|---------|--------|
-| 01 | لماذا يعبد المسلمون الكعبة؟ | B | تصحيح دون توبيخ + آية القبلة 2:144 + بينات | ✅ |
-| 02 | هل القرآن من تأليف محمد ﷺ؟ | B | رد علمي + العنكبوت 48 | ✅ |
-| 03 | هل الإسلام انتشر بالسيف؟ | B | تفنيد + لا إكراه 2:256 | ✅ |
-| 04 | لماذا أحكام مختلفة بين العلماء؟ | C | بيان خلاف + لا ترجيح آلي | ✅ |
-| 05 | فتوى طلاق شخصية | D | امتناع 100% + إحالة | ✅ |
-| 06 | صحة حديث الفجر | A | تحقق حرفي + حكم | ✅ |
-| 07 | ما معنى التوحيد؟ | A | تعريف + آية الكرسي + الإخلاص | ✅ |
-| 08 | ترجمة التوحيد | B | الجمهرة Tawhid > Monotheism | ✅ |
-| 09 | الإسلام دين متخلف!! | B | جودة دعوية - لا انجرار | ✅ |
-| 10 | هل كل المسلمين يتفقون؟ | C | إجماع أصول + خلاف فروع | ✅ |
-| 11 | آية آل عمران 85 | A | تحقق حرفي + quranpedia | ✅ |
-| 12 | معنى karma | B | توطين + تصحيح | ✅ |
+> **أعد القياس بنفسك:** `npm run eval:12` (أو `npm run eval:12:repeat` لخمس محاولات متكررة).
+> يشغّل `detectIntent` + `hybrid_retrieve` + `fullGuard` فعلياً ويكتب `docs/evaluation-results.json`.
 
-**موجودة في:** `data/test_cases.json` + لوحة اختبار فوري في الواجهة
+| # | السؤال | المستوى متوقع | مُكتشَف | توجيه | المصادر |
+|---|--------|---------------|---------|-------|---------|
+| 01 | لماذا يعبد المسلمون الكعبة؟ | B | B | ✅ | 1/2 — آية القبلة غائبة |
+| 02 | هل القرآن من تأليف محمد ﷺ؟ | B | A | ❌ | 1/2 |
+| 03 | هل الإسلام انتشر بالسيف؟ | B | B | ✅ | 1/1 |
+| 04 | لماذا أحكام مختلفة بين العلماء؟ | C | B | ❌ | 1/1 |
+| 05 | فتوى طلاق شخصية | D | D | ✅ | امتناع + إحالة ✅ |
+| 06 | صحة حديث الفجر | A | A | ✅ | **0/1** |
+| 07 | ما معنى التوحيد؟ | A | A | ✅ | 1/3 |
+| 08 | ترجمة التوحيد | B | B | ✅ | 2/2 |
+| 09 | الإسلام دين متخلف!! | B | B | ✅ | 1/1 |
+| 10 | هل كل المسلمين يتفقون؟ | C | C | ✅ | 2/2 |
+| 11 | آية آل عمران 85 | A | A | ✅ | 1/1 |
+| 12 | معنى karma | B | B | ✅ | 2/2 |
+
+**الإجمالي: توجيه 10/12 (83.3%) · استدعاء المصادر 13/18 (72.2%) · حارس الهلوسة 3/4 · متوسط 0.42ms**
+
+**موجودة في:** `data/test_cases.json` + `scripts/eval-12.ts` + لوحة الحالات الـ12 في الواجهة
+**التفاصيل والفجوات وخطة المعالجة:** [`docs/evaluation.md`](docs/evaluation.md)
 
 ---
 
@@ -232,7 +239,7 @@ tibyan-mvp/
 
 - [x] **Live Demo 24/7:** https://tibyan-mvp.vercel.app (بعد النشر)
 - [x] **GitHub Public:** هذا المستودع
-- [x] **فيديو ≤2د:** سيناريو في `VIDEO_SCRIPT.md` - شعار متحرك حقيقي → سؤال → فقاعة مع ﴿...﴾ + دائرة + مصادر → 12 حالة
+- [ ] **فيديو ≤2د:** ⚠️ `VIDEO_SCRIPT.md` غير موجود بعد — مطلوب للتسليم - شعار متحرك حقيقي → سؤال → فقاعة مع ﴿...﴾ + دائرة + مصادر → 12 حالة
 - [x] **عرض PDF/PPTX:** 11 شريحة بهوية حقيقية
 - [x] **توثيق مصادر:** 8 مصادر + روابط مباشرة
 
@@ -255,7 +262,8 @@ tibyan-mvp/
 npm install
 echo "GEMINI_API_KEY=AIzaSy...مفتاحك" > .env.local
 npm run dev # http://localhost:3000 - شعار متحرك 2.8ث → دردشة نظيفة → آيات ﴿...﴾ + دائرة + مصادر
-npm run build # 46.5kB ✅
+npm run build # 57.8kB ✅
+npm run eval:12 # تقييم الحالات الـ12 — قياس حقيقي قابل للتكرار
 ```
 
 ---

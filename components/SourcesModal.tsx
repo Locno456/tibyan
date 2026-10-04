@@ -34,6 +34,14 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
     return () => { document.body.style.overflow = 'unset' }
   }, [isOpen])
 
+  // إغلاق بـ Esc
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isOpen, onClose])
+
   const safeSources = Array.isArray(sources) ? sources.filter(s => s) : []
   const safeConfidence = Number(confidence) || 0
 
@@ -76,7 +84,12 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed inset-0 z-[101] flex items-end sm:items-center justify-center p-0 sm:p-4"
           >
-            <div className="bg-white rounded-t-[20px] sm:rounded-[16px] w-full max-w-[700px] max-h-[85vh] sm:max-h-[80vh] flex flex-col shadow-[0_20px_60px_rgba(10,42,51,0.2)] border border-[#C9DFE1]/50 overflow-hidden">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="تفاصيل المصادر الموثقة"
+              className="bg-white rounded-t-[20px] sm:rounded-[16px] w-full max-w-[700px] max-h-[85vh] sm:max-h-[80vh] flex flex-col shadow-[0_20px_60px_rgba(10,42,51,0.2)] border border-[#C9DFE1]/50 overflow-hidden"
+            >
               {/* Header */}
               <div className="shrink-0 p-5 border-b border-[#C9DFE1]/50 bg-gradient-to-r from-[#EEF6F6] to-white">
                 <div className="flex items-start justify-between gap-4">
@@ -108,6 +121,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                   
                   <button
                     onClick={onClose}
+                    aria-label="إغلاق"
                     className="shrink-0 w-8 h-8 rounded-full bg-[#EEF6F6] border border-[#C9DFE1] text-[#4B6A72] hover:bg-[#0A2A33] hover:text-white hover:border-[#0A2A33] flex items-center justify-center transition-colors"
                   >
                     ✕
@@ -116,7 +130,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
               </div>
 
               {/* Sources list */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="flex-1 overflow-y-auto tb-scroll p-4 space-y-3">
                 {safeSources.length === 0 ? (
                   <div className="text-center py-8 text-[#8FB0B6] text-[13px]">
                     لا يوجد مصادر - تم الامتناع لعدم وجود مرجعية كافية
