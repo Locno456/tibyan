@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="57 148 398 217"><defs><linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF0B8"/><stop offset="1" stop-color="#E0B450"/></linearGradient><linearGradient id="sg" gradientUnits="userSpaceOnUse" x1="90" y1="270" x2="425" y2="370"><stop offset="0" stop-color="#19D6C4"/><stop offset="1" stop-color="#14529E"/></linearGradient></defs><g transform="translate(256,256) scale(1.05) translate(-256,-297)">
+<polyline points="98.1,266.6 234,330 150.6,368.9" fill="none" stroke="url(#sg)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="413.9,266.6 278,330 361.4,368.9" fill="none" stroke="url(#sg)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="201.7" y="218" width="40" height="40" rx="6" fill="url(#gold)" transform="rotate(45 221.7 238)"/>
+<rect x="270.3" y="218" width="40" height="40" rx="6" fill="url(#gold)" transform="rotate(45 290.3 238)"/>
+</g></svg>

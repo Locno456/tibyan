@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap');
+
+/* True brand kit tokens - from tibyan-brand-kit/tokens/tokens.css */
+:root{
+  --tb-turquoise-300:#19D6C4; --tb-turquoise-500:#0A8F94; --tb-teal-900:#05495A;
+  --tb-blue-600:#14529E; --tb-blue-900:#0F2A5C;
+  --tb-gold-100:#FFF0B8; --tb-gold-500:#E0B450; --tb-ink:#0A2A33;
+  --tb-violet-500:#7B4FD6;
+  --tb-grad-brand:linear-gradient(135deg,#19D6C4 0%,#0A8F94 50%,#05495A 100%);
+  --tb-grad-motif:linear-gradient(180deg,#19D6C4 0%,#14529E 100%);
+  --tb-grad-gold:linear-gradient(180deg,#FFF0B8 0%,#E0B450 100%);
+  --tb-bg:#EEF6F6; --tb-card:#FFFFFF; --tb-line:#C9DFE1; --tb-text:#0A2A33; --tb-muted:#4B6A72; --tb-accent:#0A8F94;
+  --tb-ease-draw:cubic-bezier(.2,.7,.2,1); --tb-ease-turn:cubic-bezier(.65,0,.35,1); --tb-ease-pop:cubic-bezier(.3,1.6,.5,1);
+
+  /* Legacy mapping for existing components - now points to true brand */
+  --blue: #14529E;
+  --blue-dark: #0F2A5C;
+  --blue-light: #C9DFE1;
+  --blue-soft: #EEF6F6;
+  --turquoise: #0A8F94;
+  --turquoise-deep: #05495A;
+  --turquoise-light: #19D6C4;
+  --turquoise-soft: #EEF6F6;
+  --purple: #7B4FD6;
+  --purple-deep: #6D28D9;
+  --purple-light: #DDD6FE;
+  --purple-soft: #F5F3FF;
+  --bg: #EEF6F6;
+  --bg-light: #FFFFFF;
+  --navy: #0A2A33;
+  --text: #0A2A33;
+  --text-sec: #4B6A72;
+  --muted: #8FB0B6;
+  --border-light: rgba(10,143,148,0.12);
+  --shadow-soft: 0 8px 28px rgba(10,143,148,0.07);
+  --grad-trust: linear-gradient(135deg, #19D6C4 0%, #0A8F94 50%, #05495A 100%);
+  --grad-ai: linear-gradient(135deg, #7B4FD6 0%, #14529E 50%, #19D6C4 100%);
+  --grad-mesh: radial-gradient(700px 450px at -5% -15%, rgba(25,214,196,0.13) 0%, transparent 65%), radial-gradient(600px 450px at 105% 105%, rgba(10,143,148,0.15) 0%, transparent 65%), radial-gradient(450px 350px at 85% 15%, rgba(123,79,214,0.11) 0%, transparent 65%);
+  --grad-gold: linear-gradient(180deg, #FFF0B8 0%, #E0B450 100%);
+}
+
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --tb-bg:#061A21;--tb-card:#0C2832;--tb-line:#17414D;--tb-text:#E6F4F4;--tb-muted:#8FB0B6;--tb-accent:#19D6C4;
+    --bg:#061A21; --bg-light:#0C2832; --text:#E6F4F4; --text-sec:#8FB0B6;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Tajawal', sans-serif;
+  background: var(--grad-mesh), linear-gradient(180deg, #EEF6F6 0%, #FFFFFF 100%);
+  min-height: 100vh;
+  color: var(--text);
+  direction: rtl;
+}
+
+.glass {
+  background: rgba(255,255,255,0.84);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft), 0 1px 3px rgba(0,0,0,0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.glass-blue {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(201,223,225,0.5) 100%);
+  border: 1px solid rgba(20,82,158,0.12);
+  border-top: 3px solid var(--tb-blue-600);
+}
+
+.glass-purple {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(221,214,254,0.45) 100%);
+  border: 1px solid rgba(123,79,214,0.12);
+  border-top: 3px solid var(--tb-violet-500);
+}
+
+.glass-turquoise {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(25,214,196,0.15) 100%);
+  border: 1px solid rgba(10,143,148,0.12);
+  border-top: 3px solid var(--tb-turquoise-500);
+}
+
+.glass-gold {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,240,184,0.3) 100%);
+  border: 1px solid rgba(224,180,80,0.18);
+  border-top: 3px solid var(--tb-gold-500);
+}
+
+.sacred {
+  font-family: 'Amiri', serif;
+  font-weight: 700;
+}
+
+.body-font {
+  font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif;
+}
+
+/* True brand animations - from brand kit */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 12px 36px rgba(10,143,148,0.14), 0 0 0 1px rgba(255,255,255,0.8) inset; }
+  50% { box-shadow: 0 20px 48px rgba(10,143,148,0.22), 0 0 0 1px rgba(255,255,255,0.9) inset; }
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(15deg); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: translateX(200%) rotate(15deg); opacity: 0; }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Brand kit easing */
+@keyframes tb-draw { from { stroke-dashoffset: 242 } to { stroke-dashoffset: 0 } }
+@keyframes tb-pop { from { transform: scale(0) } to { transform: scale(1) } }
+
+.logo-float {
+  animation: float 3s ease-in-out infinite, pulse-glow 2.5s ease-in-out infinite;
+}
+
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  animation: shine 2.8s ease-in-out infinite;
+}
+
+.mesh-bg {
+  background: var(--grad-mesh), linear-gradient(180deg, #EEF6F6 0%, #FFFFFF 100%);
+}
+
+/* Motif accent */
+.motif-accent {
+  opacity: 0.9;
+  pointer-events: none;
+}

@@ -1,0 +1,53 @@
+{
+  "color": {
+    "turquoise-300": "#19D6C4",
+    "turquoise-500": "#0A8F94",
+    "teal-900": "#05495A",
+    "blue-600": "#14529E",
+    "blue-900": "#0F2A5C",
+    "gold-100": "#FFF0B8",
+    "gold-500": "#E0B450",
+    "ink": "#0A2A33",
+    "white": "#FFFFFF",
+    "violet-500-optional": "#7B4FD6"
+  },
+  "surface": {
+    "light": {
+      "bg": "#EEF6F6",
+      "card": "#FFFFFF",
+      "line": "#C9DFE1",
+      "text": "#0A2A33",
+      "muted": "#4B6A72",
+      "accent": "#0A8F94"
+    },
+    "dark": {
+      "bg": "#061A21",
+      "card": "#0C2832",
+      "line": "#17414D",
+      "text": "#E6F4F4",
+      "muted": "#8FB0B6",
+      "accent": "#19D6C4"
+    }
+  },
+  "gradient": {
+    "brand-bg": "linear-gradient(135deg, #19D6C4 0%, #0A8F94 50%, #05495A 100%)",
+    "motif": "linear-gradient(180deg, #19D6C4 0%, #14529E 100%)",
+    "gold": "linear-gradient(180deg, #FFF0B8 0%, #E0B450 100%)"
+  },
+  "radius": {
+    "app-icon": "21.9%",
+    "card": "16px",
+    "control": "12px"
+  },
+  "grid": {
+    "logo-unit-on-512": 16,
+    "stroke-width-on-512": 32,
+    "corner-ratio": "21.9%"
+  },
+  "motion": {
+    "draw": "cubic-bezier(.2,.7,.2,1)",
+    "turn": "cubic-bezier(.65,0,.35,1)",
+    "pop": "cubic-bezier(.3,1.6,.5,1)",
+    "sweep": "cubic-bezier(.45,.05,.35,1)"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "تِبْيَان - الحوار المعرفي الموثق",
+  "short_name": "تِبْيَان",
+  "description": "محرك الحوار المعرفي والاستدلال الشرعي الموثق - صفر اختلاق - هوية بصرية: علامة صح + كتاب مفتوح + نقطتا التاء",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EEF6F6",
+  "theme_color": "#0A8F94",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

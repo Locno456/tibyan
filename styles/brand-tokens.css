@@ -1,0 +1,14 @@
+/* Tibyan design tokens */
+:root{
+  --tb-turquoise-300:#19D6C4; --tb-turquoise-500:#0A8F94; --tb-teal-900:#05495A;
+  --tb-blue-600:#14529E; --tb-blue-900:#0F2A5C;
+  --tb-gold-100:#FFF0B8; --tb-gold-500:#E0B450; --tb-ink:#0A2A33;
+  --tb-violet-500:#7B4FD6; /* optional AI accent, use sparingly */
+  --tb-grad-brand:linear-gradient(135deg,#19D6C4 0%,#0A8F94 50%,#05495A 100%);
+  --tb-grad-motif:linear-gradient(180deg,#19D6C4 0%,#14529E 100%);
+  --tb-grad-gold:linear-gradient(180deg,#FFF0B8 0%,#E0B450 100%);
+  --tb-bg:#EEF6F6; --tb-card:#FFFFFF; --tb-line:#C9DFE1; --tb-text:#0A2A33; --tb-muted:#4B6A72; --tb-accent:#0A8F94;
+  --tb-ease-draw:cubic-bezier(.2,.7,.2,1); --tb-ease-turn:cubic-bezier(.65,0,.35,1); --tb-ease-pop:cubic-bezier(.3,1.6,.5,1);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--tb-bg:#061A21;--tb-card:#0C2832;--tb-line:#17414D;--tb-text:#E6F4F4;--tb-muted:#8FB0B6;--tb-accent:#19D6C4}}
+:root[data-theme="dark"]{--tb-bg:#061A21;--tb-card:#0C2832;--tb-line:#17414D;--tb-text:#E6F4F4;--tb-muted:#8FB0B6;--tb-accent:#19D6C4}

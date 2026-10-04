@@ -1,0 +1,31 @@
+{
+  "name": "tibyan-mvp",
+  "version": "2.0.0",
+  "description": "منصة تِبْيَان - محرك الحوار المعرفي الموثق - هوية فاتحة زجاجية #2563EB + #06B6D4 + #7C3AED - تحدي باذل 2026 - Gemini Flash Lite Free",
+  "private": false,
+  "scripts": {
+    "dev": "next dev -p 3000 -H 0.0.0.0",
+    "build": "next build",
+    "start": "next start -p 3000 -H 0.0.0.0",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "framer-motion": "11.3.2",
+    "@google/generative-ai": "0.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "autoprefixer": "10.4.19",
+    "postcss": "8.4.39",
+    "tailwindcss": "3.4.6",
+    "typescript": "5.5.3"
+  },
+  "keywords": ["islamic", "RAG", "badel", "tibyan", "glassmorphism", "quran", "hadith", "AI", "gemini", "flash-lite"],
+  "author": "فريق تِبْيَان - تحدي باذل 2026",
+  "license": "MIT"
+}
