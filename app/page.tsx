@@ -408,7 +408,7 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                      className="flex justify-end"
+                      className="flex justify-start"
                     >
                       <div className="max-w-[85%] sm:max-w-[70%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]">
                         <div className="text-[15px] font-medium leading-relaxed">{item.question}</div>
@@ -499,7 +499,7 @@ export default function HomePage() {
               exit={{ opacity: 0, y: 12, scale: 0.8 }}
               onClick={() => scrollToBottom()}
               aria-label="النزول إلى آخر رسالة"
-              className="fixed bottom-[132px] inset-inline-start-1/2 -translate-x-1/2 z-30 w-9 h-9 rounded-full bg-[#0A2A33] text-white shadow-[0_6px_18px_rgba(10,42,51,0.25)] flex items-center justify-center"
+              className="fixed bottom-[132px] left-1/2 -translate-x-1/2 z-30 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#0A2A33]/90 backdrop-blur text-white shadow-[0_8px_24px_rgba(10,42,51,0.3)] border border-white/10 flex items-center justify-center hover:bg-[#0A2A33] transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
                 <path d="M7 2v10M3 8l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
