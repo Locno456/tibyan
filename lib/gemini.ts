@@ -3,6 +3,7 @@
 // https://ai.google.dev/pricing - مجاني تماماً للـ MVP
 
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { buildSourceUrl } from "./sourceLinks"
 
 // نماذج سارية في أكتوبر 2026 — المرجع: https://ai.google.dev/gemini-api/docs/models
 const GEMINI_MODELS = {
@@ -127,7 +128,7 @@ export function buildTibyanPrompt(
     `[مصدر ${i+1} - ${doc.payload.type} - ${doc.payload.source} - ثقة ${(doc.score/5*100).toFixed(0)}%]
 النص الحرفي الموثق 100%:
 ${doc.payload.text}
-المصدر: ${doc.payload.source_url}
+المصدر: ${buildSourceUrl(doc.payload)}
 ---`
   ).join("\n\n")
 

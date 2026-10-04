@@ -1,6 +1,7 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect } from "react"
+import { buildSourceUrl, sourceDomain } from "../lib/sourceLinks"
 
 interface SourceDetail {
   id: string
@@ -139,12 +140,8 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                   safeSources.map((src, idx) => {
                     if (!src) return null
                     const colors = getTypeColor(src.type || "")
-                    const domain = (() => {
-                      try {
-                        if (!src.source_url) return ""
-                        return src.source_url.replace('https://', '').split('/')[0]
-                      } catch { return "" }
-                    })()
+                    const link = buildSourceUrl(src)
+                    const domain = sourceDomain(link)
 
                     return (
                       <motion.div
@@ -193,9 +190,9 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                             <div className="font-bold text-[#0A2A33]">{src.source || ""}</div>
                             {domain && <div className="text-[11.5px] text-[#8FB0B6] mt-0.5">{domain}</div>}
                           </div>
-                          {src.source_url && (
+                          {link && (
                             <a
-                              href={src.source_url}
+                              href={link}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="shrink-0 px-3 py-1.5 rounded-full bg-[#0A8F94] text-white text-[12.5px] font-bold hover:bg-[#05495A] transition-colors flex items-center gap-1"
