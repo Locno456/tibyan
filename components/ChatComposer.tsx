@@ -92,7 +92,7 @@ const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
             disabled={disabled}
             placeholder={placeholder ?? "اسأل تِبْيَان… مثال: ما معنى التوحيد؟"}
             aria-label="اكتب سؤالك"
-            className="body-font flex-1 min-h-[52px] sm:min-h-[56px] max-h-[180px] px-4 sm:px-5 py-3.5 bg-transparent border-none outline-none resize-none text-[15.5px] sm:text-[17px] leading-[1.75] text-[#0A2A33] placeholder:text-[#8FB0B6] disabled:opacity-60 tb-scroll"
+            className="body-font flex-1 min-h-[52px] sm:min-h-[56px] max-h-[180px] px-4 sm:px-5 py-3.5 bg-transparent border-none outline-none focus-visible:outline-none resize-none text-[15.5px] sm:text-[17px] leading-[1.75] text-[#0A2A33] placeholder:text-[#8FB0B6] disabled:opacity-60 tb-scroll"
           />
 
           {/* عدّاد الأحرف */}

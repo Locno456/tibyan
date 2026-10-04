@@ -119,7 +119,8 @@ export function buildTibyanPrompt(
   retrievedDocs: any[],
   persona: string,
   level: string,
-  history: ChatTurn[] = []
+  history: ChatTurn[] = [],
+  background?: string
 ): { prompt: string, systemInstruction: string } {
   
   const docsContext = retrievedDocs.map((doc, i) => 
@@ -148,6 +149,7 @@ ${doc.payload.text}
 - المستوى: ${level} - ${level === 'A' ? 'معلومات أصلية مستقرة - إجابة مباشرة موثقة' : level === 'B' ? 'شرح وتعريف واستدلال من بينات' : level === 'C' ? 'مسألة خلافية - بيان وجود الخلاف بدون ترجيح مستقل' : level === 'D' ? 'فتوى شخصية - يجب الامتناع والإحالة' : 'امتناع'}
 
 ${personaInstructions[persona] || personaInstructions.general}
+${background ? `- خلفية السائل المخصصة: «${background}» — كيّف أسلوبك وأمثلة ومستوى التفصيل لتناسب هذه الخلفية تحديداً` : ""}
 
 مهم جداً:
 - لا تستخدم زخرفة ﴿ ﴾ إلا إذا كانت موجودة حرفياً في المصادر المعطاة
@@ -180,7 +182,7 @@ ${docsContext || "لا يوجد مصادر كافية - يجب الامتناع"
 1. استخدم فقط النصوص الحرفية أعلاه في البطاقات الزرقاء (لا تولد غيرها)
 2. قدم شرحاً منظماً مبنياً على هذه المصادر فقط (سيكون في البطاقة البنفسجية)
 3. المستوى: ${level} - التزم بإجراء المستوى
-4. خلفية السائل: ${persona} - ${personaInstructions[persona] || personaInstructions.general}
+4. خلفية السائل: ${background ? `مخصصة — «${background}»` : `${persona} - ${personaInstructions[persona] || personaInstructions.general}`}
 
 أجب الآن بالشرح المنظم فقط (بدون تكرار النصوص الحرفية - هي ستظهر في البطاقات الزرقاء منفصلة):`
 

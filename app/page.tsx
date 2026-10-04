@@ -1,11 +1,18 @@
 "use client"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion"
 import SplashScreen from "../components/SplashScreen"
 import AnimatedLogo from "../components/AnimatedLogo"
 import ChatMessage from "../components/ChatMessage"
 import ChatComposer from "../components/ChatComposer"
 import ThinkingStages from "../components/ThinkingStages"
+import KnowledgePicker from "../components/KnowledgePicker"
+import CustomKnowledgeSheet from "../components/CustomKnowledgeSheet"
+import { Lightbulb } from "lucide-react"
+import {
+  KnowledgeOption, PRESET_KNOWLEDGE, getKnowledgeIcon,
+  loadCustomKnowledge, saveCustomKnowledge, loadSelectedKnowledgeId, saveSelectedKnowledgeId,
+} from "../lib/knowledge"
 import { Level, LEVELS } from "../lib/levelRouter"
 
 interface AskResponse {
@@ -22,19 +29,9 @@ interface AskResponse {
   metrics: any
 }
 
-type Persona = "general" | "new_muslim" | "non_muslim" | "teen" | "researcher"
-
 type ThreadItem =
   | { id: string; role: "user"; question: string }
   | { id: string; role: "tibyan"; response: AskResponse }
-
-const PERSONAS: { id: Persona; label: string; hint: string }[] = [
-  { id: "general", label: "عام", hint: "خطاب متوازن للجميع" },
-  { id: "new_muslim", label: "حديث الإسلام", hint: "تدرّج ولطف" },
-  { id: "non_muslim", label: "غير مسلم", hint: "تعريف أولي" },
-  { id: "teen", label: "ناشئة", hint: "لغة قريبة" },
-  { id: "researcher", label: "باحث", hint: "تحرير علمي" },
-]
 
 const QUICK_QUESTIONS = [
   { q: "ما معنى التوحيد؟", tag: "مستوى أ" },
@@ -63,11 +60,29 @@ const uid = () => `m${Date.now()}_${seq++}`
 
 export default function HomePage() {
   const [showSplash, setShowSplash] = useState(true)
-  const [persona, setPersona] = useState<Persona>("general")
   const [thread, setThread] = useState<ThreadItem[]>([])
   const [pending, setPending] = useState<string | null>(null)
   const [showTests, setShowTests] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
+
+  // نظام «معرفة خلفية السائل» — زر المصباح
+  const [knowledge, setKnowledge] = useState<KnowledgeOption>(PRESET_KNOWLEDGE[0])
+  const [customKnowledge, setCustomKnowledge] = useState<KnowledgeOption[]>([])
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  // استرجاع المحفوظ من المتصفح عند أول تحميل
+  useEffect(() => {
+    const customs = loadCustomKnowledge()
+    setCustomKnowledge(customs)
+    const selectedId = loadSelectedKnowledgeId()
+    if (selectedId) {
+      const found =
+        customs.find((c) => c.id === selectedId) ||
+        PRESET_KNOWLEDGE.find((p) => p.id === selectedId)
+      if (found) setKnowledge(found)
+    }
+  }, [])
 
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const composerRef = useRef<HTMLTextAreaElement | null>(null)
@@ -75,10 +90,24 @@ export default function HomePage() {
   const { scrollYProgress } = useScroll({ container: scrollerRef })
   useMotionValueEvent(scrollYProgress, "change", (v) => setAtBottom(v > 0.985))
 
-  const activePersona = useMemo(
-    () => PERSONAS.find((p) => p.id === persona) ?? PERSONAS[0],
-    [persona]
-  )
+  // handlers نظام المعرفة
+  const selectKnowledge = (k: KnowledgeOption) => {
+    setKnowledge(k)
+    saveSelectedKnowledgeId(k.id)
+    setPickerOpen(false)
+  }
+
+  const saveCustomKnowledgeOption = (k: KnowledgeOption) => {
+    setCustomKnowledge((prev) => {
+      const next = [...prev, k]
+      saveCustomKnowledge(next)
+      return next
+    })
+    setSheetOpen(false)
+    selectKnowledge(k)
+  }
+
+  const CurrentKnowledgeIcon = getKnowledgeIcon(knowledge.icon)
 
   useEffect(() => {
     const t = setTimeout(() => setShowSplash(false), 2800)
@@ -134,7 +163,12 @@ export default function HomePage() {
         const res = await fetch("/api/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question, persona, history }),
+          body: JSON.stringify({
+            question,
+            persona: knowledge.persona,
+            background: knowledge.kind === "custom" ? knowledge.background : undefined,
+            history,
+          }),
         })
         const json = await res.json()
         if (!res.ok || !json || json.error) throw new Error(json?.error || `HTTP ${res.status}`)
@@ -153,7 +187,7 @@ export default function HomePage() {
               explanation:
                 "تعذّر الاتصال بخدمة المعالجة. تحقّق من الاتصال ثم أعد المحاولة.\n\nتفصيل: " +
                 String(e?.message || e),
-              persona,
+              persona: knowledge.persona,
               level: "abstain",
             },
           ],
@@ -167,7 +201,7 @@ export default function HomePage() {
       setThread((t) => [...t, { id: uid(), role: "tibyan", response: data }])
       scrollToBottom()
     },
-    [pending, persona, scrollToBottom, thread]
+    [pending, knowledge, scrollToBottom, thread]
   )
 
   const isEmpty = thread.length === 0 && !pending
@@ -225,31 +259,44 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* منتقي الشخصية — مؤشر منزلق */}
-              <div className="hidden md:flex items-center gap-1 p-1 sm:p-1.5 rounded-full bg-[#EEF6F6]/80 border border-[#C9DFE1]/70">
-                {PERSONAS.map((p) => {
-                  const isActive = persona === p.id
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setPersona(p.id)}
-                      title={p.hint}
-                      className="relative px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[12.5px] sm:text-[14px] font-bold transition-colors"
-                      style={{ color: isActive ? "#fff" : "#4B6A72" }}
-                    >
-                      {isActive && (
-                        <motion.span
-                          layoutId="persona-pill"
-                          className="absolute inset-0 rounded-full"
-                          style={{ background: "linear-gradient(135deg,#19D6C4,#0A8F94)" }}
-                          transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                        />
-                      )}
-                      <span className="relative z-10">{p.label}</span>
-                    </button>
-                  )
-                })}
+              {/* زر المصباح — معرفة خلفية السائل (بدل المبدل القديم) */}
+              <div className="relative">
+                <motion.button
+                  type="button"
+                  onClick={() => setPickerOpen((s) => !s)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  aria-haspopup="menu"
+                  aria-expanded={pickerOpen}
+                  title="معرفة خلفية السائل"
+                  className="relative flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-[12.5px] sm:text-[14px] font-bold border transition-colors"
+                  style={{
+                    background: pickerOpen ? "#0A8F94" : "#fff",
+                    color: pickerOpen ? "#fff" : "#0A2A33",
+                    borderColor: pickerOpen ? "#0A8F94" : "#C9DFE1",
+                  }}
+                >
+                  <Lightbulb size={17} strokeWidth={2.4} className="text-[#E0B450]" />
+                  <CurrentKnowledgeIcon
+                    size={16}
+                    strokeWidth={2.3}
+                    className={pickerOpen ? "text-white" : "text-[#0A8F94]"}
+                  />
+                  <span className="max-w-[110px] truncate">{knowledge.label}</span>
+                </motion.button>
+
+                <KnowledgePicker
+                  open={pickerOpen}
+                  onClose={() => setPickerOpen(false)}
+                  selectedId={knowledge.id}
+                  presets={PRESET_KNOWLEDGE}
+                  customOptions={customKnowledge}
+                  onSelect={selectKnowledge}
+                  onAddCustom={() => {
+                    setPickerOpen(false)
+                    setSheetOpen(true)
+                  }}
+                />
               </div>
 
               <motion.button
@@ -273,27 +320,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* شريط الشخصية على الشاشات الصغيرة */}
-          <div className="md:hidden px-4 pb-2 flex items-center gap-1.5 overflow-x-auto tb-scroll">
-            {PERSONAS.map((p) => {
-              const isActive = persona === p.id
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPersona(p.id)}
-                  className="shrink-0 px-2.5 py-1 rounded-full text-[12px] font-bold border transition-colors"
-                  style={{
-                    background: isActive ? "#0A8F94" : "#fff",
-                    color: isActive ? "#fff" : "#4B6A72",
-                    borderColor: isActive ? "#0A8F94" : "#C9DFE1",
-                  }}
-                >
-                  {p.label}
-                </button>
-              )
-            })}
-          </div>
+          {/* أُزيل شريط الشخصية للجوال — زر المصباح في الترويسة يفتح المنتقي على كل المقاسات */}
         </header>
 
         {/* منطقة المحادثة */}
@@ -320,8 +347,8 @@ export default function HomePage() {
                   </p>
 
                   <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#C9DFE1] text-[12px] text-[#0A8F94] font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E0B450] rotate-45" />
-                    الخطاب الحالي: {activePersona.label} — {activePersona.hint}
+                    <CurrentKnowledgeIcon size={14} strokeWidth={2.4} />
+                    الخطاب الحالي: {knowledge.label} — {knowledge.kind === "custom" ? knowledge.background : knowledge.hint}
                   </div>
 
                   <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-[560px]">
@@ -488,6 +515,9 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+
+      {/* مودال / Bottom sheet «معرفة مخصصة» */}
+      <CustomKnowledgeSheet open={sheetOpen} onClose={() => setSheetOpen(false)} onSave={saveCustomKnowledgeOption} />
     </>
   )
 }

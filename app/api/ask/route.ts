@@ -54,6 +54,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { question, persona = "general" } = body
 
+    // خلفية السائل المخصصة (من زر المصباح → معرفة مخصة) — تُكيّف أسلوب الإجابة
+    const background = typeof body.background === "string" && body.background.trim()
+      ? body.background.trim().slice(0, 400)
+      : undefined
+
     // سياق المحادثة — بدونه لا يرى النموذج سوى السؤال الحالي فلا يكون الرد حوارياً
     const rawHistory = Array.isArray(body.history) ? body.history : []
     let history = rawHistory
@@ -148,7 +153,7 @@ export async function POST(request: NextRequest) {
 
     if (geminiApiKey) {
       try {
-        const { prompt, systemInstruction } = buildTibyanPrompt(question, retrieval.docs as any, persona, level, history)
+        const { prompt, systemInstruction } = buildTibyanPrompt(question, retrieval.docs as any, persona, level, history, background)
         
         const geminiResult = await generateWithGemini(
           prompt,
