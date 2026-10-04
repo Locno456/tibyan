@@ -45,13 +45,7 @@
 
 * { box-sizing: border-box; }
 
-html {
-  scroll-behavior: smooth;
-  -webkit-text-size-adjust: 100%;
-  /* أساس متجاوب: 16px على الجوال حتى 17px على الشاشات الكبيرة (+6%)
-     كل ما هو مبني على rem (خطوط Tailwind الافتراضية والمسافات) يتدرّج معه */
-  font-size: clamp(16px, 0.25vw + 15px, 17px);
-}
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 body {
   margin: 0;

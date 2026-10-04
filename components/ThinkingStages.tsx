@@ -57,7 +57,7 @@ export default function ThinkingStages({ question }: ThinkingStagesProps) {
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[14px] font-extrabold text-[#0A2A33] flex items-center gap-2">
+            <div className="text-[12.5px] font-extrabold text-[#0A2A33] flex items-center gap-2">
               تِبْيَان يعالج سؤالك
               <span className="inline-flex gap-[3px] items-end h-3">
                 {[0, 1, 2].map((i) => (
@@ -69,9 +69,9 @@ export default function ThinkingStages({ question }: ThinkingStagesProps) {
                 ))}
               </span>
             </div>
-            <div className="text-[12.5px] text-[#4B6A72] truncate">{question}</div>
+            <div className="text-[11px] text-[#4B6A72] truncate">{question}</div>
           </div>
-          <div className="shrink-0 text-[12.5px] font-bold tabular-nums text-[#0A8F94]">
+          <div className="shrink-0 text-[11px] font-bold tabular-nums text-[#0A8F94]">
             {(elapsed / 1000).toFixed(1)}ث
           </div>
         </div>
@@ -122,19 +122,19 @@ export default function ThinkingStages({ question }: ThinkingStagesProps) {
 
                 <div className="flex-1 pt-1 min-w-0">
                   <div
-                    className="text-[14px] font-bold transition-colors duration-300"
+                    className="text-[12.5px] font-bold transition-colors duration-300"
                     style={{ color: done || isNow ? "#0A2A33" : "#8FB0B6" }}
                   >
                     {s.label}
                   </div>
-                  <div className="text-[12px] text-[#8FB0B6] font-mono truncate">{s.hint}</div>
+                  <div className="text-[10.5px] text-[#8FB0B6] font-mono truncate">{s.hint}</div>
                 </div>
 
                 {isNow && (
                   <motion.span
                     initial={{ opacity: 0, x: 6 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="shrink-0 mt-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold"
+                    className="shrink-0 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold"
                     style={{ background: `${s.color}14`, color: s.color }}
                   >
                     جارٍ
@@ -145,7 +145,7 @@ export default function ThinkingStages({ question }: ThinkingStagesProps) {
           })}
         </ol>
 
-        <div className="mt-4 pt-3 border-t border-[#C9DFE1]/50 flex items-center justify-between text-[11.5px] text-[#8FB0B6]">
+        <div className="mt-4 pt-3 border-t border-[#C9DFE1]/50 flex items-center justify-between text-[10px] text-[#8FB0B6]">
           <span>يُمتنع تلقائياً عند غياب المرجعية الكافية</span>
           <span className="font-mono">min confidence 0.82</span>
         </div>

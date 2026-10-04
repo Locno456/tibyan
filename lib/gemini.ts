@@ -4,23 +4,12 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
-// نماذج سارية في أكتوبر 2026 — المرجع: https://ai.google.dev/gemini-api/docs/models
 const GEMINI_MODELS = {
-  // الافتراضي: أسرع نموذج منخفض التكلفة (الأنسب للخطة المجانية)
-  flashLite: "gemini-3.5-flash-lite",
-  flash31Lite: "gemini-3.1-flash-lite",
-  // أقوى، للاستدلال الأطول
-  flash: "gemini-3.8-flash",
-} as const
-
-// نماذج أوقفتها Google فعلياً — استدعاؤها يفشل دائماً
-// gemini-1.5-pro / gemini-1.5-flash-8b / gemini-1.5-flash أُوقفت في 2025-09-29
-export const RETIRED_MODELS = [
-  "gemini-1.5-pro",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-8b",
-  "gemini-1.5-flash-8b-latest",
-]
+  // الأفضل للخطة المجانية - سريع ورخيص ودقيق
+  flashLite: "gemini-1.5-flash-8b", // أو gemini-2.0-flash-lite-preview عند توفره
+  flash: "gemini-1.5-flash",
+  flash2Lite: "gemini-2.0-flash-lite", // الجديد - أسرع وأرخص
+}
 
 export interface GeminiConfig {
   apiKey: string
@@ -45,14 +34,6 @@ export async function generateWithGemini(
   const modelName = typeof config.model === 'string' && config.model.includes('gemini') 
     ? config.model 
     : GEMINI_MODELS[config.model as keyof typeof GEMINI_MODELS] || GEMINI_MODELS.flashLite
-
-  // نموذج موقوف = فشل مؤكد. نرمي خطأ واضحاً بدل سقوط صامت إلى القوالب المحلية
-  if (RETIRED_MODELS.some(r => modelName.startsWith(r))) {
-    throw new Error(
-      `النموذج "${modelName}" أوقفته Google (نماذج 1.5 أُوقفت في 2025-09-29). ` +
-      `حدّث GEMINI_MODEL إلى ${GEMINI_MODELS.flashLite} — راجع /api/health`
-    )
-  }
 
   const model = genAI.getGenerativeModel({ 
     model: modelName,
@@ -89,38 +70,12 @@ export async function generateWithGemini(
   }
 }
 
-export interface ChatTurn { role: "user" | "model"; text: string }
-
-// فحص حي للنموذج — يُستخدم من /api/health لتأكيد أن الذكاء الاصطناعي يعمل فعلاً
-export async function probeGemini(
-  apiKey: string,
-  model?: string
-): Promise<{ ok: boolean; model: string; latencyMs: number; reply?: string; error?: string }> {
-  const t0 = Date.now()
-  try {
-    const res = await generateWithGemini(
-      "أجب بكلمة واحدة فقط: جاهز",
-      { apiKey, model: model || GEMINI_MODELS.flashLite, temperature: 0, maxTokens: 8 }
-    )
-    return { ok: true, model: res.model, latencyMs: Date.now() - t0, reply: res.text.trim().slice(0, 40) }
-  } catch (e: any) {
-    return { ok: false, model: String(model || GEMINI_MODELS.flashLite), latencyMs: Date.now() - t0, error: String(e?.message || e).slice(0, 200) }
-  }
-}
-
-export function resolveModelName(model?: string): string {
-  if (typeof model === "string" && model.includes("gemini")) return model
-  return GEMINI_MODELS[(model as keyof typeof GEMINI_MODELS) || "flashLite"] || GEMINI_MODELS.flashLite
-}
-
 // بناء prompt محكم لمنع الهلوسة - القاعدة الذهبية: النموذج منظم وليس مصدر
 export function buildTibyanPrompt(
   question: string,
   retrievedDocs: any[],
   persona: string,
-  level: string,
-  history: ChatTurn[] = [],
-  background?: string
+  level: string
 ): { prompt: string, systemInstruction: string } {
   
   const docsContext = retrievedDocs.map((doc, i) => 
@@ -149,31 +104,15 @@ ${doc.payload.text}
 - المستوى: ${level} - ${level === 'A' ? 'معلومات أصلية مستقرة - إجابة مباشرة موثقة' : level === 'B' ? 'شرح وتعريف واستدلال من بينات' : level === 'C' ? 'مسألة خلافية - بيان وجود الخلاف بدون ترجيح مستقل' : level === 'D' ? 'فتوى شخصية - يجب الامتناع والإحالة' : 'امتناع'}
 
 ${personaInstructions[persona] || personaInstructions.general}
-${background ? `- خلفية السائل المخصصة: «${background}» — كيّف أسلوبك وأمثلة ومستوى التفصيل لتناسب هذه الخلفية تحديداً` : ""}
 
 مهم جداً:
 - لا تستخدم زخرفة ﴿ ﴾ إلا إذا كانت موجودة حرفياً في المصادر المعطاة
 - لا تقول "قال تعالى" أو "قال رسول الله" إلا بنص موجود حرفياً في المصادر
 - إذا لم تجد مصدر كاف، قل: لم أجد مصدراً كافياً في المصادر المعتمدة
 - اذكر المصادر المعتمدة: quranpedia.net, dorar.net, dawa.center/file/7937, islamic-content.com/dictionary
-- كن موجزاً مفيداً - 3-5 أسطر للشرح
+- كن موجزاً مفيداً - 3-5 أسطر للشرح`
 
-أسلوب الحوار (مهم لجعل الرد تفاعلياً):
-- أجب عن السؤال المطروح تحديداً، لا عن الموضوع العام
-- إذا أعطيتَ سياق محادثة سابقاً فاستفد منه: لا تُعِد التعريفات التي شرحتها، وابنِ عليها
-- اربط الإجابة بسياق السائل (خلفيته، لغته، ما ذكره عن حاله)
-- اختم بسؤال متابعة واحد قصير يفتح الباب للتعمق (إلا في المستوى د حيث تُنهي بالإحالة)
-- لا تكتب مقدمات آلية مثل «هذا سؤال مهم» أو «بناءً على المصادر المعتمدة نقدم شرحاً»
-- لا تكرر ما سيظهر في البطاقات الزرقاء من نصوص حرفية`
-
-  const historyBlock = history.length
-    ? `\nسياق المحادثة السابقة (من الأقدم إلى الأحدث) — استفد منه ولا تكرره:\n${history
-        .slice(-6)
-        .map(t => `${t.role === "user" ? "السائل" : "تِبْيَان"}: ${t.text.slice(0, 500)}`)
-        .join("\n")}\n`
-    : ""
-
-  const prompt = `${historyBlock}السؤال الحالي: ${question}
+  const prompt = `السؤال: ${question}
 
 المصادر الموثقة المسترجعة (Hybrid RAG - BM25 + Vector):
 ${docsContext || "لا يوجد مصادر كافية - يجب الامتناع"}
@@ -182,7 +121,7 @@ ${docsContext || "لا يوجد مصادر كافية - يجب الامتناع"
 1. استخدم فقط النصوص الحرفية أعلاه في البطاقات الزرقاء (لا تولد غيرها)
 2. قدم شرحاً منظماً مبنياً على هذه المصادر فقط (سيكون في البطاقة البنفسجية)
 3. المستوى: ${level} - التزم بإجراء المستوى
-4. خلفية السائل: ${background ? `مخصصة — «${background}»` : `${persona} - ${personaInstructions[persona] || personaInstructions.general}`}
+4. خلفية السائل: ${persona} - ${personaInstructions[persona] || personaInstructions.general}
 
 أجب الآن بالشرح المنظم فقط (بدون تكرار النصوص الحرفية - هي ستظهر في البطاقات الزرقاء منفصلة):`
 

@@ -78,7 +78,7 @@ export default function CircularProgress({ value, size = 44, showLabel = true }:
           aria-hidden
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <motion.span className="text-[12.5px] font-extrabold leading-none tabular-nums" style={{ color }}>
+          <motion.span className="text-[11px] font-extrabold leading-none tabular-nums" style={{ color }}>
             {label}
           </motion.span>
           {showLabel && <span className="text-[7px] text-[#8FB0B6] leading-none mt-0.5">موثوقية</span>}
@@ -86,7 +86,7 @@ export default function CircularProgress({ value, size = 44, showLabel = true }:
       </div>
       {showLabel && (
         <div className="hidden sm:flex flex-col">
-          <span className="text-[11.5px] font-bold" style={{ color }}>
+          <span className="text-[10px] font-bold" style={{ color }}>
             {getLabel()}
           </span>
           <span className="text-[8px] text-[#8FB0B6]">من المصادر المعتمدة</span>

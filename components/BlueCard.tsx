@@ -54,7 +54,7 @@ export default function BlueCard({ text, source, sourceUrl, grade, type = "conce
       <div className="glass glass-blue rounded-[16px] p-5 relative overflow-hidden transition-all duration-300 group-hover:shadow-[0_12px_36px_rgba(20,82,158,0.12)]">
         <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-[16px]" style={{ background: "linear-gradient(90deg, #14529E 0%, #0A8F94 100%)" }} />
 
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-bold bg-[#EEF6F6] border border-[#C9DFE1] text-[#14529E]">
+        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#EEF6F6] border border-[#C9DFE1] text-[#14529E]">
           <span className="w-3.5 h-3.5 rounded-full bg-[#14529E] flex items-center justify-center text-white text-[8px]">✓</span>
           موثق 100% • لا توليد
         </div>
@@ -65,8 +65,8 @@ export default function BlueCard({ text, source, sourceUrl, grade, type = "conce
               <span className="text-[16px]">{getIcon()}</span>
             </div>
             <div>
-              <div className="text-[13px] font-extrabold" style={{ color: '#14529E', fontFamily: 'Tajawal, sans-serif' }}>{getLabel()}</div>
-              <div className="text-[11.5px] text-[#4B6A72] mt-0.5 flex items-center gap-1">
+              <div className="text-[12px] font-extrabold" style={{ color: '#14529E', fontFamily: 'Tajawal, sans-serif' }}>{getLabel()}</div>
+              <div className="text-[10px] text-[#4B6A72] mt-0.5 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 {safeSource}
                 {confidence !== undefined && confidence !== null && (
@@ -98,7 +98,7 @@ export default function BlueCard({ text, source, sourceUrl, grade, type = "conce
               href={safeSourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] font-bold bg-white border border-[#C9DFE1] text-[#14529E] hover:bg-[#EEF6F6] transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-white border border-[#C9DFE1] text-[#14529E] hover:bg-[#EEF6F6] transition-all"
             >
               <span>تحقق من المصدر</span>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -106,10 +106,10 @@ export default function BlueCard({ text, source, sourceUrl, grade, type = "conce
               </svg>
             </a>
           ) : (
-            <span className="text-[12.5px] text-[#8FB0B6]">{safeSource}</span>
+            <span className="text-[11px] text-[#8FB0B6]">{safeSource}</span>
           )}
 
-          <div className="flex items-center gap-1.5 text-[11.5px] text-[#8FB0B6]">
+          <div className="flex items-center gap-1.5 text-[10px] text-[#8FB0B6]">
             <span className="w-1 h-1 rounded-full bg-[#14529E]/40" />
             <span>استرجاع حرفي • {getDomain()}</span>
           </div>

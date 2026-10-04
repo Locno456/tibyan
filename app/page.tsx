@@ -86,6 +86,7 @@ export default function HomePage() {
 
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const composerRef = useRef<HTMLTextAreaElement | null>(null)
+  const knowledgeBtnRef = useRef<HTMLDivElement | null>(null)
 
   const { scrollYProgress } = useScroll({ container: scrollerRef })
   useMotionValueEvent(scrollYProgress, "change", (v) => setAtBottom(v > 0.985))
@@ -260,7 +261,7 @@ export default function HomePage() {
 
             <div className="flex items-center gap-2">
               {/* زر المصباح — معرفة خلفية السائل (بدل المبدل القديم) */}
-              <div className="relative">
+              <div className="relative" ref={knowledgeBtnRef}>
                 <motion.button
                   type="button"
                   onClick={() => setPickerOpen((s) => !s)}
@@ -296,6 +297,7 @@ export default function HomePage() {
                     setPickerOpen(false)
                     setSheetOpen(true)
                   }}
+                  anchorRef={knowledgeBtnRef}
                 />
               </div>
 

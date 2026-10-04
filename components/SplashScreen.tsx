@@ -137,7 +137,7 @@ export default function SplashScreen({ onFinish, duration = 2800 }: SplashScreen
                 تِبْيَان
               </h1>
               <motion.p
-                className="text-[14px] tracking-[0.22em] font-bold mt-1"
+                className="text-[13px] tracking-[0.22em] font-bold mt-1"
                 style={{ color: '#4B6A72' }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -147,7 +147,7 @@ export default function SplashScreen({ onFinish, duration = 2800 }: SplashScreen
               </motion.p>
 
               <motion.div
-                className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-[13px] font-bold"
+                className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-[12px] font-bold"
                 style={{ background: "rgba(255,255,255,0.9)", border: "1px solid rgba(10,143,148,0.12)" }}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -160,14 +160,14 @@ export default function SplashScreen({ onFinish, duration = 2800 }: SplashScreen
               </motion.div>
 
               <motion.p
-                className="mt-4 text-[14px] leading-relaxed max-w-[360px] mx-auto"
+                className="mt-4 text-[13px] leading-relaxed max-w-[360px] mx-auto"
                 style={{ color: '#4B6A72', fontFamily: 'IBM Plex Sans Arabic, Tajawal, sans-serif' }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.1 }}
               >
                 محرك الحوار المعرفي والاستدلال الشرعي الموثق<br />
-                <span className="text-[12.5px] text-[#8FB0B6]">تحدي باذل 2026 • المسار الأول • علامة الصح + كتاب + نقطتا التاء</span>
+                <span className="text-[11px] text-[#8FB0B6]">تحدي باذل 2026 • المسار الأول • علامة الصح + كتاب + نقطتا التاء</span>
               </motion.p>
             </motion.div>
 
@@ -199,7 +199,7 @@ export default function SplashScreen({ onFinish, duration = 2800 }: SplashScreen
                 <motion.span className="w-1.5 h-1.5 rounded-full bg-[#19D6C4]" animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} />
                 <motion.span className="w-1.5 h-1.5 rounded-full bg-[#E0B450]" animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} />
               </div>
-              <span className="text-[11.5px] text-[#8FB0B6] mr-2 font-medium">جاري تهيئة المصادر الموثقة...</span>
+              <span className="text-[10px] text-[#8FB0B6] mr-2 font-medium">جاري تهيئة المصادر الموثقة...</span>
             </motion.div>
 
             {/* Footer identity colors - true brand */}
@@ -211,28 +211,28 @@ export default function SplashScreen({ onFinish, duration = 2800 }: SplashScreen
             >
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#0A8F94] shadow-[0_0_12px_rgba(10,143,148,0.4)]" />
-                <span className="text-[11.5px] font-bold text-[#4B6A72]">#0A8F94 إسلام</span>
+                <span className="text-[10px] font-bold text-[#4B6A72]">#0A8F94 إسلام</span>
               </div>
               <span className="w-px h-3 bg-[#C9DFE1]" />
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#14529E] shadow-[0_0_12px_rgba(20,82,158,0.4)]" />
-                <span className="text-[11.5px] font-bold text-[#4B6A72]">#14529E موثوقية</span>
+                <span className="text-[10px] font-bold text-[#4B6A72]">#14529E موثوقية</span>
               </div>
               <span className="w-px h-3 bg-[#C9DFE1]" />
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#E0B450] shadow-[0_0_12px_rgba(224,180,80,0.4)] rotate-45" />
-                <span className="text-[11.5px] font-bold text-[#4B6A72]">#E0B450 نور المعرفة</span>
+                <span className="text-[10px] font-bold text-[#4B6A72]">#E0B450 نور المعرفة</span>
               </div>
               <span className="w-px h-3 bg-[#C9DFE1] hidden sm:block" />
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#7B4FD6] shadow-[0_0_12px_rgba(123,79,214,0.4)]" />
-                <span className="text-[11.5px] font-bold text-[#4B6A72]">#7B4FD6 ذكاء (اختياري)</span>
+                <span className="text-[10px] font-bold text-[#4B6A72]">#7B4FD6 ذكاء (اختياري)</span>
               </div>
             </motion.div>
 
             {/* Brand story */}
             <motion.div
-              className="mt-6 px-4 py-2 rounded-full bg-[#EEF6F6] border border-[#C9DFE1]/50 text-[11.5px] text-[#4B6A72] max-w-[420px] text-center leading-relaxed"
+              className="mt-6 px-4 py-2 rounded-full bg-[#EEF6F6] border border-[#C9DFE1]/50 text-[10px] text-[#4B6A72] max-w-[420px] text-center leading-relaxed"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.5 }}

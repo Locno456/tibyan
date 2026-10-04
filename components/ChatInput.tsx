@@ -35,7 +35,7 @@ export default function ChatInput({ onSend, disabled = false, placeholder }: Cha
             key={i}
             onClick={() => !disabled && onSend(s)}
             disabled={disabled}
-            className="px-3 py-1.5 rounded-full text-[12.5px] font-medium bg-white border border-[#C9DFE1] text-[#4B6A72] hover:border-[#0A8F94]/30 hover:bg-[#EEF6F6] hover:text-[#0A8F94] transition-all disabled:opacity-50"
+            className="px-3 py-1.5 rounded-full text-[11px] font-medium bg-white border border-[#C9DFE1] text-[#4B6A72] hover:border-[#0A8F94]/30 hover:bg-[#EEF6F6] hover:text-[#0A8F94] transition-all disabled:opacity-50"
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
@@ -61,7 +61,7 @@ export default function ChatInput({ onSend, disabled = false, placeholder }: Cha
             placeholder={placeholder || "اسأل تِبْيَان... مثال: ما معنى التوحيد؟ أو لماذا يعبد المسلمون الكعبة؟"}
             disabled={disabled}
             rows={1}
-            className="flex-1 min-h-[44px] max-h-[120px] p-3 bg-transparent border-none outline-none resize-none text-[15px] leading-relaxed placeholder:text-slate-400"
+            className="flex-1 min-h-[44px] max-h-[120px] p-3 bg-transparent border-none outline-none resize-none text-[14px] leading-relaxed placeholder:text-slate-400"
             style={{ fontFamily: 'IBM Plex Sans Arabic, Tajawal, sans-serif' }}
           />
 
@@ -87,7 +87,7 @@ export default function ChatInput({ onSend, disabled = false, placeholder }: Cha
           </motion.button>
         </div>
 
-        <div className="mt-2.5 flex items-center justify-between text-[11.5px] text-slate-400 px-1">
+        <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 px-1">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#14529E]" />
