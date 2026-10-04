@@ -1,6 +1,6 @@
 "use client"
-import { useState } from "react"
-import { motion } from "framer-motion"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import QuranBracket from "./QuranBracket"
 import CircularProgress from "./CircularProgress"
 import SourcesModal from "./SourcesModal"
@@ -17,11 +17,57 @@ interface ChatMessageProps {
   status: "ok" | "abstain" | "blocked"
 }
 
-export default function ChatMessage({ question, level, levelInfo, blueCards, purpleCards, confidence, metrics, status }: ChatMessageProps) {
+/* ---------------------------------------------------------
+   كشف تدريجي للنص — يعطي إحساس الكتابة الحيّة
+   --------------------------------------------------------- */
+function useReveal(text: string, enabled = true) {
+  const words = useMemo(() => text.split(/(\s+)/), [text])
+  const total = words.length
+  const [shown, setShown] = useState(enabled ? 0 : total)
+
+  useEffect(() => {
+    if (!enabled) {
+      setShown(total)
+      return
+    }
+    setShown(0)
+    let i = 0
+    // سرعات مختلفة: النصوص الطويلة تُكشف أسرع
+    const per = total > 220 ? 7 : total > 90 ? 4 : 2
+    const id = setInterval(() => {
+      i += per
+      setShown(i)
+      if (i >= total) clearInterval(id)
+    }, 26)
+    return () => clearInterval(id)
+  }, [text, total, enabled])
+
+  return { out: words.slice(0, shown).join(""), done: shown >= total }
+}
+
+function prefersReduced() {
+  if (typeof window === "undefined") return false
+  return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+}
+
+export default function ChatMessage({
+  question,
+  level,
+  levelInfo,
+  blueCards,
+  purpleCards,
+  confidence,
+  metrics,
+  status,
+}: ChatMessageProps) {
   const [showSources, setShowSources] = useState(false)
-  
-  const safeBlueCards = Array.isArray(blueCards) ? blueCards.filter(c => c) : []
-  const safePurpleCards = Array.isArray(purpleCards) ? purpleCards.filter(c => c) : []
+  const [copiedNote, setCopiedNote] = useState(false)
+  const [reduce, setReduce] = useState(false)
+
+  useEffect(() => setReduce(prefersReduced()), [])
+
+  const safeBlueCards = Array.isArray(blueCards) ? blueCards.filter((c) => c) : []
+  const safePurpleCards = Array.isArray(purpleCards) ? purpleCards.filter((c) => c) : []
   const safeConfidence = Number(confidence) || 0
   const safeQuestion = question || ""
   const mainExplanation = safePurpleCards[0]?.explanation || ""
@@ -29,132 +75,244 @@ export default function ChatMessage({ question, level, levelInfo, blueCards, pur
   const safeLevel = level || "abstain"
   const safeLevelInfo = levelInfo || { name: "عام" }
 
-  // فصل الآيات عن المفاهيم لعرضها داخل الأقواس
-  const quranCards = safeBlueCards.filter(c => c.type === "quran")
-  const hadithCards = safeBlueCards.filter(c => c.type === "hadith")
-  const otherCards = safeBlueCards.filter(c => c.type !== "quran" && c.type !== "hadith")
+  const { out, done } = useReveal(mainExplanation, !reduce)
+
+  const quranCards = safeBlueCards.filter((c) => c.type === "quran")
+  const hadithCards = safeBlueCards.filter((c) => c.type === "hadith")
+  const otherCards = safeBlueCards.filter((c) => c.type !== "quran" && c.type !== "hadith")
+
+  const statusMeta =
+    status === "ok"
+      ? { badge: "✓ موثق", tone: "#059669", bg: "#ECFDF5", line: "linear-gradient(90deg,#19D6C4 0%,#0A8F94 50%,#14529E 100%)" }
+      : status === "abstain"
+      ? { badge: "⊘ امتناع", tone: "#B45309", bg: "#FFFBEB", line: "linear-gradient(90deg,#E0B450,#B45309)" }
+      : { badge: "⛔ حجب", tone: "#BE123C", bg: "#FFF1F2", line: "linear-gradient(90deg,#E0B450,#E11D48)" }
+
+  const copyNote = async () => {
+    try {
+      await navigator.clipboard.writeText(mainExplanation)
+    } catch {
+      /* تجاهل */
+    }
+    setCopiedNote(true)
+    setTimeout(() => setCopiedNote(false), 1800)
+  }
 
   return (
     <>
       <div className="w-full max-w-[800px] mx-auto">
-        {/* User bubble */}
+        {/* فقاعة المستخدم */}
         <div className="flex justify-end mb-4">
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            initial={{ opacity: 0, y: 10, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="max-w-[85%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_4px_12px_rgba(10,42,51,0.15)]"
+            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+            className="max-w-[85%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]"
           >
             <div className="text-[14px] font-medium leading-relaxed">{safeQuestion}</div>
-            <div className="text-[10px] opacity-60 mt-2 flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">مستوى {safeLevel} • {safeLevelInfo.name || ""}</span>
-              {safeMetrics.responseTime && <span>{safeMetrics.responseTime}ms</span>}
+            <div className="text-[10px] opacity-60 mt-2 flex items-center gap-2 flex-wrap">
+              <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
+                مستوى {safeLevel} • {safeLevelInfo.name || ""}
+              </span>
+              {safeMetrics.responseTime !== undefined && <span className="tabular-nums">{safeMetrics.responseTime}ms</span>}
             </div>
           </motion.div>
         </div>
 
-        {/* AI bubble - ChatGPT style with integrated Quran brackets */}
+        {/* فقاعة تِبْيَان */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-[18px] rounded-bl-[6px] border border-[#C9DFE1]/60 shadow-[0_8px_24px_rgba(10,42,51,0.06)] overflow-hidden"
+          initial={{ opacity: 0, y: 16, scale: 0.99 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.06, type: "spring", stiffness: 240, damping: 26 }}
+          className="bg-white rounded-[18px] rounded-bl-[6px] border border-[#C9DFE1]/60 shadow-[0_10px_30px_rgba(10,42,51,0.07)] overflow-hidden"
         >
-          {/* Top accent - true brand */}
-          <div className="h-[3px] w-full" style={{ background: status === 'ok' ? "linear-gradient(90deg, #19D6C4 0%, #0A8F94 50%, #14529E 100%)" : "linear-gradient(90deg, #E0B450, #E11D48)" }} />
+          <div className="h-[3px] w-full" style={{ background: statusMeta.line }} />
 
           <div className="p-5">
-            {/* AI header */}
+            {/* ترويسة */}
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#19D6C4] to-[#0A8F94] flex items-center justify-center shadow-[0_2px_8px_rgba(10,143,148,0.2)]">
-                <img src="/tibyan-logo-white.svg" alt="" className="w-5 h-5 object-contain" />
-              </div>
-              <div className="flex-1">
-                <div className="text-[12px] font-extrabold text-[#0A2A33]" style={{ fontFamily: 'Tajawal, sans-serif' }}>تِبْيَان</div>
-                <div className="text-[10px] text-[#4B6A72] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {status === 'ok' ? 'إجابة موثقة • صفر اختلاق' : status === 'abstain' ? 'امتناع - لا يوجد مرجعية كافية' : 'محجوب - حارس صفر اختلاق'}
+              <div className="relative w-8 h-8 shrink-0">
+                <motion.span
+                  className="absolute inset-0 rounded-[10px]"
+                  style={{ background: "linear-gradient(135deg,#19D6C4,#0A8F94)" }}
+                  animate={reduce ? {} : { opacity: [0.35, 0.7, 0.35], scale: [1, 1.12, 1] }}
+                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <div
+                  className="absolute inset-0 rounded-[10px] flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg,#19D6C4,#0A8F94)" }}
+                >
+                  <img src="/tibyan-logo-white.svg" alt="" className="w-5 h-5 object-contain" />
                 </div>
               </div>
-              <div className="hidden sm:flex items-center gap-1.5">
-                <span className={`px-2 py-1 rounded-full text-[10px] font-bold border ${status === 'ok' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
-                  {status === 'ok' ? '✓ موثق' : '⊘ امتناع'}
-                </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[12px] font-extrabold text-[#0A2A33]">تِبْيَان</div>
+                <div className="text-[10px] text-[#4B6A72] flex items-center gap-1.5">
+                  {!done && !reduce ? (
+                    <span className="inline-flex gap-[3px] items-end h-2.5">
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          className="tb-dot w-[3px] h-[3px] rounded-full bg-[#0A8F94]"
+                          style={{ animationDelay: `${i * 0.16}s` }}
+                        />
+                      ))}
+                    </span>
+                  ) : (
+                    <span
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ background: statusMeta.tone }}
+                    />
+                  )}
+                  {status === "ok"
+                    ? "إجابة موثقة • صفر اختلاق"
+                    : status === "abstain"
+                    ? "امتناع — لا توجد مرجعية كافية"
+                    : "محجوب — حارس صفر اختلاق"}
+                </div>
               </div>
+              <motion.span
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="hidden sm:inline-flex px-2 py-1 rounded-full text-[10px] font-bold border"
+                style={{ background: statusMeta.bg, color: statusMeta.tone, borderColor: `${statusMeta.tone}33` }}
+              >
+                {statusMeta.badge}
+              </motion.span>
             </div>
 
-            {/* Main explanation */}
+            {/* الشرح — يُكشف تدريجياً */}
             {mainExplanation && (
-              <div
-                className="text-[14px] leading-[1.85] text-[#0A2A33] mb-4"
-                style={{ fontFamily: 'IBM Plex Sans Arabic, Tajawal, sans-serif', whiteSpace: 'pre-wrap' }}
-              >
-                {mainExplanation}
+              <div className="relative mb-4">
+                <div
+                  className="body-font text-[14px] leading-[1.9] text-[#0A2A33]"
+                  style={{ whiteSpace: "pre-wrap" }}
+                >
+                  {out}
+                  {!done && !reduce && <span className="tb-caret" aria-hidden />}
+                </div>
+
+                <AnimatePresence>
+                  {done && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center gap-1.5 mt-2.5"
+                    >
+                      <button
+                        type="button"
+                        onClick={copyNote}
+                        className="px-2 py-1 rounded-full bg-[#EEF6F6] border border-[#C9DFE1] text-[10px] font-bold text-[#4B6A72] hover:text-[#0A8F94] hover:border-[#0A8F94]/40 transition-colors"
+                      >
+                        {copiedNote ? "✓ نُسخ الشرح" : "⧉ نسخ الشرح"}
+                      </button>
+                      <span className="text-[9.5px] text-[#8FB0B6]">
+                        {safePurpleCards[0]?.llm ? String(safePurpleCards[0].llm).slice(0, 34) : "شرح منظَّم من المصادر"}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
-            {/* Quran brackets inside message - like Mushaf */}
+            {/* الآيات */}
             {quranCards.length > 0 && (
-              <div className="mb-4">
+              <motion.section
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="mb-4"
+              >
                 <div className="text-[11px] font-bold text-[#14529E] mb-2 flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-[6px] bg-[#14529E] text-white flex items-center justify-center text-[10px]">﴿</span>
                   آيات قرآنية موثقة
+                  <span className="text-[9px] font-bold text-[#8FB0B6]">({quranCards.length})</span>
                 </div>
                 {quranCards.map((card, i) => (
-                  <QuranBracket key={card.id || i} {...card} />
+                  <QuranBracket key={card.id || i} {...card} index={i} />
                 ))}
-              </div>
+              </motion.section>
             )}
 
-            {/* Hadith brackets */}
+            {/* الأحاديث */}
             {hadithCards.length > 0 && (
-              <div className="mb-4">
+              <motion.section
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.16 }}
+                className="mb-4"
+              >
                 <div className="text-[11px] font-bold text-[#0A8F94] mb-2 flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-[6px] bg-[#0A8F94] text-white flex items-center justify-center text-[10px]">ﷺ</span>
                   أحاديث شريفة موثقة
+                  <span className="text-[9px] font-bold text-[#8FB0B6]">({hadithCards.length})</span>
                 </div>
                 {hadithCards.map((card, i) => (
-                  <QuranBracket key={card.id || i} {...card} />
+                  <QuranBracket key={card.id || i} {...card} index={i} />
                 ))}
-              </div>
+              </motion.section>
             )}
 
-            {/* Other sources inline */}
+            {/* مصادر إضافية */}
             {otherCards.length > 0 && (
-              <div className="mb-4 p-3 rounded-[12px] bg-[#EEF6F6]/60 border border-[#C9DFE1]/40">
-                <div className="text-[11px] font-bold text-[#0A2A33] mb-2">📚 مصادر إضافية موثقة:</div>
+              <motion.section
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.22 }}
+                className="mb-4 p-3 rounded-[12px] bg-[#EEF6F6]/60 border border-[#C9DFE1]/40"
+              >
+                <div className="text-[11px] font-bold text-[#0A2A33] mb-2">📚 مصادر إضافية موثقة</div>
                 {otherCards.map((card, i) => (
-                  <div key={card.id || i} className="text-[13px] leading-[1.7] text-[#0A2A33] mb-2 p-2.5 rounded-[8px] bg-white border border-[#C9DFE1]/30" style={{ fontFamily: 'IBM Plex Sans Arabic, sans-serif' }}>
+                  <motion.div
+                    key={card.id || i}
+                    initial={{ opacity: 0, x: 8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.24 + i * 0.05 }}
+                    className="body-font text-[13px] leading-[1.75] text-[#0A2A33] mb-2 p-2.5 rounded-[8px] bg-white border border-[#C9DFE1]/30"
+                  >
                     {card.text || ""}
                     <div className="text-[10px] text-[#8FB0B6] mt-1">{card.source || ""}</div>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.section>
             )}
 
-            {/* Footer with sources button + circular progress - like ChatGPT */}
-            <div className="mt-5 pt-4 border-t border-[#C9DFE1]/40 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <button
+            {/* التذييل */}
+            <div className="mt-5 pt-4 border-t border-[#C9DFE1]/40 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <motion.button
+                  type="button"
                   onClick={() => setShowSources(true)}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#0A2A33] text-white text-[12px] font-bold hover:bg-black hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all group"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.96 }}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#0A2A33] text-white text-[12px] font-bold hover:bg-black hover:shadow-[0_6px_16px_rgba(0,0,0,0.18)] transition-all group"
                 >
-                  <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-[11px] group-hover:bg-white/25">📚</span>
+                  <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-[11px] group-hover:bg-white/25">
+                    📚
+                  </span>
                   عرض المصادر ({safeBlueCards.length})
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="opacity-60 group-hover:opacity-100 group-hover:translate-x-[-2px] transition-all">
+                  <svg
+                    width="12" height="12" viewBox="0 0 12 12" fill="none"
+                    className="opacity-60 group-hover:opacity-100 transition-all group-hover:-translate-x-0.5"
+                    aria-hidden
+                  >
                     <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </button>
+                </motion.button>
 
-                <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-[#8FB0B6]">
+                <div className="hidden md:flex items-center gap-1.5 text-[10px] text-[#8FB0B6]">
                   <span className="w-px h-4 bg-[#C9DFE1]" />
-                  <span>• {safeMetrics.retrievalSource || "hybrid"} • {safeBlueCards.length} مصادر • {safeMetrics.llm ? safeMetrics.llm.toString().slice(0, 20) : "موثق"}</span>
+                  <span className="font-mono">{safeMetrics.retrievalSource || "hybrid"}</span>
+                  <span>•</span>
+                  <span className="tabular-nums">{safeBlueCards.length} مصادر</span>
                 </div>
               </div>
 
               <CircularProgress value={safeConfidence * 100} size={48} />
             </div>
 
-            {/* Visual separation hint inside bubble */}
+            {/* مفتاح الألوان */}
             <div className="mt-4 flex items-center justify-center gap-3 text-[9px] text-[#8FB0B6] flex-wrap">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#14529E]" />أزرق = نص حرفي 100%</span>
               <span className="w-px h-3 bg-[#C9DFE1]" />
@@ -166,7 +324,6 @@ export default function ChatMessage({ question, level, levelInfo, blueCards, pur
         </motion.div>
       </div>
 
-      {/* Sources Modal */}
       <SourcesModal
         isOpen={showSources}
         onClose={() => setShowSources(false)}

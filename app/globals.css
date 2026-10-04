@@ -2,9 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap');
 
-/* True brand kit tokens - from tibyan-brand-kit/tokens/tokens.css */
+/* ============================================================
+   تِبْيَان — True brand kit tokens
+   ============================================================ */
 :root{
   --tb-turquoise-300:#19D6C4; --tb-turquoise-500:#0A8F94; --tb-teal-900:#05495A;
   --tb-blue-600:#14529E; --tb-blue-900:#0F2A5C;
@@ -16,31 +18,22 @@
   --tb-bg:#EEF6F6; --tb-card:#FFFFFF; --tb-line:#C9DFE1; --tb-text:#0A2A33; --tb-muted:#4B6A72; --tb-accent:#0A8F94;
   --tb-ease-draw:cubic-bezier(.2,.7,.2,1); --tb-ease-turn:cubic-bezier(.65,0,.35,1); --tb-ease-pop:cubic-bezier(.3,1.6,.5,1);
 
-  /* Legacy mapping for existing components - now points to true brand */
-  --blue: #14529E;
-  --blue-dark: #0F2A5C;
-  --blue-light: #C9DFE1;
-  --blue-soft: #EEF6F6;
-  --turquoise: #0A8F94;
-  --turquoise-deep: #05495A;
-  --turquoise-light: #19D6C4;
-  --turquoise-soft: #EEF6F6;
-  --purple: #7B4FD6;
-  --purple-deep: #6D28D9;
-  --purple-light: #DDD6FE;
-  --purple-soft: #F5F3FF;
-  --bg: #EEF6F6;
-  --bg-light: #FFFFFF;
-  --navy: #0A2A33;
-  --text: #0A2A33;
-  --text-sec: #4B6A72;
-  --muted: #8FB0B6;
+  /* Legacy mapping */
+  --blue: #14529E; --blue-dark: #0F2A5C; --blue-light: #C9DFE1; --blue-soft: #EEF6F6;
+  --turquoise: #0A8F94; --turquoise-deep: #05495A; --turquoise-light: #19D6C4; --turquoise-soft: #EEF6F6;
+  --purple: #7B4FD6; --purple-deep: #6D28D9; --purple-light: #DDD6FE; --purple-soft: #F5F3FF;
+  --bg: #EEF6F6; --bg-light: #FFFFFF; --navy: #0A2A33;
+  --text: #0A2A33; --text-sec: #4B6A72; --muted: #8FB0B6;
   --border-light: rgba(10,143,148,0.12);
   --shadow-soft: 0 8px 28px rgba(10,143,148,0.07);
   --grad-trust: linear-gradient(135deg, #19D6C4 0%, #0A8F94 50%, #05495A 100%);
   --grad-ai: linear-gradient(135deg, #7B4FD6 0%, #14529E 50%, #19D6C4 100%);
   --grad-mesh: radial-gradient(700px 450px at -5% -15%, rgba(25,214,196,0.13) 0%, transparent 65%), radial-gradient(600px 450px at 105% 105%, rgba(10,143,148,0.15) 0%, transparent 65%), radial-gradient(450px 350px at 85% 15%, rgba(123,79,214,0.11) 0%, transparent 65%);
   --grad-gold: linear-gradient(180deg, #FFF0B8 0%, #E0B450 100%);
+
+  --surface: #FFFFFF;
+  --surface-sunken: #EEF6F6;
+  --hairline: rgba(10,143,148,0.14);
 }
 
 @media (prefers-color-scheme:dark){
@@ -52,6 +45,8 @@
 
 * { box-sizing: border-box; }
 
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
 body {
   margin: 0;
   font-family: 'Tajawal', sans-serif;
@@ -59,8 +54,34 @@ body {
   min-height: 100vh;
   color: var(--text);
   direction: rtl;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
+::selection { background: rgba(25,214,196,0.28); color: var(--tb-ink); }
+
+:focus-visible {
+  outline: 2px solid var(--tb-turquoise-500);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* شريط تمرير بهوية تِبْيَان */
+.tb-scroll { scrollbar-width: thin; scrollbar-color: rgba(10,143,148,0.28) transparent; }
+.tb-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.tb-scroll::-webkit-scrollbar-track { background: transparent; }
+.tb-scroll::-webkit-scrollbar-thumb {
+  background: rgba(10,143,148,0.24);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.tb-scroll::-webkit-scrollbar-thumb:hover { background: rgba(10,143,148,0.45); background-clip: content-box; }
+
+/* ============================================================
+   الأسطح الزجاجية
+   ============================================================ */
 .glass {
   background: rgba(255,255,255,0.84);
   border: 1px solid var(--border-light);
@@ -69,92 +90,184 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
-
 .glass-blue {
   background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(201,223,225,0.5) 100%);
   border: 1px solid rgba(20,82,158,0.12);
   border-top: 3px solid var(--tb-blue-600);
 }
-
 .glass-purple {
   background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(221,214,254,0.45) 100%);
   border: 1px solid rgba(123,79,214,0.12);
   border-top: 3px solid var(--tb-violet-500);
 }
-
 .glass-turquoise {
   background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(25,214,196,0.15) 100%);
   border: 1px solid rgba(10,143,148,0.12);
   border-top: 3px solid var(--tb-turquoise-500);
 }
-
 .glass-gold {
   background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,240,184,0.3) 100%);
   border: 1px solid rgba(224,180,80,0.18);
   border-top: 3px solid var(--tb-gold-500);
 }
 
-.sacred {
-  font-family: 'Amiri', serif;
-  font-weight: 700;
-}
+.sacred { font-family: 'Amiri', serif; font-weight: 700; }
+.body-font { font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif; }
 
-.body-font {
-  font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif;
-}
-
-/* True brand animations - from brand kit */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 12px 36px rgba(10,143,148,0.14), 0 0 0 1px rgba(255,255,255,0.8) inset; }
-  50% { box-shadow: 0 20px 48px rgba(10,143,148,0.22), 0 0 0 1px rgba(255,255,255,0.9) inset; }
-}
-
-@keyframes shine {
-  0% { transform: translateX(-100%) rotate(15deg); opacity: 0; }
-  50% { opacity: 0.6; }
-  100% { transform: translateX(200%) rotate(15deg); opacity: 0; }
-}
-
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-/* Brand kit easing */
-@keyframes tb-draw { from { stroke-dashoffset: 242 } to { stroke-dashoffset: 0 } }
-@keyframes tb-pop { from { transform: scale(0) } to { transform: scale(1) } }
-
-.logo-float {
-  animation: float 3s ease-in-out infinite, pulse-glow 2.5s ease-in-out infinite;
-}
-
-.shine-effect {
-  position: relative;
-  overflow: hidden;
-}
-
-.shine-effect::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 50%;
-  height: 200%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-  animation: shine 2.8s ease-in-out infinite;
-}
-
+/* ============================================================
+   الخلفية الحيّة — هالات تتنفّس + شبكة زخرفية
+   ============================================================ */
 .mesh-bg {
   background: var(--grad-mesh), linear-gradient(180deg, #EEF6F6 0%, #FFFFFF 100%);
 }
 
-/* Motif accent */
-.motif-accent {
-  opacity: 0.9;
+@keyframes tb-orb-a {
+  0%,100% { transform: translate3d(0,0,0) scale(1); }
+  33%     { transform: translate3d(4%, -6%, 0) scale(1.12); }
+  66%     { transform: translate3d(-5%, 4%, 0) scale(0.94); }
+}
+@keyframes tb-orb-b {
+  0%,100% { transform: translate3d(0,0,0) scale(1.05); }
+  50%     { transform: translate3d(-6%, -8%, 0) scale(0.9); }
+}
+@keyframes tb-orb-c {
+  0%,100% { transform: translate3d(0,0,0) scale(0.95); opacity:.55; }
+  50%     { transform: translate3d(5%, 6%, 0) scale(1.15); opacity:.85; }
+}
+
+.tb-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
   pointer-events: none;
+  will-change: transform;
+}
+.tb-orb--a {
+  width: 46vmax; height: 46vmax; top: -18vmax; inset-inline-start: -14vmax;
+  background: radial-gradient(circle at 40% 40%, rgba(25,214,196,0.34), rgba(25,214,196,0) 68%);
+  animation: tb-orb-a 26s var(--tb-ease-draw) infinite;
+}
+.tb-orb--b {
+  width: 40vmax; height: 40vmax; bottom: -16vmax; inset-inline-end: -12vmax;
+  background: radial-gradient(circle at 50% 50%, rgba(20,82,158,0.28), rgba(20,82,158,0) 66%);
+  animation: tb-orb-b 32s var(--tb-ease-draw) infinite;
+}
+.tb-orb--c {
+  width: 26vmax; height: 26vmax; top: 34%; inset-inline-end: 18%;
+  background: radial-gradient(circle at 50% 50%, rgba(123,79,214,0.22), rgba(123,79,214,0) 66%);
+  animation: tb-orb-c 22s var(--tb-ease-draw) infinite;
+}
+.tb-orb--d {
+  width: 18vmax; height: 18vmax; top: 12%; inset-inline-start: 30%;
+  background: radial-gradient(circle at 50% 50%, rgba(224,180,80,0.22), rgba(224,180,80,0) 66%);
+  animation: tb-orb-c 18s var(--tb-ease-draw) infinite reverse;
+}
+
+/* شبكة نقطية خفيفة تعطي عمقاً */
+.tb-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(rgba(10,143,148,0.13) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 78%);
+  opacity: .5;
+}
+
+/* ============================================================
+   حركات الهوية
+   ============================================================ */
+@keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 12px 36px rgba(10,143,148,0.14), 0 0 0 1px rgba(255,255,255,0.8) inset; }
+  50%      { box-shadow: 0 20px 48px rgba(10,143,148,0.22), 0 0 0 1px rgba(255,255,255,0.9) inset; }
+}
+@keyframes shine {
+  0%   { transform: translateX(-100%) rotate(15deg); opacity: 0; }
+  50%  { opacity: 0.6; }
+  100% { transform: translateX(200%) rotate(15deg); opacity: 0; }
+}
+@keyframes gradient-shift { 0%,100% { background-position: 0% 50% } 50% { background-position: 100% 50% } }
+@keyframes tb-draw { from { stroke-dashoffset: 242 } to { stroke-dashoffset: 0 } }
+@keyframes tb-pop  { from { transform: scale(0) } to { transform: scale(1) } }
+
+/* وميض الحافة — يمر على حدود البطاقة */
+@keyframes tb-edge {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* نبض الحلقة حول مؤشر النشاط */
+@keyframes tb-ring {
+  0%   { transform: scale(0.85); opacity: .8; }
+  70%  { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* هيكل تحميل لامع */
+@keyframes tb-shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+.tb-shimmer {
+  background: linear-gradient(90deg, rgba(201,223,225,0.28) 25%, rgba(25,214,196,0.20) 37%, rgba(201,223,225,0.28) 63%);
+  background-size: 200% 100%;
+  animation: tb-shimmer 1.5s linear infinite;
+  border-radius: 8px;
+}
+
+/* مؤشر الكتابة */
+@keyframes tb-caret { 0%,49% { opacity: 1 } 50%,100% { opacity: 0 } }
+.tb-caret {
+  display: inline-block; width: 2px; height: 1.05em; margin-inline-start: 2px;
+  background: var(--tb-turquoise-500); vertical-align: text-bottom;
+  animation: tb-caret 1s step-end infinite;
+}
+
+/* نقاط التفكير */
+@keyframes tb-bounce { 0%,80%,100% { transform: translateY(0); opacity:.45 } 40% { transform: translateY(-5px); opacity:1 } }
+.tb-dot { animation: tb-bounce 1.2s infinite ease-in-out; }
+
+.logo-float { animation: float 3s ease-in-out infinite, pulse-glow 2.5s ease-in-out infinite; }
+
+.shine-effect { position: relative; overflow: hidden; }
+.shine-effect::after {
+  content: ''; position: absolute; top: -50%; left: -50%; width: 50%; height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  animation: shine 2.8s ease-in-out infinite;
+}
+
+/* تدرّج متحرك للنص المميز */
+.tb-grad-text {
+  background: linear-gradient(90deg,#05495A,#0A8F94,#19D6C4,#14529E,#05495A);
+  background-size: 200% auto;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: tb-edge 7s linear infinite;
+}
+
+/* حافة متوهجة للبطاقة النشطة */
+.tb-live-edge {
+  position: relative;
+}
+.tb-live-edge::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px;
+  background: linear-gradient(90deg,#19D6C4,#14529E,#E0B450,#19D6C4);
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: tb-edge 4s linear infinite;
+  opacity: .75; pointer-events: none;
+}
+
+.motif-accent { opacity: 0.9; pointer-events: none; }
+
+/* ============================================================
+   احترام تقليل الحركة — مطلب إتاحة
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .tb-orb { animation: none !important; }
 }
