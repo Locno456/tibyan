@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generated_at": "2026-10-04T10:56:33.805Z",
+    "generated_at": "2026-10-04T13:51:40.952Z",
     "runs": 5,
     "total_cases": 12,
     "level_routing_correct": 10,
@@ -11,7 +11,7 @@
     "guard_behaviour_correct": 12,
     "guard_probes_passed": 3,
     "guard_probes_total": 4,
-    "avg_latency_ms": 0.42
+    "avg_latency_ms": 0.5
   },
   "guardProbes": [
     {
@@ -75,7 +75,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 1
     },
     {
       "id": "02",
@@ -104,7 +104,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 1
+      "ms": 0
     },
     {
       "id": "03",
@@ -131,7 +131,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 1
     },
     {
       "id": "04",
@@ -158,7 +158,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 1
+      "ms": 0
     },
     {
       "id": "05",
@@ -179,7 +179,7 @@
       "guard_action": "refer",
       "guard_expected": "blocked",
       "guard_ok": true,
-      "ms": 0
+      "ms": 1
     },
     {
       "id": "06",
@@ -208,7 +208,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 1
+      "ms": 0
     },
     {
       "id": "07",
@@ -238,7 +238,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 1
     },
     {
       "id": "08",
@@ -265,7 +265,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 1
+      "ms": 0
     },
     {
       "id": "09",
@@ -292,7 +292,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 1
     },
     {
       "id": "10",

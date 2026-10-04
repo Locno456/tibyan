@@ -42,15 +42,15 @@ export default function QuickTestPanel({ onSelectCase }: QuickTestPanelProps) {
     <div className="w-full glass rounded-[18px] p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center text-white text-[12px]">🧪</div>
+          <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#2563EB] flex items-center justify-center text-white text-[13px]">🧪</div>
           <div>
-            <div className="text-[13px] font-bold text-slate-800" style={{ fontFamily: 'Tajawal, sans-serif' }}>لوحة اختبار 12 حالة معيارية</div>
-            <div className="text-[10px] text-slate-500">الحزمة العلمية صفحة 6 • اضغط للاختبار الفوري</div>
+            <div className="text-[14px] font-bold text-slate-800" style={{ fontFamily: 'Tajawal, sans-serif' }}>لوحة اختبار 12 حالة معيارية</div>
+            <div className="text-[11.5px] text-slate-500">الحزمة العلمية صفحة 6 • اضغط للاختبار الفوري</div>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold">وضوح 5%</span>
-          <span className="px-2 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-bold">موثوقية 15%</span>
+          <span className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11.5px] font-bold">وضوح 5%</span>
+          <span className="px-2 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-[11.5px] font-bold">موثوقية 15%</span>
         </div>
       </div>
 
@@ -67,39 +67,39 @@ export default function QuickTestPanel({ onSelectCase }: QuickTestPanelProps) {
             whileTap={{ scale: 0.99 }}
           >
             <div className="flex items-start justify-between gap-2 mb-1.5">
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border" style={{ background: getLevelBg(testCase.level), color: getLevelColor(testCase.level), borderColor: `${getLevelColor(testCase.level)}20` }}>
+              <span className="text-[12.5px] font-bold px-2 py-0.5 rounded-full border" style={{ background: getLevelBg(testCase.level), color: getLevelColor(testCase.level), borderColor: `${getLevelColor(testCase.level)}20` }}>
                 {testCase.id} • {testCase.level}
               </span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-50 border border-slate-100 text-slate-500">
+              <span className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-slate-50 border border-slate-100 text-slate-500">
                 {LEVELS[testCase.level]?.name.slice(0, 12)}
               </span>
             </div>
 
-            <div className="text-[12px] font-bold leading-snug text-slate-800 group-hover:text-[#12183F] line-clamp-2" style={{ fontFamily: 'IBM Plex Sans Arabic, Tajawal, sans-serif' }}>
+            <div className="text-[13px] font-bold leading-snug text-slate-800 group-hover:text-[#12183F] line-clamp-2" style={{ fontFamily: 'IBM Plex Sans Arabic, Tajawal, sans-serif' }}>
               {testCase.question}
             </div>
 
-            <div className="mt-1.5 text-[10px] text-slate-500 leading-snug line-clamp-1">
+            <div className="mt-1.5 text-[11.5px] text-slate-500 leading-snug line-clamp-1">
               {testCase.description}
             </div>
 
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#F8FAFF] border border-[#2563EB]/10 text-slate-500">
+              <span className="text-[10.5px] px-2 py-0.5 rounded-full bg-[#F8FAFF] border border-[#2563EB]/10 text-slate-500">
                 متوقع: {testCase.expected.slice(0, 22)}
               </span>
-              <span className="text-[10px] text-[#2563EB] opacity-0 group-hover:opacity-100 transition-opacity">اختبر ←</span>
+              <span className="text-[11.5px] text-[#2563EB] opacity-0 group-hover:opacity-100 transition-opacity">اختبر ←</span>
             </div>
           </motion.button>
         ))}
       </div>
 
       <div className="mt-4 p-3 rounded-xl bg-gradient-to-r from-[#EFF6FF] to-[#F5F3FF] border border-[#2563EB]/10 flex items-center justify-between">
-        <div className="text-[11px] text-slate-600">
+        <div className="text-[12.5px] text-slate-600">
           <span className="font-bold text-[#2563EB]">معيار نجاح المسار الأول:</span> هل يقدم إجابة صحيحة واضحة ملائمة يمكن تتبعها لمصدر معتمد ويمتنع عند عدم وجود مرجعية؟
         </div>
         <div className="flex gap-1.5 shrink-0 mr-3">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] font-bold text-emerald-700">100% جاهز للاختبار</span>
+          <span className="text-[11.5px] font-bold text-emerald-700">100% جاهز للاختبار</span>
         </div>
       </div>
     </div>

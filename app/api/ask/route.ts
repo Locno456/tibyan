@@ -54,6 +54,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { question, persona = "general" } = body
 
+    // خلفية السائل المخصصة (من زر المصباح → معرفة مخصة) — تُكيّف أسلوب الإجابة
+    const background = typeof body.background === "string" && body.background.trim()
+      ? body.background.trim().slice(0, 400)
+      : undefined
+
+    // سياق المحادثة — بدونه لا يرى النموذج سوى السؤال الحالي فلا يكون الرد حوارياً
+    const rawHistory = Array.isArray(body.history) ? body.history : []
+    let history = rawHistory
+      .filter((t: any) => t && typeof t.text === "string" && t.text.trim())
+      .slice(-8)
+      .map((t: any) => ({ role: t.role === "user" ? "user" : "model", text: String(t.text).slice(0, 1000) }))
+    // الواجهة تضيف السؤال الحالي إلى السجل قبل الإرسال — نحذفه كي لا يتكرر في الـ prompt
+    if (history.length && history[history.length - 1].role === "user" &&
+        history[history.length - 1].text.trim() === String(question).trim()) {
+      history = history.slice(0, -1)
+    }
+
     if (!question || typeof question !== 'string' || question.trim().length < 2) {
       return NextResponse.json({ error: "السؤال مطلوب" }, { status: 400 })
     }
@@ -136,7 +153,7 @@ export async function POST(request: NextRequest) {
 
     if (geminiApiKey) {
       try {
-        const { prompt, systemInstruction } = buildTibyanPrompt(question, retrieval.docs as any, persona, level)
+        const { prompt, systemInstruction } = buildTibyanPrompt(question, retrieval.docs as any, persona, level, history, background)
         
         const geminiResult = await generateWithGemini(
           prompt,
@@ -167,12 +184,21 @@ export async function POST(request: NextRequest) {
 
       } catch (geminiError: any) {
         console.warn("Gemini failed, using fallback:", geminiError.message)
-        explanation = getFallbackExplanation(question, persona, level)
+        explanation =
+          `⚠️ تعذّر تشغيل النموذج اللغوي، وهذا الرد قالب محلي ثابت لا ذكاء اصطناعي فيه.\n` +
+          `السبب: ${String(geminiError?.message || geminiError).slice(0, 160)}\n` +
+          `للتشخيص: افتح /api/health\n\n— القالب المحلي —\n` +
+          getFallbackExplanation(question, persona, level)
         llmSource = `fallback - gemini error: ${geminiError.message.slice(0, 50)}`
       }
     } else {
       // No API key - use fallback (works 100% offline)
-      explanation = getMockExplanation(question, persona, level)
+      // نص صريح كي لا يبدو القالب الثابت وكأنه توليد من نموذج لغوي
+      explanation =
+        `⚠️ وضع بدون نموذج لغوي: لا يوجد GEMINI_API_KEY في البيئة، ` +
+        `فهذا الرد قالب محلي ثابت وليس توليداً بالذكاء الاصطناعي — ولن يتغير بتغيّر السؤال.\n` +
+        `للتفعيل: أضف المفتاح في .env.local ثم تحقق عبر /api/health\n\n— القالب المحلي —\n` +
+        getMockExplanation(question, persona, level)
       llmSource = "mock_fallback - no GEMINI_API_KEY (works offline)"
     }
 

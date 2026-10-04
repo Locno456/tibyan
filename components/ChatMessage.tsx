@@ -102,15 +102,15 @@ export default function ChatMessage({
     <>
       <div className="w-full max-w-[800px] mx-auto">
         {/* فقاعة المستخدم */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-start mb-4">
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ type: "spring", stiffness: 320, damping: 26 }}
             className="max-w-[85%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]"
           >
-            <div className="text-[14px] font-medium leading-relaxed">{safeQuestion}</div>
-            <div className="text-[10px] opacity-60 mt-2 flex items-center gap-2 flex-wrap">
+            <div className="text-[15px] font-medium leading-relaxed">{safeQuestion}</div>
+            <div className="text-[11.5px] opacity-60 mt-2 flex items-center gap-2 flex-wrap">
               <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
                 مستوى {safeLevel} • {safeLevelInfo.name || ""}
               </span>
@@ -146,8 +146,8 @@ export default function ChatMessage({
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-extrabold text-[#0A2A33]">تِبْيَان</div>
-                <div className="text-[10px] text-[#4B6A72] flex items-center gap-1.5">
+                <div className="text-[13px] font-extrabold text-[#0A2A33]">تِبْيَان</div>
+                <div className="text-[11.5px] text-[#4B6A72] flex items-center gap-1.5">
                   {!done && !reduce ? (
                     <span className="inline-flex gap-[3px] items-end h-2.5">
                       {[0, 1, 2].map((i) => (
@@ -174,7 +174,7 @@ export default function ChatMessage({
               <motion.span
                 initial={{ scale: 0.85, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="hidden sm:inline-flex px-2 py-1 rounded-full text-[10px] font-bold border"
+                className="hidden sm:inline-flex px-2 py-1 rounded-full text-[11.5px] font-bold border"
                 style={{ background: statusMeta.bg, color: statusMeta.tone, borderColor: `${statusMeta.tone}33` }}
               >
                 {statusMeta.badge}
@@ -185,7 +185,7 @@ export default function ChatMessage({
             {mainExplanation && (
               <div className="relative mb-4">
                 <div
-                  className="body-font text-[14px] leading-[1.9] text-[#0A2A33]"
+                  className="body-font text-[15px] leading-[1.9] text-[#0A2A33]"
                   style={{ whiteSpace: "pre-wrap" }}
                 >
                   {out}
@@ -203,11 +203,11 @@ export default function ChatMessage({
                       <button
                         type="button"
                         onClick={copyNote}
-                        className="px-2 py-1 rounded-full bg-[#EEF6F6] border border-[#C9DFE1] text-[10px] font-bold text-[#4B6A72] hover:text-[#0A8F94] hover:border-[#0A8F94]/40 transition-colors"
+                        className="px-2 py-1 rounded-full bg-[#EEF6F6] border border-[#C9DFE1] text-[11.5px] font-bold text-[#4B6A72] hover:text-[#0A8F94] hover:border-[#0A8F94]/40 transition-colors"
                       >
                         {copiedNote ? "✓ نُسخ الشرح" : "⧉ نسخ الشرح"}
                       </button>
-                      <span className="text-[9.5px] text-[#8FB0B6]">
+                      <span className="text-[11px] text-[#8FB0B6]">
                         {safePurpleCards[0]?.llm ? String(safePurpleCards[0].llm).slice(0, 34) : "شرح منظَّم من المصادر"}
                       </span>
                     </motion.div>
@@ -224,10 +224,10 @@ export default function ChatMessage({
                 transition={{ delay: 0.1 }}
                 className="mb-4"
               >
-                <div className="text-[11px] font-bold text-[#14529E] mb-2 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-[6px] bg-[#14529E] text-white flex items-center justify-center text-[10px]">﴿</span>
+                <div className="text-[12.5px] font-bold text-[#14529E] mb-2 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-[6px] bg-[#14529E] text-white flex items-center justify-center text-[11.5px]">﴿</span>
                   آيات قرآنية موثقة
-                  <span className="text-[9px] font-bold text-[#8FB0B6]">({quranCards.length})</span>
+                  <span className="text-[10.5px] font-bold text-[#8FB0B6]">({quranCards.length})</span>
                 </div>
                 {quranCards.map((card, i) => (
                   <QuranBracket key={card.id || i} {...card} index={i} />
@@ -243,10 +243,10 @@ export default function ChatMessage({
                 transition={{ delay: 0.16 }}
                 className="mb-4"
               >
-                <div className="text-[11px] font-bold text-[#0A8F94] mb-2 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-[6px] bg-[#0A8F94] text-white flex items-center justify-center text-[10px]">ﷺ</span>
+                <div className="text-[12.5px] font-bold text-[#0A8F94] mb-2 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-[6px] bg-[#0A8F94] text-white flex items-center justify-center text-[11.5px]">ﷺ</span>
                   أحاديث شريفة موثقة
-                  <span className="text-[9px] font-bold text-[#8FB0B6]">({hadithCards.length})</span>
+                  <span className="text-[10.5px] font-bold text-[#8FB0B6]">({hadithCards.length})</span>
                 </div>
                 {hadithCards.map((card, i) => (
                   <QuranBracket key={card.id || i} {...card} index={i} />
@@ -262,17 +262,17 @@ export default function ChatMessage({
                 transition={{ delay: 0.22 }}
                 className="mb-4 p-3 rounded-[12px] bg-[#EEF6F6]/60 border border-[#C9DFE1]/40"
               >
-                <div className="text-[11px] font-bold text-[#0A2A33] mb-2">📚 مصادر إضافية موثقة</div>
+                <div className="text-[12.5px] font-bold text-[#0A2A33] mb-2">📚 مصادر إضافية موثقة</div>
                 {otherCards.map((card, i) => (
                   <motion.div
                     key={card.id || i}
                     initial={{ opacity: 0, x: 8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.24 + i * 0.05 }}
-                    className="body-font text-[13px] leading-[1.75] text-[#0A2A33] mb-2 p-2.5 rounded-[8px] bg-white border border-[#C9DFE1]/30"
+                    className="body-font text-[14px] leading-[1.75] text-[#0A2A33] mb-2 p-2.5 rounded-[8px] bg-white border border-[#C9DFE1]/30"
                   >
                     {card.text || ""}
-                    <div className="text-[10px] text-[#8FB0B6] mt-1">{card.source || ""}</div>
+                    <div className="text-[11.5px] text-[#8FB0B6] mt-1">{card.source || ""}</div>
                   </motion.div>
                 ))}
               </motion.section>
@@ -286,9 +286,9 @@ export default function ChatMessage({
                   onClick={() => setShowSources(true)}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.96 }}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#0A2A33] text-white text-[12px] font-bold hover:bg-black hover:shadow-[0_6px_16px_rgba(0,0,0,0.18)] transition-all group"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#0A2A33] text-white text-[13px] font-bold hover:bg-black hover:shadow-[0_6px_16px_rgba(0,0,0,0.18)] transition-all group"
                 >
-                  <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-[11px] group-hover:bg-white/25">
+                  <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-[12.5px] group-hover:bg-white/25">
                     📚
                   </span>
                   عرض المصادر ({safeBlueCards.length})
@@ -301,7 +301,7 @@ export default function ChatMessage({
                   </svg>
                 </motion.button>
 
-                <div className="hidden md:flex items-center gap-1.5 text-[10px] text-[#8FB0B6]">
+                <div className="hidden md:flex items-center gap-1.5 text-[11.5px] text-[#8FB0B6]">
                   <span className="w-px h-4 bg-[#C9DFE1]" />
                   <span className="font-mono">{safeMetrics.retrievalSource || "hybrid"}</span>
                   <span>•</span>
@@ -313,7 +313,7 @@ export default function ChatMessage({
             </div>
 
             {/* مفتاح الألوان */}
-            <div className="mt-4 flex items-center justify-center gap-3 text-[9px] text-[#8FB0B6] flex-wrap">
+            <div className="mt-4 flex items-center justify-center gap-3 text-[10.5px] text-[#8FB0B6] flex-wrap">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#14529E]" />أزرق = نص حرفي 100%</span>
               <span className="w-px h-3 bg-[#C9DFE1]" />
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#7B4FD6]" />بنفسجي = شرح AI</span>

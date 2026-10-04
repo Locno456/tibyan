@@ -95,27 +95,27 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2.5 mb-2">
-                      <div className="w-8 h-8 rounded-[10px] bg-[#0A8F94] text-white flex items-center justify-center text-[14px]">📚</div>
+                      <div className="w-8 h-8 rounded-[10px] bg-[#0A8F94] text-white flex items-center justify-center text-[15px]">📚</div>
                       <h3 className="text-[16px] font-extrabold text-[#0A2A33]" style={{ fontFamily: 'Tajawal, sans-serif' }}>
                         تفاصيل المصادر الموثقة
                       </h3>
-                      <span className="px-2.5 py-1 rounded-full bg-white border border-[#C9DFE1] text-[11px] font-bold text-[#0A8F94]">
+                      <span className="px-2.5 py-1 rounded-full bg-white border border-[#C9DFE1] text-[12.5px] font-bold text-[#0A8F94]">
                         {safeSources.length} مصادر
                       </span>
                     </div>
-                    <p className="text-[12px] text-[#4B6A72] leading-relaxed">
+                    <p className="text-[13px] text-[#4B6A72] leading-relaxed">
                       السؤال: <span className="font-bold text-[#0A2A33]">{question || ""}</span>
                     </p>
                     <div className="mt-2 flex items-center gap-2">
-                      <span className="text-[11px] text-[#4B6A72]">موثوقية إجمالية:</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                      <span className="text-[12.5px] text-[#4B6A72]">موثوقية إجمالية:</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[12.5px] font-bold border ${
                         safeConfidence >= 0.9 ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
                         safeConfidence >= 0.7 ? 'bg-[#EEF6F6] border-[#C9DFE1] text-[#0A8F94]' :
                         'bg-amber-50 border-amber-100 text-amber-700'
                       }`}>
                         {(safeConfidence * 100).toFixed(0)}% - {safeConfidence >= 0.9 ? 'ممتاز' : safeConfidence >= 0.7 ? 'جيد' : 'متوسط'}
                       </span>
-                      <span className="text-[10px] text-[#8FB0B6]">• صفر اختلاق • استرجاع حرفي</span>
+                      <span className="text-[11.5px] text-[#8FB0B6]">• صفر اختلاق • استرجاع حرفي</span>
                     </div>
                   </div>
                   
@@ -132,7 +132,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
               {/* Sources list */}
               <div className="flex-1 overflow-y-auto tb-scroll p-4 space-y-3">
                 {safeSources.length === 0 ? (
-                  <div className="text-center py-8 text-[#8FB0B6] text-[13px]">
+                  <div className="text-center py-8 text-[#8FB0B6] text-[14px]">
                     لا يوجد مصادر - تم الامتناع لعدم وجود مرجعية كافية
                   </div>
                 ) : (
@@ -157,24 +157,24 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                       >
                         <div className="flex items-center justify-between mb-2.5">
                           <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-[8px] flex items-center justify-center text-white text-[10px] font-bold" style={{ background: colors.dot }}>
+                            <span className="w-6 h-6 rounded-[8px] flex items-center justify-center text-white text-[11.5px] font-bold" style={{ background: colors.dot }}>
                               {idx + 1}
                             </span>
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border bg-white" style={{ borderColor: colors.border, color: colors.text }}>
+                            <span className="px-2.5 py-1 rounded-full text-[11.5px] font-bold border bg-white" style={{ borderColor: colors.border, color: colors.text }}>
                               {getTypeLabel(src.type)}
                             </span>
                             {src.grade && (
-                              <span className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[9px] font-bold">
+                              <span className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10.5px] font-bold">
                                 {src.grade}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] px-2 py-1 rounded-full bg-white border border-[#C9DFE1] text-[#4B6A72]">
+                            <span className="text-[11.5px] px-2 py-1 rounded-full bg-white border border-[#C9DFE1] text-[#4B6A72]">
                               ثقة {((Number(src.confidence) || 0) * 100).toFixed(0)}%
                             </span>
                             {src.surah && src.ayah && (
-                              <span className="text-[10px] px-2 py-1 rounded-full bg-[#14529E] text-white font-bold">
+                              <span className="text-[11.5px] px-2 py-1 rounded-full bg-[#14529E] text-white font-bold">
                                 {src.surah}:{src.ayah}
                               </span>
                             )}
@@ -182,23 +182,23 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                         </div>
 
                         <div
-                          className="text-[15px] leading-[1.8] p-3 rounded-[10px] bg-white border border-[#C9DFE1]/50 mb-2.5"
+                          className="text-[16px] leading-[1.8] p-3 rounded-[10px] bg-white border border-[#C9DFE1]/50 mb-2.5"
                           style={{ fontFamily: src.type === 'quran' || src.type === 'hadith' ? 'Amiri, serif' : 'IBM Plex Sans Arabic, sans-serif', color: '#0A2A33' }}
                         >
                           {src.text || ""}
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <div className="text-[11px] text-[#4B6A72] flex-1">
+                          <div className="text-[12.5px] text-[#4B6A72] flex-1">
                             <div className="font-bold text-[#0A2A33]">{src.source || ""}</div>
-                            {domain && <div className="text-[10px] text-[#8FB0B6] mt-0.5">{domain}</div>}
+                            {domain && <div className="text-[11.5px] text-[#8FB0B6] mt-0.5">{domain}</div>}
                           </div>
                           {src.source_url && (
                             <a
                               href={src.source_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="shrink-0 px-3 py-1.5 rounded-full bg-[#0A8F94] text-white text-[11px] font-bold hover:bg-[#05495A] transition-colors flex items-center gap-1"
+                              className="shrink-0 px-3 py-1.5 rounded-full bg-[#0A8F94] text-white text-[12.5px] font-bold hover:bg-[#05495A] transition-colors flex items-center gap-1"
                             >
                               تحقق
                               <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -209,7 +209,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                         </div>
 
                         {(src.bm25_score !== undefined || src.vector_score !== undefined) && (
-                          <div className="mt-2 pt-2 border-t border-[#C9DFE1]/30 flex gap-3 text-[9px] text-[#8FB0B6]">
+                          <div className="mt-2 pt-2 border-t border-[#C9DFE1]/30 flex gap-3 text-[10.5px] text-[#8FB0B6]">
                             {src.bm25_score !== undefined && <span>BM25: {Number(src.bm25_score).toFixed(2)}</span>}
                             {src.vector_score !== undefined && <span>Vector: {Number(src.vector_score).toFixed(2)}</span>}
                             <span>• استرجاع هجين</span>
@@ -223,7 +223,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
 
               {/* Footer */}
               <div className="shrink-0 p-4 border-t border-[#C9DFE1]/50 bg-[#EEF6F6]/50">
-                <div className="flex items-center justify-between text-[10px] text-[#8FB0B6]">
+                <div className="flex items-center justify-between text-[11.5px] text-[#8FB0B6]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#0A8F94]" />
                     8 مصادر معتمدة: quranpedia.net, dorar.net, shamela.ws, dawa.center, islamic-content.com
