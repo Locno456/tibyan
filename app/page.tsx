@@ -199,33 +199,34 @@ export default function HomePage() {
 
         {/* الترويسة */}
         <header className="shrink-0 z-30 backdrop-blur-[14px] border-b bg-white/72">
-          <div className="max-w-[940px] mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
+          <div className="max-w-[940px] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
               <motion.div
                 whileHover={{ rotate: -6, scale: 1.06 }}
                 transition={{ type: "spring", stiffness: 300, damping: 14 }}
-                className="w-9 h-9 shrink-0 rounded-[11px] bg-white shadow-[0_3px_10px_rgba(10,143,148,0.18)] p-1 flex items-center justify-center border border-[#C9DFE1]/60"
+                /* خلفية الشعار شفافة تماماً — بلا صندوق أبيض ولا حد ولا ظل */
+                className="w-11 h-11 sm:w-[52px] sm:h-[52px] shrink-0 flex items-center justify-center"
               >
                 <img src="/tibyan-logo-color.svg" alt="تِبْيَان" className="w-full h-full object-contain" />
               </motion.div>
               <div className="min-w-0">
-                <div className="font-extrabold text-[15px] leading-tight text-[#0A2A33]">تِبْيَان</div>
-                <div className="text-[9.5px] text-[#4B6A72] truncate">
+                <div className="font-extrabold text-[18px] sm:text-[21px] leading-tight text-[#0A2A33]">تِبْيَان</div>
+                <div className="text-[11.5px] sm:text-[13px] text-[#4B6A72] truncate">
                   الحوار المعرفي الموثق • صفر اختلاق
                 </div>
               </div>
-              <div className="hidden lg:flex items-center gap-1.5 ms-2 px-2.5 py-1 rounded-full bg-emerald-50/80 border border-emerald-100">
+              <div className="hidden lg:flex items-center gap-1.5 ms-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-emerald-50/80 border border-emerald-100">
                 <span className="relative flex w-1.5 h-1.5">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
                   <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-emerald-500" />
                 </span>
-                <span className="text-[9.5px] font-bold text-emerald-700">المصادر حيّة</span>
+                <span className="text-[11.5px] sm:text-[13px] font-bold text-emerald-700">المصادر حيّة</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               {/* منتقي الشخصية — مؤشر منزلق */}
-              <div className="hidden md:flex items-center gap-0.5 p-1 rounded-full bg-[#EEF6F6]/80 border border-[#C9DFE1]/70">
+              <div className="hidden md:flex items-center gap-1 p-1 sm:p-1.5 rounded-full bg-[#EEF6F6]/80 border border-[#C9DFE1]/70">
                 {PERSONAS.map((p) => {
                   const isActive = persona === p.id
                   return (
@@ -234,7 +235,7 @@ export default function HomePage() {
                       type="button"
                       onClick={() => setPersona(p.id)}
                       title={p.hint}
-                      className="relative px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-colors"
+                      className="relative px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[12.5px] sm:text-[14px] font-bold transition-colors"
                       style={{ color: isActive ? "#fff" : "#4B6A72" }}
                     >
                       {isActive && (
@@ -256,7 +257,7 @@ export default function HomePage() {
                 onClick={() => setShowTests((s) => !s)}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.95 }}
-                className="relative px-3 py-1.5 rounded-full text-[10.5px] font-bold border transition-colors"
+                className="relative px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[12.5px] sm:text-[14px] font-bold border transition-colors"
                 style={{
                   background: showTests ? "#0A8F94" : "#fff",
                   color: showTests ? "#fff" : "#0A8F94",
@@ -281,7 +282,7 @@ export default function HomePage() {
                   key={p.id}
                   type="button"
                   onClick={() => setPersona(p.id)}
-                  className="shrink-0 px-2.5 py-1 rounded-full text-[10.5px] font-bold border transition-colors"
+                  className="shrink-0 px-2.5 py-1 rounded-full text-[12px] font-bold border transition-colors"
                   style={{
                     background: isActive ? "#0A8F94" : "#fff",
                     color: isActive ? "#fff" : "#4B6A72",
@@ -313,12 +314,12 @@ export default function HomePage() {
                   <h1 className="mt-5 text-[30px] font-extrabold leading-tight">
                     <span className="tb-grad-text">مرحباً في تِبْيَان</span>
                   </h1>
-                  <p className="body-font mt-2 text-[14px] text-[#4B6A72] max-w-[500px] leading-relaxed">
+                  <p className="body-font mt-2 text-[15px] text-[#4B6A72] max-w-[500px] leading-relaxed">
                     اسأل سؤالاً شرعياً أو فكرياً، فيرجع إليك الجواب بنصٍّ حرفي من مصدر معتمد،
                     وشرح منظم، ودائرة موثوقية — أو امتناع صريح عند غياب المرجعية.
                   </p>
 
-                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#C9DFE1] text-[10.5px] text-[#0A8F94] font-bold">
+                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#C9DFE1] text-[12px] text-[#0A8F94] font-bold">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#E0B450] rotate-45" />
                     الخطاب الحالي: {activePersona.label} — {activePersona.hint}
                   </div>
@@ -340,10 +341,10 @@ export default function HomePage() {
                           className="absolute inset-y-0 start-0 w-[3px] opacity-0 group-hover:opacity-100 transition-opacity"
                           style={{ background: "linear-gradient(180deg,#19D6C4,#0A8F94)" }}
                         />
-                        <span className="block text-[13.5px] font-bold text-[#0A2A33] group-hover:text-[#0A8F94] transition-colors">
+                        <span className="block text-[14.5px] font-bold text-[#0A2A33] group-hover:text-[#0A8F94] transition-colors">
                           {item.q}
                         </span>
-                        <span className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] text-[#8FB0B6]">
+                        <span className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-[#8FB0B6]">
                           <span className="px-1.5 py-0.5 rounded-full bg-[#EEF6F6] border border-[#C9DFE1]">
                             {item.tag}
                           </span>
@@ -355,7 +356,7 @@ export default function HomePage() {
                     ))}
                   </div>
 
-                  <div className="mt-7 flex items-center gap-3 text-[10px] text-[#8FB0B6] flex-wrap justify-center">
+                  <div className="mt-7 flex items-center gap-3 text-[11.5px] text-[#8FB0B6] flex-wrap justify-center">
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#14529E]" />أزرق = نص موثق ﴿…﴾</span>
                     <span className="w-px h-3 bg-[#C9DFE1]" />
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#7B4FD6]" />بنفسجي = شرح AI</span>
@@ -383,7 +384,7 @@ export default function HomePage() {
                       className="flex justify-end"
                     >
                       <div className="max-w-[85%] sm:max-w-[70%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]">
-                        <div className="text-[14px] font-medium leading-relaxed">{item.question}</div>
+                        <div className="text-[15px] font-medium leading-relaxed">{item.question}</div>
                       </div>
                     </motion.div>
                   ) : (
@@ -425,10 +426,10 @@ export default function HomePage() {
                 >
                   <div className="rounded-[16px] bg-white/85 backdrop-blur border border-[#C9DFE1]/70 p-4 shadow-[0_6px_20px_rgba(10,42,51,0.06)]">
                     <div className="flex items-center justify-between gap-3 mb-3">
-                      <div className="text-[12.5px] font-extrabold text-[#0A2A33]">
+                      <div className="text-[14px] font-extrabold text-[#0A2A33]">
                         🧪 الحالات المعيارية الـ12
                       </div>
-                      <span className="text-[10px] text-[#8FB0B6]">
+                      <span className="text-[11.5px] text-[#8FB0B6]">
                         الحزمة العلمية — صفحة 6
                       </span>
                     </div>
@@ -445,7 +446,7 @@ export default function HomePage() {
                           whileTap={{ scale: 0.985 }}
                           className="text-right p-2.5 rounded-[10px] bg-white border border-[#C9DFE1]/60 hover:border-[#0A8F94]/45 hover:bg-[#EEF6F6]/50 transition-colors group"
                         >
-                          <span className="text-[11.5px] font-bold text-[#0A2A33] group-hover:text-[#0A8F94] transition-colors">
+                          <span className="text-[13px] font-bold text-[#0A2A33] group-hover:text-[#0A8F94] transition-colors">
                             <span className="tabular-nums text-[#8FB0B6] me-1.5">
                               {String(i + 1).padStart(2, "0")}
                             </span>
@@ -480,9 +481,9 @@ export default function HomePage() {
           )}
         </AnimatePresence>
 
-        {/* المُدخل */}
-        <div className="shrink-0 z-20 backdrop-blur-[16px] border-t bg-white/80">
-          <div className="max-w-[860px] mx-auto px-4 py-3">
+        {/* المُدخل — بلا خلفية ولا حد علوي ولا ضبابية: الصندوق يطفو فوق خلفية الصفحة */}
+        <div className="shrink-0 z-20">
+          <div className="max-w-[860px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
             <ChatComposer ref={composerRef} onSend={handleAsk} disabled={!!pending} />
           </div>
         </div>

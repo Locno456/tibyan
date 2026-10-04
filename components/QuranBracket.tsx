@@ -76,14 +76,14 @@ export default function QuranBracket({
         />
 
         <div className="flex items-start gap-2">
-          <div className="shrink-0 w-6 h-6 rounded-[8px] bg-[#14529E] text-white flex items-center justify-center text-[12px] font-bold mt-0.5">
+          <div className="shrink-0 w-6 h-6 rounded-[8px] bg-[#14529E] text-white flex items-center justify-center text-[13px] font-bold mt-0.5">
             ﴿
           </div>
           <div className="flex-1 min-w-0">
             <div className="sacred text-[17px] leading-[2] text-[#0A2A33]">{displayText}</div>
 
             <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#C9DFE1] text-[10px] font-bold text-[#14529E] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#C9DFE1] text-[11.5px] font-bold text-[#14529E] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <span className="w-4 h-4 rounded-full bg-[#14529E] text-white flex items-center justify-center text-[8px]">
                   📖
                 </span>
@@ -91,12 +91,12 @@ export default function QuranBracket({
               </span>
 
               {confidence !== undefined && (
-                <span className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[9px] font-bold">
+                <span className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10.5px] font-bold">
                   ثقة {(Number(confidence) * 100).toFixed(0)}%
                 </span>
               )}
 
-              <span className="px-2 py-1 rounded-full bg-[#FFF8E0] border border-[#E0B450]/30 text-[#8B6914] text-[9px] font-bold flex items-center gap-1">
+              <span className="px-2 py-1 rounded-full bg-[#FFF8E0] border border-[#E0B450]/30 text-[#8B6914] text-[10.5px] font-bold flex items-center gap-1">
                 <span className="w-2 h-2 rounded-[2px] rotate-45 bg-[#E0B450]" />
                 موثق 100% • لا توليد
               </span>
@@ -106,7 +106,7 @@ export default function QuranBracket({
                 type="button"
                 onClick={copy}
                 aria-label="نسخ النص"
-                className="relative px-2 py-1 rounded-full bg-white border border-[#C9DFE1] text-[9px] font-bold text-[#4B6A72] hover:text-[#0A8F94] hover:border-[#0A8F94]/40 transition-colors"
+                className="relative px-2 py-1 rounded-full bg-white border border-[#C9DFE1] text-[10.5px] font-bold text-[#4B6A72] hover:text-[#0A8F94] hover:border-[#0A8F94]/40 transition-colors"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.span
@@ -129,18 +129,18 @@ export default function QuranBracket({
                   href={sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[10px] text-[#0A8F94] hover:text-[#05495A] underline decoration-dotted underline-offset-2 transition-colors"
+                  className="inline-flex items-center gap-1 text-[11.5px] text-[#0A8F94] hover:text-[#05495A] underline decoration-dotted underline-offset-2 transition-colors"
                 >
                   تحقق: {getDomain() || sourceUrl}
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden>
                     <path d="M3 9L9 3M9 3H4.5M9 3V7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </a>
-                {source && <span className="text-[10px] text-[#8FB0B6]">• {source}</span>}
+                {source && <span className="text-[11.5px] text-[#8FB0B6]">• {source}</span>}
               </div>
             )}
           </div>
-          <div className="shrink-0 w-6 h-6 rounded-[8px] bg-[#14529E] text-white flex items-center justify-center text-[12px] font-bold mt-0.5">
+          <div className="shrink-0 w-6 h-6 rounded-[8px] bg-[#14529E] text-white flex items-center justify-center text-[13px] font-bold mt-0.5">
             ﴾
           </div>
         </div>
