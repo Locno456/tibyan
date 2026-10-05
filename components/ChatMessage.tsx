@@ -101,24 +101,6 @@ export default function ChatMessage({
   return (
     <>
       <div className="w-full max-w-[800px] mx-auto">
-        {/* فقاعة المستخدم */}
-        <div className="flex justify-start mb-4">
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 320, damping: 26 }}
-            className="max-w-[85%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]"
-          >
-            <div className="text-[15px] font-medium leading-relaxed">{safeQuestion}</div>
-            <div className="text-[11.5px] opacity-60 mt-2 flex items-center gap-2 flex-wrap">
-              <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
-                مستوى {safeLevel} • {safeLevelInfo.name || ""}
-              </span>
-              {safeMetrics.responseTime !== undefined && <span className="tabular-nums">{safeMetrics.responseTime}ms</span>}
-            </div>
-          </motion.div>
-        </div>
-
         {/* فقاعة تِبْيَان */}
         <motion.div
           initial={{ opacity: 0, y: 16, scale: 0.99 }}
@@ -169,6 +151,10 @@ export default function ChatMessage({
                     : status === "abstain"
                     ? "امتناع — لا توجد مرجعية كافية"
                     : "محجوب — حارس صفر اختلاق"}
+                </div>
+                <div className="mt-1 flex items-center gap-1.5 text-[10.5px] text-[#8FB0B6]">
+                  <span>مستوى {safeLevel} · {safeLevelInfo.name || "عام"}</span>
+                  {safeMetrics.responseTime !== undefined && <span>· {safeMetrics.responseTime}ms</span>}
                 </div>
               </div>
               <motion.span

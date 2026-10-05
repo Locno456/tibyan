@@ -161,41 +161,74 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
           )}
         </AnimatePresence>
 
-        {/* حركة خروج السؤال من الحقل باتجاه موضعه في المحادثة */}
+        {/* خروج السؤال بحركة اندفاع، توهج، ثم استقرار سريع في خيط المحادثة */}
         <AnimatePresence>
           {phase === "sending" && sentQuestion && (
-            <motion.div
-              key="question-flight"
-              initial={{ opacity: 1, x: "-50%", y: 0, scale: 1, filter: "blur(0px)" }}
-              animate={{ opacity: [1, 1, 0], x: "-50%", y: "-50vh", scale: 0.94, filter: "blur(0px)" }}
-              transition={{ duration: reduceMotion ? 0.22 : 0.52, ease: [0.18, 0.82, 0.25, 1] }}
-              onAnimationComplete={finishSending}
-              className="pointer-events-none absolute left-1/2 top-[63%] z-30 w-[min(90vw,720px)]"
-              dir="rtl"
-            >
-              <div className="flex justify-start">
-                <motion.div
-                  className="max-w-[86%] rounded-[18px] rounded-br-[6px] bg-[#0A2A33] px-4 py-3 text-[14px] font-medium leading-relaxed text-white shadow-[0_10px_28px_rgba(10,42,51,0.2)] sm:px-5 sm:text-[15px]"
-                >
-                  {sentQuestion}
-                </motion.div>
-              </div>
-            </motion.div>
+            <>
+              <motion.div
+                aria-hidden="true"
+                initial={{ opacity: 0, x: "-50%", y: 0, scale: 0.65 }}
+                animate={{
+                  opacity: reduceMotion ? [0, 0.2, 0] : [0, 0.48, 0],
+                  x: "-50%",
+                  y: reduceMotion ? "-50vh" : ["0vh", "-2vh", "-50vh"],
+                  scale: reduceMotion ? [0.8, 1.2, 1.45] : [0.65, 1.12, 1.55],
+                }}
+                transition={{ duration: reduceMotion ? 0.24 : 0.74, times: [0, 0.18, 1], ease: [0.18, 0.82, 0.25, 1] }}
+                className="pointer-events-none absolute left-1/2 top-[63%] z-20 w-[min(90vw,720px)]"
+                dir="rtl"
+              >
+                <div className="flex justify-start">
+                  <div className="h-12 w-[62%] rounded-full bg-gradient-to-l from-[#19D6C4]/45 via-[#14529E]/20 to-transparent blur-[24px] sm:h-16" />
+                </div>
+              </motion.div>
+              <motion.div
+                key="question-flight"
+                initial={{ opacity: 1, x: "-50%", y: 0, scale: 1, rotate: 0, filter: "blur(0px)" }}
+                animate={{
+                  opacity: [1, 1, 0],
+                  x: "-50%",
+                  y: reduceMotion ? "-50vh" : ["0vh", "-2vh", "-50vh"],
+                  scale: reduceMotion ? 0.94 : [1, 1.07, 0.9],
+                  rotate: reduceMotion ? 0 : [0, -1.2, 0],
+                  filter: reduceMotion ? "blur(0px)" : ["blur(0px)", "blur(0px)", "blur(1px)"],
+                }}
+                transition={{ duration: reduceMotion ? 0.24 : 0.74, times: [0, 0.18, 1], ease: [0.18, 0.82, 0.25, 1] }}
+                onAnimationComplete={finishSending}
+                className="pointer-events-none absolute left-1/2 top-[63%] z-30 w-[min(90vw,720px)]"
+                dir="rtl"
+              >
+                <div className="flex justify-start">
+                  <div className="max-w-[86%] rounded-[18px] rounded-br-[6px] bg-[#0A2A33] px-4 py-3 text-[14px] font-medium leading-relaxed text-white shadow-[0_10px_28px_rgba(10,42,51,0.2)] sm:px-5 sm:text-[15px]">
+                    {sentQuestion}
+                  </div>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
 
-        {/* عبارة الهوية مثبتة أسفل الشاشة في المنتصف */}
-        <motion.p
+        {/* آية الهوية مع الأقواس القرآنية والزخرفة */}
+        <motion.div
           initial={{ opacity: 0, x: "-50%", y: 12 }}
           animate={{ opacity: phase === "sending" ? 0 : 1, x: "-50%", y: 0 }}
           transition={{ duration: reduceMotion ? 0.2 : 0.7, delay: reduceMotion ? 0 : 0.7, ease: "easeOut" }}
-          className="absolute bottom-[max(24px,env(safe-area-inset-bottom))] left-1/2 z-10 whitespace-nowrap px-4 text-center text-[13px] font-bold tracking-[0.02em] text-[#4B6A72] sm:bottom-8 sm:text-[15px]"
+          className="absolute bottom-[max(18px,env(safe-area-inset-bottom))] left-1/2 z-10 w-[min(94vw,1120px)] px-2 text-center sm:bottom-7 sm:px-4"
           dir="rtl"
         >
-          <span className="bg-gradient-to-l from-[#14529E] via-[#0A8F94] to-[#14529E] bg-clip-text text-transparent">
-            نص يعتمد لدليل يستند
-          </span>
-        </motion.p>
+          <div className="flex items-center justify-center gap-1.5 sm:gap-3">
+            <span aria-hidden="true" className="shrink-0 text-[13px] text-[#E0B450] sm:text-lg">۞</span>
+            <p className="body-font max-w-full text-[11.5px] font-bold leading-[1.9] text-[#14529E] sm:text-[14px] lg:text-[16px]">
+              <span className="px-1 text-[1.2em] text-[#E0B450]">﴿</span>
+              وَنَزَّلۡنَا عَلَيۡكَ ٱلۡكِتَٰبَ تِبۡيَٰنٗا لِّكُلِّ شَيۡءٖ وَهُدٗى وَرَحۡمَةٗ وَبُشۡرَىٰ لِلۡمُسۡلِمِينَ
+              <span className="px-1 text-[1.2em] text-[#E0B450]">﴾</span>
+            </p>
+            <span aria-hidden="true" className="shrink-0 text-[13px] text-[#E0B450] sm:text-lg">۞</span>
+          </div>
+          <p className="mt-0.5 text-[9.5px] font-semibold tracking-wide text-[#6D8A90] sm:text-[10.5px]">
+            سورة النحل · الآية ٨٩
+          </p>
+        </motion.div>
     </motion.section>
   )
 }
