@@ -1,6 +1,6 @@
 "use client"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { motion, AnimatePresence, LayoutGroup, useScroll, useMotionValueEvent } from "framer-motion"
 import SplashScreen from "../components/SplashScreen"
 import AnimatedLogo from "../components/AnimatedLogo"
 import ChatMessage from "../components/ChatMessage"
@@ -8,30 +8,23 @@ import ChatComposer from "../components/ChatComposer"
 import ThinkingStages from "../components/ThinkingStages"
 import KnowledgePicker from "../components/KnowledgePicker"
 import CustomKnowledgeSheet from "../components/CustomKnowledgeSheet"
-import { Lightbulb } from "lucide-react"
+import ChatSidebar from "../components/ChatSidebar"
+import ChatSettingsModal from "../components/ChatSettingsModal"
+import { Lightbulb, Menu } from "lucide-react"
 import {
   KnowledgeOption, PRESET_KNOWLEDGE, getKnowledgeIcon,
   loadCustomKnowledge, saveCustomKnowledge, loadSelectedKnowledgeId, saveSelectedKnowledgeId,
 } from "../lib/knowledge"
 import { Level, LEVELS } from "../lib/levelRouter"
+import {
+  ChatSession, ConversationMessage, StoredAskResponse,
+  createChatSession, createMessageId, loadChatSessions, loadActiveChatId,
+  loadSidebarCollapsed, makeChatTitle, saveActiveChatId, saveChatSessions,
+  saveSidebarCollapsed,
+} from "../lib/chatHistory"
 
-interface AskResponse {
-  question: string
-  level: Level
-  levelInfo: any
-  intent: string
-  status: "ok" | "abstain" | "blocked"
-  action: string
-  blueCards: any[]
-  purpleCards: any[]
-  confidence: number
-  guard: any
-  metrics: any
-}
-
-type ThreadItem =
-  | { id: string; role: "user"; question: string }
-  | { id: string; role: "tibyan"; response: AskResponse }
+type AskResponse = StoredAskResponse
+type ThreadItem = ConversationMessage
 
 const QUICK_QUESTIONS = [
   { q: "ما معنى التوحيد؟", tag: "مستوى أ" },
@@ -55,34 +48,67 @@ const ALL_TESTS = [
   "ما معنى كلمة karma في الإسلام؟",
 ]
 
-let seq = 0
-const uid = () => `m${Date.now()}_${seq++}`
-
 export default function HomePage() {
-  const [showSplash, setShowSplash] = useState(true)
-  const [thread, setThread] = useState<ThreadItem[]>([])
-  const [pending, setPending] = useState<string | null>(null)
+  const [showSplash, setShowSplash] = useState(false)
+  const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [activeSessionId, setActiveSessionId] = useState("")
+  const [historyReady, setHistoryReady] = useState(false)
+  const [pending, setPending] = useState<{ sessionId: string; question: string } | null>(null)
   const [showTests, setShowTests] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [storageWarning, setStorageWarning] = useState(false)
 
-  // نظام «معرفة خلفية السائل» — زر المصباح
+  const activeSession = useMemo(
+    () => sessions.find((session) => session.id === activeSessionId) || null,
+    [sessions, activeSessionId]
+  )
+  const thread = activeSession?.messages || []
+  const pendingForActiveSession = pending?.sessionId === activeSessionId
+
+  // معرفة خلفية السائل — زر المصباح
   const [knowledge, setKnowledge] = useState<KnowledgeOption>(PRESET_KNOWLEDGE[0])
   const [customKnowledge, setCustomKnowledge] = useState<KnowledgeOption[]>([])
   const [pickerOpen, setPickerOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  // استرجاع المحفوظ من المتصفح عند أول تحميل
+  // استعادة سجل المحادثات والتفضيلات محلياً عند أول تحميل (من دون أي طلب للخادم).
   useEffect(() => {
     const customs = loadCustomKnowledge()
     setCustomKnowledge(customs)
-    const selectedId = loadSelectedKnowledgeId()
-    if (selectedId) {
+    const selectedKnowledgeId = loadSelectedKnowledgeId()
+    if (selectedKnowledgeId) {
       const found =
-        customs.find((c) => c.id === selectedId) ||
-        PRESET_KNOWLEDGE.find((p) => p.id === selectedId)
+        customs.find((option) => option.id === selectedKnowledgeId) ||
+        PRESET_KNOWLEDGE.find((option) => option.id === selectedKnowledgeId)
       if (found) setKnowledge(found)
     }
+
+    const storedSessions = loadChatSessions()
+    const preferredId = loadActiveChatId()
+    const selectedSession = storedSessions.find((session) => session.id === preferredId) || storedSessions[0]
+    const initialSessions = storedSessions.length > 0 ? storedSessions : [createChatSession()]
+    setSessions(initialSessions)
+    setActiveSessionId(selectedSession?.id || initialSessions[0].id)
+    setShowSplash((selectedSession?.messages.length || 0) === 0)
+    setSidebarCollapsed(loadSidebarCollapsed())
+    setHistoryReady(true)
   }, [])
+
+  useEffect(() => {
+    if (!historyReady) return
+    setStorageWarning(!saveChatSessions(sessions))
+  }, [sessions, historyReady])
+
+  useEffect(() => {
+    if (historyReady && activeSessionId) saveActiveChatId(activeSessionId)
+  }, [activeSessionId, historyReady])
+
+  useEffect(() => {
+    if (historyReady) saveSidebarCollapsed(sidebarCollapsed)
+  }, [sidebarCollapsed, historyReady])
 
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const composerRef = useRef<HTMLTextAreaElement | null>(null)
@@ -110,11 +136,6 @@ export default function HomePage() {
 
   const CurrentKnowledgeIcon = getKnowledgeIcon(knowledge.icon)
 
-  useEffect(() => {
-    const t = setTimeout(() => setShowSplash(false), 2800)
-    return () => clearTimeout(t)
-  }, [])
-
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const el = scrollerRef.current
     if (!el) return
@@ -122,6 +143,59 @@ export default function HomePage() {
       el.scrollTo({ top: el.scrollHeight, behavior })
     })
   }, [])
+
+  const appendToSession = useCallback((sessionId: string, message: ThreadItem) => {
+    setSessions((previous) => {
+      const current = previous.find((session) => session.id === sessionId)
+      if (!current) return previous
+      const messages = [...current.messages, message]
+      const firstQuestion = messages.find((entry) => entry.role === "user")
+      const next: ChatSession = {
+        ...current,
+        title: current.title === "محادثة جديدة" && firstQuestion?.role === "user"
+          ? makeChatTitle(firstQuestion.question)
+          : current.title,
+        updatedAt: new Date().toISOString(),
+        messages,
+      }
+      return [next, ...previous.filter((session) => session.id !== sessionId)]
+    })
+  }, [])
+
+  const startNewChat = useCallback(() => {
+    if (!historyReady || pending) return
+    const fresh = createChatSession()
+    setSessions((previous) => [fresh, ...previous])
+    setActiveSessionId(fresh.id)
+    saveActiveChatId(fresh.id)
+    setShowTests(false)
+    setMobileSidebarOpen(false)
+    setAtBottom(true)
+  }, [historyReady, pending])
+
+  const selectChat = useCallback((sessionId: string) => {
+    setActiveSessionId(sessionId)
+    saveActiveChatId(sessionId)
+    setShowTests(false)
+    setAtBottom(true)
+    setMobileSidebarOpen(false)
+  }, [])
+
+  const closeMobileSidebar = useCallback(() => setMobileSidebarOpen(false), [])
+  const toggleSidebarCollapsed = useCallback(() => setSidebarCollapsed((value) => !value), [])
+  const openSettings = useCallback(() => {
+    setPickerOpen(false)
+    setSettingsOpen(true)
+  }, [])
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
+
+  useEffect(() => {
+    if (!historyReady) return
+    requestAnimationFrame(() => {
+      const el = scrollerRef.current
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" })
+    })
+  }, [activeSessionId, historyReady])
 
   // اختصار لوحة المفاتيح: تركيز المُدخل
   useEffect(() => {
@@ -136,30 +210,34 @@ export default function HomePage() {
   }, [])
 
   const handleAsk = useCallback(
-    async (raw: string) => {
+    async (raw: string, sendAnimationId?: string) => {
       const question = (raw || "").trim()
-      if (!question || pending) return
+      const sessionId = activeSessionId
+      const currentSession = sessions.find((session) => session.id === sessionId)
+      if (!question || !historyReady || !sessionId || !currentSession || pending) return
 
-      setThread((t) => [...t, { id: uid(), role: "user", question }])
-      setPending(question)
+      appendToSession(sessionId, {
+        id: createMessageId(),
+        role: "user",
+        question,
+        createdAt: new Date().toISOString(),
+        sendAnimationId,
+      })
+      setPending({ sessionId, question })
       scrollToBottom()
 
       let data: AskResponse
       try {
-        // سياق المحادثة حتى هذه اللحظة — يجعل الردود مترابطة بدل أن تكون منفصلة
-        const history = thread
+        const history = currentSession.messages
           .slice(-8)
-          .map((m) =>
-            m.role === "user"
-              ? { role: "user", text: m.question }
-              : {
-                  role: "model",
-                  text: (m.response?.purpleCards?.[0]?.explanation || "")
-                    .replace(/^⚠️[\s\S]*?— القالب المحلي —\n/, "")
-                    .slice(0, 1000),
-                }
+          .map((message) => message.role === "user"
+            ? { role: "user", text: message.question }
+            : {
+                role: "model",
+                text: (message.response?.purpleCards?.[0]?.explanation || "").slice(0, 1000),
+              }
           )
-          .filter((t) => t.text && t.text.trim())
+          .filter((turn) => turn.text && turn.text.trim())
 
         const res = await fetch("/api/ask", {
           method: "POST",
@@ -172,47 +250,82 @@ export default function HomePage() {
           }),
         })
         const json = await res.json()
-        if (!res.ok || !json || json.error) throw new Error(json?.error || `HTTP ${res.status}`)
-        data = json as AskResponse
-      } catch (e: any) {
+        if (!res.ok || !json || json.error) throw new Error("ask_failed")
+
+        data = {
+          question: String(json.question || question),
+          level: (json.level || "abstain") as Level,
+          levelInfo: json.levelInfo || LEVELS.abstain,
+          intent: String(json.intent || "general"),
+          status: json.status === "ok" || json.status === "blocked" ? json.status : "abstain",
+          action: String(json.action || "proceed"),
+          blueCards: Array.isArray(json.blueCards) ? json.blueCards : [],
+          purpleCards: Array.isArray(json.purpleCards) ? json.purpleCards.map((card: any) => ({
+            explanation: String(card?.explanation || ""),
+            persona: card?.persona || knowledge.persona,
+            level: card?.level || json.level || "abstain",
+            references: Array.isArray(card?.references) ? card.references : [],
+            llm: card?.llm,
+          })) : [],
+          confidence: Number(json.confidence) || 0,
+          guard: json.guard ? { status: json.guard.status, action: json.guard.action } : {},
+          metrics: {
+            responseTime: Number(json.metrics?.responseTime) || 0,
+            confidence: Number(json.metrics?.confidence) || 0,
+            sourcesCount: Number(json.metrics?.sourcesCount) || 0,
+            retrievalSource: json.metrics?.retrievalSource,
+            llm: json.metrics?.llm,
+          },
+        }
+      } catch {
         data = {
           question,
           level: "abstain",
-          levelInfo: LEVELS?.abstain || { name: "امتناع" },
+          levelInfo: LEVELS.abstain,
           intent: "error",
           status: "abstain",
           action: "abstain",
           blueCards: [],
-          purpleCards: [
-            {
-              explanation:
-                "تعذّر الاتصال بخدمة المعالجة. تحقّق من الاتصال ثم أعد المحاولة.\n\nتفصيل: " +
-                String(e?.message || e),
-              persona: knowledge.persona,
-              level: "abstain",
-            },
-          ],
+          purpleCards: [{
+            explanation: "تعذّر الاتصال بخدمة الإجابة الآن. تحقّق من الاتصال ثم حاول مرة أخرى.",
+            persona: knowledge.persona,
+            level: "abstain",
+          }],
           confidence: 0,
           guard: { status: "error" },
           metrics: { responseTime: 0 },
         }
       }
 
-      setPending(null)
-      setThread((t) => [...t, { id: uid(), role: "tibyan", response: data }])
-      scrollToBottom()
+      appendToSession(sessionId, {
+        id: createMessageId(),
+        role: "tibyan",
+        response: data,
+        createdAt: new Date().toISOString(),
+      })
+      setPending((current) => current?.sessionId === sessionId ? null : current)
+      if (activeSessionId === sessionId) scrollToBottom()
     },
-    [pending, knowledge, scrollToBottom, thread]
+    [activeSessionId, appendToSession, historyReady, knowledge, pending, scrollToBottom, sessions]
   )
 
-  const isEmpty = thread.length === 0 && !pending
-  const answeredCount = thread.filter((m) => m.role === "tibyan").length
+  const isEmpty = thread.length === 0 && !pendingForActiveSession
+  const answeredCount = thread.filter((message) => message.role === "tibyan").length
 
   return (
-    <>
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} duration={2800} />}
+    <LayoutGroup id="tibyan-chat-layout">
+      <>
+        <AnimatePresence initial={false}>
+          {showSplash && (
+            <SplashScreen
+              key="tibyan-splash"
+              onFinish={() => setShowSplash(false)}
+              onAsk={handleAsk}
+            />
+          )}
+        </AnimatePresence>
 
-      <main className="h-[100dvh] flex flex-col relative overflow-hidden">
+      <main className="relative flex h-[100dvh] flex-row overflow-hidden">
         {/* خلفية حيّة */}
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
           <div className="tb-orb tb-orb--a" />
@@ -232,34 +345,52 @@ export default function HomePage() {
           />
         </div>
 
+        <ChatSidebar
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          collapsed={sidebarCollapsed}
+          mobileOpen={mobileSidebarOpen}
+          disabled={!historyReady || !!pending}
+          storageWarning={storageWarning}
+          onToggleCollapsed={toggleSidebarCollapsed}
+          onCloseMobile={closeMobileSidebar}
+          onNewChat={startNewChat}
+          onSelectSession={selectChat}
+          onOpenSettings={openSettings}
+        />
+
+        <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
         {/* الترويسة */}
         <header className="shrink-0 z-30 backdrop-blur-[14px] border-b bg-white/72">
-          <div className="max-w-[940px] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <motion.div
-                whileHover={{ rotate: -6, scale: 1.06 }}
-                transition={{ type: "spring", stiffness: 300, damping: 14 }}
-                /* خلفية الشعار شفافة تماماً — بلا صندوق أبيض ولا حد ولا ظل */
-                className="w-11 h-11 sm:w-[52px] sm:h-[52px] shrink-0 flex items-center justify-center"
+          <div className="mx-auto flex w-full max-w-[940px] items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <motion.button
+                type="button"
+                onClick={() => setMobileSidebarOpen(true)}
+                whileTap={{ scale: 0.94 }}
+                aria-label="فتح سجل المحادثات"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#C9DFE1]/80 bg-white/80 text-[#0A8F94] shadow-sm md:hidden"
               >
-                <img src="/tibyan-logo-color.svg" alt="تِبْيَان" className="w-full h-full object-contain" />
-              </motion.div>
+                <Menu size={18} />
+              </motion.button>
               <div className="min-w-0">
-                <div className="font-extrabold text-[18px] sm:text-[21px] leading-tight text-[#0A2A33]">تِبْيَان</div>
-                <div className="text-[11.5px] sm:text-[13px] text-[#4B6A72] truncate">
-                  الحوار المعرفي الموثق • صفر اختلاق
+                <div className="truncate text-[15px] font-extrabold leading-tight text-[#0A2A33] sm:text-[17px]">
+                  {activeSession?.title || "محادثة جديدة"}
+                </div>
+                <div className="truncate text-[10.5px] text-[#6D8A90] sm:text-[12px]">
+                  الحوار المعرفي الموثّق
                 </div>
               </div>
-              <div className="hidden lg:flex items-center gap-1.5 ms-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-emerald-50/80 border border-emerald-100">
-                <span className="relative flex w-1.5 h-1.5">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-emerald-500" />
+              <div className="hidden items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50/80 px-3 py-1.5 lg:flex">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 </span>
-                <span className="text-[11.5px] sm:text-[13px] font-bold text-emerald-700">المصادر حيّة</span>
+                <span className="text-[11.5px] font-bold text-emerald-700">المصادر حيّة</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               {/* زر المصباح — معرفة خلفية السائل (بدل المبدل القديم) */}
               <div className="relative" ref={knowledgeBtnRef}>
                 <motion.button
@@ -329,7 +460,7 @@ export default function HomePage() {
         <div ref={scrollerRef} className="flex-1 overflow-y-auto tb-scroll relative">
           <div className="max-w-[940px] mx-auto px-4 pt-6 pb-4">
             <AnimatePresence initial={false} mode="popLayout">
-              {isEmpty && !pending && (
+              {isEmpty && (
                 <motion.section
                   key="empty"
                   initial={{ opacity: 0, y: 16 }}
@@ -412,9 +543,12 @@ export default function HomePage() {
                       transition={{ type: "spring", stiffness: 300, damping: 28 }}
                       className="flex justify-start"
                     >
-                      <div className="max-w-[85%] sm:max-w-[70%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]">
+                      <motion.div
+                        layoutId={item.sendAnimationId ? `sent-question-${item.sendAnimationId}` : undefined}
+                        className="max-w-[85%] sm:max-w-[70%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]"
+                      >
                         <div className="text-[15px] font-medium leading-relaxed">{item.question}</div>
-                      </div>
+                      </motion.div>
                     </motion.div>
                   ) : (
                     <motion.div
@@ -440,7 +574,7 @@ export default function HomePage() {
                 )}
               </AnimatePresence>
 
-              {pending && <ThinkingStages key={pending} question={pending} />}
+              {pendingForActiveSession && pending && <ThinkingStages key={`${pending.sessionId}:${pending.question}`} question={pending.question} />}
             </div>
 
             {/* لوحة الحالات الـ12 */}
@@ -511,15 +645,19 @@ export default function HomePage() {
         </AnimatePresence>
 
         {/* المُدخل — بلا خلفية ولا حد علوي ولا ضبابية: الصندوق يطفو فوق خلفية الصفحة */}
-        <div className="shrink-0 z-20">
-          <div className="max-w-[860px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
-            <ChatComposer ref={composerRef} onSend={handleAsk} disabled={!!pending} />
+        <div className="z-20 shrink-0">
+          <div className="mx-auto max-w-[860px] px-4 py-4 sm:px-6 sm:py-6">
+            <ChatComposer ref={composerRef} onSend={handleAsk} disabled={!historyReady || !!pending} />
           </div>
+        </div>
         </div>
       </main>
 
+      <ChatSettingsModal open={settingsOpen} sessions={sessions} onClose={closeSettings} />
+
       {/* مودال / Bottom sheet «معرفة مخصصة» */}
       <CustomKnowledgeSheet open={sheetOpen} onClose={() => setSheetOpen(false)} onSave={saveCustomKnowledgeOption} />
-    </>
+      </>
+    </LayoutGroup>
   )
 }
