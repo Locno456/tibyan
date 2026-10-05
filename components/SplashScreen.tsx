@@ -24,6 +24,7 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
   const [sentQuestion, setSentQuestion] = useState("")
   const [logoLoaded, setLogoLoaded] = useState(false)
   const [logoFailed, setLogoFailed] = useState(false)
+  const [animationSrc, setAnimationSrc] = useState<string | null>(null)
   const reduceMotion = useReducedMotion()
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -39,6 +40,22 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
   useEffect(() => {
     onFinishRef.current = onFinish
   }, [onFinish])
+
+  // لا نحمّل SVG المتحرك قبل hydration؛ وإلا قد يبدأ وينتهي قبل أن تُسجّل React onLoad والمؤقتات.
+  // query فريد يضمن بدء دورة CSS جديدة مع كل فتح/إعادة تحميل حتى لو كان الملف في cache المتصفح.
+  useEffect(() => {
+    if (reduceMotion === null) return
+    if (reduceMotion) {
+      setAnimationSrc(null)
+      setLogoLoaded(true)
+      return
+    }
+
+    setLogoLoaded(false)
+    setLogoFailed(false)
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    setAnimationSrc(`/tibyan-brand-kit/animation/tibyan-intro-color.svg?intro=${runId}`)
+  }, [reduceMotion])
 
   const clearTimelineTimers = useCallback(() => {
     timerIdsRef.current.forEach((timer) => window.clearTimeout(timer))
@@ -109,6 +126,8 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
   }
 
   const showStaticLogo = reduceMotion === true || logoFailed
+  const logoSrc = showStaticLogo || !animationSrc ? "/tibyan-logo-color.svg" : animationSrc
+  const logoKey = showStaticLogo ? "static-logo" : animationSrc || "waiting-logo"
 
   return (
     <motion.section
@@ -118,6 +137,16 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
       transition={{ duration: reduceMotion ? 0.18 : 0.72, ease: [0.22, 1, 0.36, 1] }}
       className="fixed inset-0 z-[9999] overflow-hidden"
       aria-label="بداية تِبْيَان"
+      onPointerDownCapture={(event) => {
+        if (event.target instanceof Element && event.target.closest("[data-splash-interactive]")) return
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      onClickCapture={(event) => {
+        if (event.target instanceof Element && event.target.closest("[data-splash-interactive]")) return
+        event.preventDefault()
+        event.stopPropagation()
+      }}
       style={{ backgroundColor: "#F8FCFB" }}
     >
       {/* العلامة وحدها تماماً في افتتاح الشاشة */}
@@ -137,11 +166,16 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
           style={{ willChange: "transform, opacity" }}
         >
           <img
-            src={showStaticLogo ? "/tibyan-logo-color.svg" : "/tibyan-brand-kit/animation/tibyan-intro-color.svg"}
+            key={logoKey}
+            src={logoSrc}
             alt=""
             aria-hidden="true"
             draggable={false}
-            onLoad={() => setLogoLoaded(true)}
+            loading="eager"
+            fetchPriority="high"
+            onLoad={() => {
+              if (showStaticLogo || animationSrc) setLogoLoaded(true)
+            }}
             onError={() => {
               setLogoFailed(true)
               setLogoLoaded(true)
@@ -169,6 +203,7 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
         {phase === "ready" && (
           <motion.form
             key="splash-question"
+            data-splash-interactive="true"
             onSubmit={submitQuestion}
             initial={{ opacity: 0, x: "-50%", y: 24, scale: 0.97 }}
             animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
