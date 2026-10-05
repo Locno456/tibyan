@@ -393,7 +393,7 @@ export default function HomePage() {
                   {activeSession?.title || "محادثة جديدة"}
                 </div>
                 <div className="truncate text-[10.5px] text-[#6D8A90] sm:text-[12px]">
-                  الحوار المعرفي الموثّق
+                  نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ
                 </div>
               </div>
               <div className="hidden items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50/80 px-3 py-1.5 lg:flex">

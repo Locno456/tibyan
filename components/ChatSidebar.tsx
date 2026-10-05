@@ -63,7 +63,7 @@ function SidebarContents({
             {(!collapsed || mobile) && (
               <div className="min-w-0">
                 <div className="text-[16px] font-extrabold leading-tight text-[#0A2A33]">تِبْيَان</div>
-                <div className="mt-0.5 truncate text-[11px] text-[#6D8A90]">الحوار المعرفي الموثّق</div>
+                <div className="mt-0.5 truncate text-[11px] text-[#6D8A90]">نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ</div>
               </div>
             )}
           </div>

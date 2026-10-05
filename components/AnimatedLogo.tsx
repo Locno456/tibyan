@@ -101,7 +101,7 @@ export default function AnimatedLogo({ size = 140, animated = true, showText = f
           <h1 className="text-[28px] font-extrabold tracking-tight" style={{ fontFamily: 'Tajawal, sans-serif', color: '#0A2A33' }}>
             تِبْيَان
           </h1>
-          <p className="text-[12.5px] tracking-[0.18em] text-[#4B6A72] font-bold mt-0.5">TIBYAN • الحوار المعرفي الموثق</p>
+          <p className="text-[11.5px] tracking-normal text-[#4B6A72] font-bold mt-0.5">TIBYAN • نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ</p>
           <div className="flex items-center justify-center gap-1.5 mt-2">
             <span className="w-2 h-2 rounded-full bg-[#0A8F94] animate-pulse" />
             <span className="w-2 h-2 rounded-full bg-[#19D6C4] animate-pulse" style={{ animationDelay: '0.3s' }} />

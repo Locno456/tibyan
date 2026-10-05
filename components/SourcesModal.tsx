@@ -25,6 +25,22 @@ interface SourcesModalProps {
   confidence: number
 }
 
+function presentSacredText(text: string, type: string) {
+  if (type === "quran") {
+    return text.startsWith("﴿") && text.endsWith("﴾") ? text : `﴿${text}﴾`
+  }
+  if (type === "hadith") {
+    return text.startsWith("«") && text.endsWith("»") ? text : `«${text}»`
+  }
+  return text
+}
+
+function getSurahReference(source: string, surah?: number, ayah?: number) {
+  const match = source.match(/سورة\s+(.+?)\s*-\s*(?:الآية|آيه|آية)\s*\d+/)
+  const name = match?.[1]?.trim() || (surah ? String(surah) : "")
+  return name && ayah ? `سورة ${name} · الآية ${ayah}` : ""
+}
+
 export default function SourcesModal({ isOpen, onClose, sources, question, confidence }: SourcesModalProps) {
   useEffect(() => {
     if (isOpen) {
@@ -61,7 +77,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
 
   const getTypeColor = (type: string) => {
     if (type === "quran") return { bg: "#EEF6F6", border: "#C9DFE1", text: "#14529E", dot: "#14529E" }
-    if (type === "hadith") return { bg: "#EEF6F6", border: "#C9DFE1", text: "#0A8F94", dot: "#0A8F94" }
+    if (type === "hadith") return { bg: "#F3FAF5", border: "#D6E8DA", text: "#18794E", dot: "#18794E" }
     if (type === "shubha") return { bg: "#F5F3FF", border: "#DDD6FE", text: "#7B4FD6", dot: "#7B4FD6" }
     return { bg: "#EEF6F6", border: "#C9DFE1", text: "#0A2A33", dot: "#0A8F94" }
   }
@@ -142,6 +158,10 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                     const colors = getTypeColor(src.type || "")
                     const link = buildSourceUrl(src)
                     const domain = sourceDomain(link)
+                    const isQuran = src.type === "quran"
+                    const isHadith = src.type === "hadith"
+                    const sacredText = presentSacredText(src.text || "", src.type || "")
+                    const surahReference = getSurahReference(src.source || "", src.surah, src.ayah)
 
                     return (
                       <motion.div
@@ -152,8 +172,8 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                         className="rounded-[12px] border p-4 bg-white hover:shadow-[0_4px_12px_rgba(10,143,148,0.08)] transition-all"
                         style={{ borderColor: colors.border, background: `linear-gradient(135deg, white 0%, ${colors.bg} 100%)` }}
                       >
-                        <div className="flex items-center justify-between mb-2.5">
-                          <div className="flex items-center gap-2">
+                        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
                             <span className="w-6 h-6 rounded-[8px] flex items-center justify-center text-white text-[11.5px] font-bold" style={{ background: colors.dot }}>
                               {idx + 1}
                             </span>
@@ -166,23 +186,29 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <span className="text-[11.5px] px-2 py-1 rounded-full bg-white border border-[#C9DFE1] text-[#4B6A72]">
                               ثقة {((Number(src.confidence) || 0) * 100).toFixed(0)}%
                             </span>
                             {src.surah && src.ayah && (
-                              <span className="text-[11.5px] px-2 py-1 rounded-full bg-[#14529E] text-white font-bold">
-                                {src.surah}:{src.ayah}
+                              <span className="rounded-full bg-[#14529E] px-2 py-1 text-[11.5px] font-bold text-white">
+                                {surahReference || `سورة ${src.surah} · الآية ${src.ayah}`}
                               </span>
                             )}
                           </div>
                         </div>
 
                         <div
-                          className="text-[16px] leading-[1.8] p-3 rounded-[10px] bg-white border border-[#C9DFE1]/50 mb-2.5"
-                          style={{ fontFamily: src.type === 'quran' || src.type === 'hadith' ? 'Amiri, serif' : 'IBM Plex Sans Arabic, sans-serif', color: '#0A2A33' }}
+                          dir="rtl"
+                          className="mb-2.5 whitespace-pre-wrap rounded-[10px] border p-3 text-[16px] leading-[1.9]"
+                          style={{
+                            fontFamily: isQuran || isHadith ? "Amiri, serif" : "IBM Plex Sans Arabic, sans-serif",
+                            color: isQuran ? "#14529E" : isHadith ? "#18794E" : "#0A2A33",
+                            backgroundColor: isQuran ? "#F4F8FF" : isHadith ? "#F3FAF5" : "#FFFFFF",
+                            borderColor: isQuran ? "#D8E4F4" : isHadith ? "#D6E8DA" : "#C9DFE1",
+                          }}
                         >
-                          {src.text || ""}
+                          {sacredText}
                         </div>
 
                         <div className="flex items-center justify-between">
