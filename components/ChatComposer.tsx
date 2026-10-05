@@ -6,6 +6,7 @@ interface ChatComposerProps {
   onSend: (text: string) => void
   disabled?: boolean
   placeholder?: string
+  initialValue?: string
 }
 
 const MAX = 500
@@ -15,12 +16,16 @@ const MAX = 500
  * يحل محل الوصول المباشر إلى DOM في النسخة السابقة.
  */
 const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
-  function ChatComposer({ onSend, disabled = false, placeholder }, ref) {
+  function ChatComposer({ onSend, disabled = false, placeholder, initialValue }, ref) {
     const inner = useRef<HTMLTextAreaElement | null>(null)
-    const [value, setValue] = useState("")
+    const [value, setValue] = useState(initialValue || "")
     const [focused, setFocused] = useState(false)
 
     useImperativeHandle(ref, () => inner.current as HTMLTextAreaElement)
+
+    useEffect(() => {
+      if (initialValue !== undefined) setValue(initialValue)
+    }, [initialValue])
 
     // نمو ذاتي بالارتفاع
     useEffect(() => {

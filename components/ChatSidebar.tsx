@@ -13,6 +13,7 @@ interface ChatSidebarProps {
   activeSessionId: string
   collapsed: boolean
   mobileOpen: boolean
+  visible?: boolean
   disabled?: boolean
   storageWarning?: boolean
   onToggleCollapsed: () => void
@@ -220,8 +221,17 @@ export default function ChatSidebar(props: ChatSidebarProps) {
     <>
       <motion.aside
         initial={false}
-        animate={{ width: props.collapsed ? 78 : 282 }}
-        transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
+        animate={{
+          width: props.collapsed ? 78 : 282,
+          opacity: props.visible === false ? 0 : 1,
+          x: props.visible === false ? 20 : 0,
+        }}
+        transition={{
+          width: { duration: 0.22, ease: [0.2, 0.7, 0.2, 1] },
+          opacity: { duration: props.visible === false ? 0 : 0.68, delay: props.visible === false ? 0 : 0.14 },
+          x: { duration: props.visible === false ? 0 : 0.72, delay: props.visible === false ? 0 : 0.08, ease: [0.16, 1, 0.3, 1] },
+        }}
+        aria-hidden={props.visible === false}
         className="relative z-30 hidden h-full shrink-0 flex-col border-l border-[#C9DFE1]/70 bg-white shadow-[0_0_24px_rgba(10,42,51,0.035)] md:flex"
         aria-label="القائمة الجانبية"
       >

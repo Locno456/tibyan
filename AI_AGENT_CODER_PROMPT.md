@@ -32,7 +32,7 @@
   - `tibyan-app-icon.svg` - مربع مستدير بتدرج تركوازي + علامة بيضاء - أيقونة التطبيق / avatar / favicon source
   - `icons/icon-16/32/48/192/512/1024.png` + `maskable-512.png` + `apple-touch-icon-180.png` + `favicon.svg` + `favicon.ico`
 
-- **الرسوم المتحركة الحقيقية:** `public/tibyan-intro-color.svg` و `tibyan-intro-white.svg` - شفافة، تلعب مرة واحدة ~5.5ث ثم تثبت على الشعار النهائي
+- **الرسوم المتحركة الحقيقية:** ملفات SVG الأصلية `public/tibyan-intro-color.svg` و `tibyan-intro-white.svg` شفافة وتلعب مرة واحدة ~5.5ث ثم تثبت على الشعار النهائي. شاشة البداية الحالية تستخدم نسخة Brand Kit المطابقة `public/tibyan-brand-kit/animation/tibyan-intro-color.svg` عبر `<object>` لضبط توقيت العرض الأبطأ (~7.8ث) من دون تعديل ملف SVG الأصلي.
   - التسلسل: رسم علامة صح → مسح ضوئي سينمائي + توهج anamorphic flare → دوران يساراً → نسخة معكوسة تظهر → نقطتا التاء pop
   - Pure CSS animation داخل SVG، بدون JS - تستخدم عبر `<img src>` - إعادة التشغيل بإعادة إنشاء العنصر أو `?v=n`
   - **مطلوب:** `prefers-reduced-motion` fallback يعرض الشعار الثابت بدلاً من الرسوم - اختبر في Chrome/Safari/Firefox
@@ -143,7 +143,7 @@
 ### الواجهة - بسيطة مثل ChatGPT مع ميزات موثوقية:
 
 - **app/page.tsx** - بسيط: Header مصغر 48px (شعار 8x8 + 4 persona pills + زر 12 اختبار) + Main chat area (Empty state مركزي شعار 96px + 4 أسئلة + فقاعات) + Input ثابت أسفل مثل ChatGPT - **لا زحام بصري**
-- **components/SplashScreen.tsx** - شعار متحرك حقيقي 2.8ث: `tibyan-intro-color.svg` (CSS animation داخل SVG) + reduced-motion fallback + زخارف motif + ألوان حقيقية + progress bar + قصة الشعار
+- **components/SplashScreen.tsx** - عند فتح التطبيق يظهر الشعار المتحرك وحده في مركز الشاشة؛ يرتفع بعد ظهور الصح واللمعان وقبل دورانها، ثم يظهر حقل السؤال والآية بحركة، وتدخل الواجهة كاملة بعد انتهاء تسلسل الشعار (~7.8ث). يدعم reduced-motion ويحتفظ بمسودة السؤال.
 - **components/AnimatedLogo.tsx** - شعار حقيقي `tibyan-logo-color.svg` + float + pulse-glow + shine sweep + توهج ذهبي للنقطتين
 - **components/ChatMessage.tsx** (جديد) - فقاعة واحدة ChatGPT style تجمع أزرق+بنفسجي: شرح + آيات داخل ﴿...﴾ مع سورة ورقم + زر مصادر + دائرة موثوقية
 - **components/QuranBracket.tsx** (جديد) - آية داخل ﴿...﴾ مثل المصحف مع سورة ورقم + badge موثق 100% + رابط تحقق - text يأتي حرفياً من JSON - Guard يحمي
@@ -169,7 +169,7 @@
 |---------|-------|-------------------|---------|
 | جودة تقنية | 25% | Next.js 14 + Hybrid RAG BM25+Vector+Reranker mock → Qdrant + Guard + Gemini Flash Lite Free + API + بناء 46.5kB | lib/rag.ts + guard.ts + gemini.ts + api/ask/route.ts |
 | موثوقية | 15% | صفر اختلاق، 12/12، تتبع مصدري برابط مباشر (quranpedia.net, dorar.net, dawa.center), مستويات A/B/C/D + abstain 100% D، Guard ﴿...﴾ + exact_match، آيات ﴿...﴾ من JSON فقط | data/test_cases.json + docs/evaluation.md + guard.ts + QuranBracket.tsx |
-| ابتكار | 15% | فصل بصري أزرق/بنفسجي <1ث داخل فقاعة واحدة ChatGPT style + Persona 4 أنماط + الجمهرة + شعار متحرك حقيقي 5.5ث + آيات ﴿...﴾ مع سورة ورقم + دائرة موثوقية Circular Progress + زر مصادر Modal | ChatMessage.tsx + QuranBracket.tsx + CircularProgress.tsx + SourcesModal.tsx + SplashScreen.tsx |
+| ابتكار | 15% | فصل بصري أزرق/بنفسجي <1ث داخل فقاعة واحدة ChatGPT style + Persona 4 أنماط + الجمهرة + شاشة بداية بشعار متحرك ~7.8ث + آيات ﴿...﴾ مع سورة ورقم + دائرة موثوقية Circular Progress + زر مصادر Modal | ChatMessage.tsx + QuranBracket.tsx + CircularProgress.tsx + SourcesModal.tsx + SplashScreen.tsx |
 | تجربة مستفيد | 10% | هوية حقيقية فاتحة + شعار متحرك حقيقي + واجهة دردشة بسيطة مثل ChatGPT + Amiri للوحي + Tajawal للعناوين + RTL-first + reduced-motion fallback + ثنائي لغة | page.tsx + SplashScreen.tsx + globals.css + layout.tsx |
 | تحقيق نفع | 20% | مؤشرات ≥98% دقة، 0% اختلاق، ≥90% ملاءمة، 100% امتناع D، <2.5ث، Dashboard + دائرة موثوقية + زر مصادر يزيد الشفافية + تتبع | docs/evaluation.md + CircularProgress.tsx |
 | واقعية تشغيل | 10% | تكاليف 0$ (Vercel Free + JSON Fallback + Gemini Flash Lite Free 60 req/min 1500/day) + Fallback مرآة محلية 10k + تكاليف واضحة ~5$ لـ 100k | vercel.json + netlify.toml + verified_texts.json + .env.example |
@@ -222,7 +222,7 @@
 ```bash
 npm install
 echo "GEMINI_API_KEY=AIzaSy...مفتاحك المجاني من https://aistudio.google.com/app/apikey" > .env.local
-npm run dev # http://localhost:3000 - شعار متحرك 2.8ث → دردشة نظيفة → آيات ﴿...﴾ [سورة:آية] + زر مصادر + دائرة موثوقية
+npm run dev # http://localhost:3000 - شاشة بداية بشعار متحرك ~7.8ث → دردشة نظيفة → آيات ﴿...﴾ [سورة:آية] + زر مصادر + دائرة موثوقية
 npm run build # 46.5kB ✅
 
 # اختبار API
@@ -242,7 +242,7 @@ done
 
 - **Live Demo 24/7:** https://tibyan-mvp.vercel.app (Vercel Free + Gemini Flash Lite Free)
 - **GitHub Public:** هذا المستودع - README شامل + Brand Kit + 7 معايير + هيكل + quickstart + 12 حالة
-- **فيديو ≤2د:** سيناريو: شعار متحرك حقيقي 5.5ث → سؤال "ما معنى التوحيد؟" → فقاعة ChatGPT مع ﴿...﴾ [البقرة:255] + زر مصادر Modal + دائرة موثوقية 94% → 12 حالة → مصادر + تكاليف 0$
+- **فيديو ≤2د:** سيناريو: شعار متحرك حقيقي ~7.8ث → سؤال "ما معنى التوحيد؟" → فقاعة ChatGPT مع ﴿...﴾ [البقرة:255] + زر مصادر Modal + دائرة موثوقية 94% → 12 حالة → مصادر + تكاليف 0$
 - **PDF/PPTX 11 شريحة:** بهوية حقيقية #19D6C4 #0A8F94 #14529E #E0B450 + شعار حقيقي + روابط Live Demo + GitHub + Video
 
 **الأساس قوي ومرن 46.5kB - ابنِ عليه، لا تعيد بناءه - حافظ على صفر اختلاق + هوية حقيقية + بساطة ChatGPT**
@@ -276,4 +276,4 @@ done
 
 ---
 
-**جاهز - ابدأ بـ npm run dev → شعار متحرك حقيقي 2.8ث → دردشة نظيفة → آيات ﴿...﴾ + دائرة + مصادر - اختبر 12 حالة - ابنِ مميزات ثانوية**
+**جاهز - ابدأ بـ npm run dev → شاشة بداية بشعار متحرك ~7.8ث → دردشة نظيفة → آيات ﴿...﴾ + دائرة + مصادر - اختبر 12 حالة - ابنِ مميزات ثانوية**

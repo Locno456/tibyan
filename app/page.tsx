@@ -49,7 +49,8 @@ const ALL_TESTS = [
 ]
 
 export default function HomePage() {
-  const [showSplash, setShowSplash] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
+  const [splashDraft, setSplashDraft] = useState<string | undefined>()
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState("")
   const [historyReady, setHistoryReady] = useState(false)
@@ -74,6 +75,11 @@ export default function HomePage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
 
+  const finishSplash = useCallback((draft?: string) => {
+    setSplashDraft(draft?.trim() ? draft : undefined)
+    setShowSplash(false)
+  }, [])
+
   // استعادة سجل المحادثات والتفضيلات محلياً عند أول تحميل (من دون أي طلب للخادم).
   useEffect(() => {
     const customs = loadCustomKnowledge()
@@ -92,7 +98,6 @@ export default function HomePage() {
     const initialSessions = storedSessions.length > 0 ? storedSessions : [createChatSession()]
     setSessions(initialSessions)
     setActiveSessionId(selectedSession?.id || initialSessions[0].id)
-    setShowSplash((selectedSession?.messages.length || 0) === 0)
     setSidebarCollapsed(loadSidebarCollapsed())
     setHistoryReady(true)
   }, [])
@@ -310,20 +315,36 @@ export default function HomePage() {
 
   const isEmpty = thread.length === 0 && !pendingForActiveSession
   const answeredCount = thread.filter((message) => message.role === "tibyan").length
+  const appVisible = historyReady && !showSplash
+  const splashVisible = showSplash || !historyReady
 
   return (
     <>
       <AnimatePresence initial={false}>
-          {showSplash && (
+          {splashVisible && (
             <SplashScreen
               key="tibyan-splash"
-              onFinish={() => setShowSplash(false)}
+              onFinish={finishSplash}
               onAsk={handleAsk}
             />
           )}
         </AnimatePresence>
 
-      <main className="relative flex h-[100dvh] flex-row overflow-hidden">
+      <motion.main
+        initial={false}
+        animate={{
+          opacity: appVisible ? 1 : 0,
+          y: appVisible ? 0 : 18,
+          filter: appVisible ? "blur(0px)" : "blur(7px)",
+        }}
+        transition={{
+          opacity: { duration: appVisible ? 0.72 : 0.12, delay: appVisible ? 0.12 : 0 },
+          y: { duration: appVisible ? 0.82 : 0.12, delay: appVisible ? 0.08 : 0, ease: [0.16, 1, 0.3, 1] },
+          filter: { duration: appVisible ? 0.68 : 0.12, delay: appVisible ? 0.08 : 0 },
+        }}
+        aria-hidden={!appVisible}
+        className="relative flex h-[100dvh] flex-row overflow-hidden"
+      >
         {/* خلفية حيّة */}
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
           <div className="tb-orb tb-orb--a" />
@@ -348,7 +369,8 @@ export default function HomePage() {
           activeSessionId={activeSessionId}
           collapsed={sidebarCollapsed}
           mobileOpen={mobileSidebarOpen}
-          disabled={!historyReady || !!pending}
+          visible={appVisible}
+          disabled={!historyReady || !!pending || !appVisible}
           storageWarning={storageWarning}
           onToggleCollapsed={toggleSidebarCollapsed}
           onCloseMobile={closeMobileSidebar}
@@ -642,11 +664,16 @@ export default function HomePage() {
         {/* المُدخل — بلا خلفية ولا حد علوي ولا ضبابية: الصندوق يطفو فوق خلفية الصفحة */}
         <div className="z-20 shrink-0">
           <div className="mx-auto max-w-[860px] px-4 py-4 sm:px-6 sm:py-6">
-            <ChatComposer ref={composerRef} onSend={handleAsk} disabled={!historyReady || !!pending} />
+            <ChatComposer
+              ref={composerRef}
+              onSend={handleAsk}
+              disabled={!historyReady || !!pending || !appVisible}
+              initialValue={splashDraft}
+            />
           </div>
         </div>
         </div>
-      </main>
+      </motion.main>
 
       <ChatSettingsModal open={settingsOpen} sessions={sessions} onClose={closeSettings} />
 
