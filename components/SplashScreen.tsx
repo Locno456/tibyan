@@ -11,20 +11,13 @@ interface SplashScreenProps {
 
 type SplashPhase = "intro" | "lifting" | "ready" | "sending"
 
-const LIFT_START_MS = 2850
-const LIFT_DURATION_MS = 700
-const INTRO_FINISH_MS = 7800
-const REDUCED_MOTION_FINISH_MS = 3000
-const SVG_TIMING_OVERRIDES = `
-  .cl { animation-duration: 1.25s !important; animation-delay: .22s !important; }
-  .sw, .fl, .fi { animation-duration: 1.2s !important; animation-delay: 1.65s !important; }
-  .cg { animation-duration: 1.25s !important; animation-delay: 3.65s !important; }
-  .cm { animation-duration: 1.1s !important; animation-delay: 5.1s !important; }
-  .dp { animation-duration: .8s !important; }
-  .dp.d1 { animation-delay: 6.55s !important; }
-  .dp.d2 { animation-delay: 6.75s !important; }
-`
-
+// توقيت متزامن مع CSS الموجود داخل أصل Brand Kit نفسه:
+// اللمعان يبدأ عند 1.35ث، والدوران يبدأ عند 2.45ث.
+const LIFT_START_MS = 1850
+const LIFT_DURATION_MS = 550
+const UI_READY_MS = 2500
+const INTRO_FINISH_MS = 5750
+const REDUCED_MOTION_FINISH_MS = 1800
 export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
   const [phase, setPhase] = useState<SplashPhase>("intro")
   const [question, setQuestion] = useState("")
@@ -33,7 +26,6 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
   const [logoFailed, setLogoFailed] = useState(false)
   const reduceMotion = useReducedMotion()
 
-  const logoObjectRef = useRef<HTMLObjectElement | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const questionDraftRef = useRef("")
   const phaseRef = useRef(phase)
@@ -65,21 +57,6 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
     onFinishRef.current(cleanDraft || undefined)
   }, [clearTimelineTimers])
 
-  const handleAnimatedLogoLoad = () => {
-    try {
-      const svgDocument = logoObjectRef.current?.contentDocument
-      if (svgDocument && !svgDocument.querySelector("style[data-tibyan-splash-timing]")) {
-        const timingStyle = svgDocument.createElementNS("http://www.w3.org/2000/svg", "style")
-        timingStyle.setAttribute("data-tibyan-splash-timing", "true")
-        timingStyle.textContent = SVG_TIMING_OVERRIDES
-        svgDocument.documentElement.appendChild(timingStyle)
-      }
-    } catch {
-      // إن تعذّر الوصول إلى وثيقة SVG، تستمر الحركة الأصلية للملف كما هي.
-    }
-    setLogoLoaded(true)
-  }
-
   useEffect(() => {
     if (!logoLoaded || reduceMotion === null) return
     clearTimelineTimers()
@@ -92,7 +69,7 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
     } else {
       timerIdsRef.current = [
         window.setTimeout(() => setPhase("lifting"), LIFT_START_MS),
-        window.setTimeout(() => setPhase("ready"), LIFT_START_MS + LIFT_DURATION_MS),
+        window.setTimeout(() => setPhase("ready"), UI_READY_MS),
         window.setTimeout(() => finishSplash(questionDraftRef.current), INTRO_FINISH_MS),
       ]
     }
@@ -137,54 +114,42 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
     <motion.section
       key="tibyan-splash"
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, filter: "blur(7px)", scale: 1.01 }}
+      exit={{ opacity: 0, scale: 0.995 }}
       transition={{ duration: reduceMotion ? 0.18 : 0.72, ease: [0.22, 1, 0.36, 1] }}
       className="fixed inset-0 z-[9999] overflow-hidden"
       aria-label="بداية تِبْيَان"
       style={{ backgroundColor: "#F8FCFB" }}
     >
       {/* العلامة وحدها تماماً في افتتاح الشاشة */}
-      <motion.div
-        className="absolute left-1/2 top-1/2 z-10 h-[min(64vw,280px)] w-[min(64vw,280px)]"
-        animate={{
-          x: "-50%",
-          y: "-50%",
-          top: phase === "intro" ? "50%" : phase === "lifting" ? "20%" : phase === "sending" ? "17%" : "20%",
-          scale: phase === "intro" ? 1 : phase === "sending" ? 0.84 : 0.9,
-          opacity: phase === "sending" ? 0.62 : 1,
-        }}
-        transition={{
-          x: { duration: 0 },
-          y: { duration: 0 },
-          top: { duration: reduceMotion ? 0 : LIFT_DURATION_MS / 1000, ease: [0.2, 0.75, 0.2, 1] },
-          scale: { duration: reduceMotion ? 0 : 0.72, ease: [0.2, 0.75, 0.2, 1] },
-          opacity: { duration: reduceMotion ? 0.12 : 0.5 },
-        }}
-      >
-        {showStaticLogo ? (
+      <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-[min(64vw,280px)] w-[min(64vw,280px)] -translate-x-1/2 -translate-y-1/2">
+        <motion.div
+          animate={{
+            y: phase === "intro" ? "0vh" : phase === "sending" ? "-33vh" : "-30vh",
+            scale: phase === "intro" ? 1 : phase === "sending" ? 0.84 : 0.9,
+            opacity: phase === "sending" ? 0.62 : 1,
+          }}
+          transition={{
+            y: { duration: reduceMotion ? 0 : LIFT_DURATION_MS / 1000, ease: [0.2, 0.75, 0.2, 1] },
+            scale: { duration: reduceMotion ? 0 : 0.55, ease: [0.2, 0.75, 0.2, 1] },
+            opacity: { duration: reduceMotion ? 0.12 : 0.45 },
+          }}
+          className="h-full w-full"
+          style={{ willChange: "transform, opacity" }}
+        >
           <img
-            src="/tibyan-logo-color.svg"
+            src={showStaticLogo ? "/tibyan-logo-color.svg" : "/tibyan-brand-kit/animation/tibyan-intro-color.svg"}
             alt=""
             aria-hidden="true"
+            draggable={false}
             onLoad={() => setLogoLoaded(true)}
-            className="absolute inset-0 h-full w-full object-contain"
-          />
-        ) : (
-          <object
-            ref={logoObjectRef}
-            data="/tibyan-brand-kit/animation/tibyan-intro-color.svg"
-            type="image/svg+xml"
-            aria-hidden="true"
-            tabIndex={-1}
-            onLoad={handleAnimatedLogoLoad}
             onError={() => {
               setLogoFailed(true)
               setLogoLoaded(true)
             }}
-            className="pointer-events-none absolute inset-0 h-full w-full"
+            className="h-full w-full object-contain"
           />
-        )}
-      </motion.div>
+        </motion.div>
+      </div>
 
       {/* زخرفة واحدة من دليل الهوية لا تدخل إلا بعد صعود الشعار */}
       {phase === "ready" && (
@@ -205,14 +170,14 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
           <motion.form
             key="splash-question"
             onSubmit={submitQuestion}
-            initial={{ opacity: 0, x: "-50%", y: 30, scale: 0.96, filter: "blur(7px)" }}
-            animate={{ opacity: 1, x: "-50%", y: 0, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, x: "-50%", y: -12, scale: 0.97, filter: "blur(3px)" }}
+            initial={{ opacity: 0, x: "-50%", y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
+            exit={{ opacity: 0, x: "-50%", y: -10, scale: 0.98 }}
             transition={{ duration: reduceMotion ? 0.2 : 0.88, delay: reduceMotion ? 0 : 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="absolute left-1/2 top-[63%] z-20 w-[min(90vw,720px)]"
             dir="rtl"
           >
-            <div className="relative flex items-end gap-2 rounded-[28px] border border-white/90 bg-white/88 p-2.5 shadow-[0_18px_60px_rgba(10,42,51,0.13),0_2px_12px_rgba(10,143,148,0.1)] backdrop-blur-2xl sm:rounded-[34px] sm:p-3">
+            <div className="relative flex items-end gap-2 rounded-[28px] border border-white/90 bg-white/96 p-2.5 shadow-[0_12px_30px_rgba(10,42,51,0.12),0_2px_10px_rgba(10,143,148,0.08)] sm:rounded-[34px] sm:p-3">
               <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[inherit] border border-[#C9DFE1]/60" />
               <textarea
                 ref={textareaRef}
@@ -264,19 +229,21 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
               dir="rtl"
             >
               <div className="flex justify-start">
-                <div className="h-12 w-[62%] rounded-full bg-gradient-to-l from-[#19D6C4]/45 via-[#14529E]/20 to-transparent blur-[24px] sm:h-16" />
+                <div
+                  className="h-12 w-[62%] rounded-full opacity-80 sm:h-16"
+                  style={{ background: "radial-gradient(ellipse at center, rgba(25,214,196,0.3), rgba(20,82,158,0.12) 48%, transparent 76%)" }}
+                />
               </div>
             </motion.div>
             <motion.div
               key="question-flight"
-              initial={{ opacity: 1, x: "-50%", y: "0vh", scale: 1, rotate: 0, filter: "blur(0px)" }}
+              initial={{ opacity: 1, x: "-50%", y: "0vh", scale: 1, rotate: 0 }}
               animate={{
                 opacity: [1, 1, 0],
                 x: "-50%",
                 y: reduceMotion ? "-50vh" : ["0vh", "-2vh", "-50vh"],
                 scale: reduceMotion ? 0.94 : [1, 1.07, 0.9],
                 rotate: reduceMotion ? 0 : [0, -1.2, 0],
-                filter: reduceMotion ? "blur(0px)" : ["blur(0px)", "blur(0px)", "blur(1px)"],
               }}
               transition={{ duration: reduceMotion ? 0.24 : 0.74, times: [0, 0.18, 1], ease: [0.18, 0.82, 0.25, 1] }}
               onAnimationComplete={finishSending}
@@ -298,9 +265,9 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
         {phase === "ready" && (
           <motion.div
             key="splash-verse"
-            initial={{ opacity: 0, x: "-50%", y: 22, scale: 0.97, filter: "blur(6px)" }}
-            animate={{ opacity: 1, x: "-50%", y: 0, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: 10, filter: "blur(3px)" }}
+            initial={{ opacity: 0, x: "-50%", y: 18, scale: 0.98 }}
+            animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8 }}
             transition={{ duration: reduceMotion ? 0.2 : 0.95, delay: reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="absolute bottom-[max(18px,env(safe-area-inset-bottom))] left-1/2 z-10 w-[min(94vw,1120px)] px-2 text-center sm:bottom-7 sm:px-4"
             dir="rtl"

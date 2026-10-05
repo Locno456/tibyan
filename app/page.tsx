@@ -330,19 +330,14 @@ export default function HomePage() {
           )}
         </AnimatePresence>
 
+      {appVisible && (
       <motion.main
-        initial={false}
-        animate={{
-          opacity: appVisible ? 1 : 0,
-          y: appVisible ? 0 : 18,
-          filter: appVisible ? "blur(0px)" : "blur(7px)",
-        }}
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{
-          opacity: { duration: appVisible ? 0.72 : 0.12, delay: appVisible ? 0.12 : 0 },
-          y: { duration: appVisible ? 0.82 : 0.12, delay: appVisible ? 0.08 : 0, ease: [0.16, 1, 0.3, 1] },
-          filter: { duration: appVisible ? 0.68 : 0.12, delay: appVisible ? 0.08 : 0 },
+          opacity: { duration: 0.68, delay: 0.08 },
+          y: { duration: 0.74, delay: 0.04, ease: [0.16, 1, 0.3, 1] },
         }}
-        aria-hidden={!appVisible}
         className="relative flex h-[100dvh] flex-row overflow-hidden"
       >
         {/* خلفية حيّة */}
@@ -674,6 +669,7 @@ export default function HomePage() {
         </div>
         </div>
       </motion.main>
+      )}
 
       <ChatSettingsModal open={settingsOpen} sessions={sessions} onClose={closeSettings} />
 

@@ -36,7 +36,7 @@
 # 3. محلي
 npm install
 echo "GEMINI_API_KEY=AIzaSy...مفتاحك" > .env.local
-npm run dev # http://localhost:3000 - شاشة بداية بشعار متحرك ~7.8ث ثم دردشة نظيفة
+npm run dev # http://localhost:3000 - شاشة بداية بشعار متحرك ~5.8ث ثم دردشة نظيفة
 npm run build # 57.8kB ✅
 npm run eval:12 # تقييم الحالات الـ12 — قياس حقيقي قابل للتكرار
 ```
@@ -55,7 +55,7 @@ npm run eval:12 # تقييم الحالات الـ12 — قياس حقيقي ق�
 - علامة الصح تدور وتتكرر معكوسة → تشكل **كتاب مفتوح (القرآن)**
 - فوق الكتاب **نقطتان ذهبيتان معينتان** = نقطتا حرف **ت** أول حرف "تبيان" = نور المعرفة
 - الملفات: `public/tibyan-logo-color.svg` (تدرج تركواز→أزرق + ذهبي) / `tibyan-logo-white.svg` / `tibyan-app-icon.svg`
-- **الرسوم المتحركة:** `public/tibyan-intro-color.svg` - CSS animation داخل SVG بدون JS - 5.5ث: رسم علامة → مسح ضوئي + توهج → دوران → نسخة معكوسة → نقطتا التاء pop - مع `prefers-reduced-motion` fallback
+- **الرسوم المتحركة:** `public/tibyan-intro-color.svg` - CSS animation داخل SVG بدون JS - 5.5ث: رسم علامة → مسح ضوئي + توهج → دوران → نسخة معكوسة → نقطتا التاء pop - مع `prefers-reduced-motion` fallback. تستخدم شاشة البداية أصل Brand Kit المطابق عبر `<img>` مباشرةً.
 
 ### الألوان - كل لون له فكرة (من tokens.css):
 - `#19D6C4 → #0A8F94 → #05495A` = **إسلام / تراث** (قباب وزليج) - سائد
@@ -100,7 +100,7 @@ npm run eval:12 # تقييم الحالات الـ12 — قياس حقيقي ق�
 |---------|-------|-------------------|--------|
 | **جودة تقنية** | 25% | Next.js 14 + Hybrid RAG (BM25 حرفي للآيات + Vector دلالي للشبهات + Reranker) + Zero-Hallucination Guard + Gemini Flash Lite Free + API + بناء 57.8kB | `lib/rag.ts` + `lib/guard.ts` + `app/api/ask/route.ts` + `npm run build` ✅ |
 | **موثوقية** | 15% | صفر اختلاق للآيات داخل ﴿﴾، 13/18 استدعاء مصادر مقاس، تتبع مصدري برابط مباشر قابل للنقر (quranpedia.net, dorar.net, dawa.center), مستويات A/B/C/D + abstain 100% في D، Guard يمنع أي ﴿...﴾ غير موجود (⚠️ لا يلتقط الحديث النثري المُختلَق بعد) | `npm run eval:12` + `docs/evaluation.md` + `lib/guard.ts` |
-| **ابتكار** | 15% | فصل بصري تام أزرق/بنفسجي <1ث داخل فقاعة واحدة + Persona 4 أنماط + قاموس الجمهرة يقدم على الترجمة الآلية + شاشة بداية بشعار متحرك ~7.8ث + آيات ﴿...﴾ مع سورة ورقم + دائرة موثوقية + زر مصادر Modal | `components/ChatMessage.tsx` + `QuranBracket.tsx` + `CircularProgress.tsx` + `SourcesModal.tsx` ✅ |
+| **ابتكار** | 15% | فصل بصري تام أزرق/بنفسجي <1ث داخل فقاعة واحدة + Persona 4 أنماط + قاموس الجمهرة يقدم على الترجمة الآلية + شاشة بداية بشعار متحرك ~5.8ث + آيات ﴿...﴾ مع سورة ورقم + دائرة موثوقية + زر مصادر Modal | `components/ChatMessage.tsx` + `QuranBracket.tsx` + `CircularProgress.tsx` + `SourcesModal.tsx` ✅ |
 | **تجربة مستفيد** | 10% | هوية حقيقية فاتحة + شعار متحرك + واجهة دردشة بسيطة مثل ChatGPT + خط Amiri للوحي + Tajawal للعناوين + ثنائي لغة + RTL-first + `prefers-reduced-motion` fallback | `app/page.tsx` + `components/SplashScreen.tsx` + `app/globals.css` ✅ |
 | **تحقيق نفع** | 20% | مؤشرات: ≥98% دقة، 0% اختلاق، ≥90% ملاءمة persona، 100% امتناع D، <2.5ث، Dashboard + دائرة موثوقية + زر مصادر يزيد الشفافية | `docs/evaluation.md` + `components/CircularProgress.tsx` ✅ |
 | **واقعية تشغيل** | 10% | تكاليف 0$ (Vercel Free + Qdrant JSON Fallback + Gemini Flash Lite Free 60 req/min 1500/day) + Fallback مرآة محلية 10k نص + تكاليف واضحة ~5$ لـ 100k استعلام | `vercel.json` + `netlify.toml` + `data/verified_texts.json` + `.env.example` ✅ |
@@ -170,7 +170,7 @@ tibyan-mvp/
 │   ├── globals.css (Brand Kit tokens #19D6C4 #0A8F94 #14529E #E0B450 + Glassmorphism)
 │   └── api/ask/route.ts (Intent + Level + Hybrid RAG + Gemini Flash Lite + Guard)
 ├── components/
-│   ├── SplashScreen.tsx (شعار في المنتصف ثم حقل/آية؛ ظهور الواجهة بعد ~7.8ث + reduced-motion)
+│   ├── SplashScreen.tsx (شعار في المنتصف ثم حقل/آية؛ ظهور الواجهة بعد ~5.8ث + reduced-motion)
 │   ├── AnimatedLogo.tsx (شعار حقيقي ✓ + كتاب + نقطتا تاء ذهبيتان)
 │   ├── ChatMessage.tsx (جديد - فقاعة ChatGPT + آيات ﴿...﴾ + زر مصادر + دائرة موثوقية)
 │   ├── QuranBracket.tsx (جديد - آية داخل ﴿...﴾ مع سورة ورقم + badge موثق)
@@ -192,7 +192,7 @@ tibyan-mvp/
 ├── public/
 │   ├── tibyan-logo-color.svg (شعار حقيقي - تدرج تركواز→أزرق + ذهبي)
 │   ├── tibyan-logo-white.svg / app-icon.svg
-│   ├── tibyan-intro-color.svg (الأصل المتحرك؛ وتستخدم شاشة البداية نسخة Brand Kit أبطأ)
+│   ├── tibyan-intro-color.svg (الأصل المتحرك؛ شاشة البداية تستخدم أصل Brand Kit المطابق)
 │   ├── icon-16/32/48/192/512/1024.png + favicon.svg + apple-touch-180.png
 │   ├── favicon.ico (إصلاح 404)
 │   ├── manifest.json (PWA)
@@ -262,7 +262,7 @@ tibyan-mvp/
 ```bash
 npm install
 echo "GEMINI_API_KEY=AIzaSy...مفتاحك" > .env.local
-npm run dev # http://localhost:3000 - شاشة بداية بشعار متحرك ~7.8ث → دردشة نظيفة → آيات ﴿...﴾ + دائرة + مصادر
+npm run dev # http://localhost:3000 - شاشة بداية بشعار متحرك ~5.8ث → دردشة نظيفة → آيات ﴿...﴾ + دائرة + مصادر
 npm run build # 57.8kB ✅
 npm run eval:12 # تقييم الحالات الـ12 — قياس حقيقي قابل للتكرار
 ```
