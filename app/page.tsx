@@ -1,6 +1,6 @@
 "use client"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { motion, AnimatePresence, LayoutGroup, useScroll, useMotionValueEvent } from "framer-motion"
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion"
 import SplashScreen from "../components/SplashScreen"
 import AnimatedLogo from "../components/AnimatedLogo"
 import ChatMessage from "../components/ChatMessage"
@@ -210,7 +210,7 @@ export default function HomePage() {
   }, [])
 
   const handleAsk = useCallback(
-    async (raw: string, sendAnimationId?: string) => {
+    async (raw: string) => {
       const question = (raw || "").trim()
       const sessionId = activeSessionId
       const currentSession = sessions.find((session) => session.id === sessionId)
@@ -221,7 +221,6 @@ export default function HomePage() {
         role: "user",
         question,
         createdAt: new Date().toISOString(),
-        sendAnimationId,
       })
       setPending({ sessionId, question })
       scrollToBottom()
@@ -313,9 +312,8 @@ export default function HomePage() {
   const answeredCount = thread.filter((message) => message.role === "tibyan").length
 
   return (
-    <LayoutGroup id="tibyan-chat-layout">
-      <>
-        <AnimatePresence initial={false}>
+    <>
+      <AnimatePresence initial={false}>
           {showSplash && (
             <SplashScreen
               key="tibyan-splash"
@@ -543,12 +541,9 @@ export default function HomePage() {
                       transition={{ type: "spring", stiffness: 300, damping: 28 }}
                       className="flex justify-start"
                     >
-                      <motion.div
-                        layoutId={item.sendAnimationId ? `sent-question-${item.sendAnimationId}` : undefined}
-                        className="max-w-[85%] sm:max-w-[70%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]"
-                      >
+                      <div className="max-w-[85%] sm:max-w-[70%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]">
                         <div className="text-[15px] font-medium leading-relaxed">{item.question}</div>
-                      </motion.div>
+                      </div>
                     </motion.div>
                   ) : (
                     <motion.div
@@ -657,7 +652,6 @@ export default function HomePage() {
 
       {/* مودال / Bottom sheet «معرفة مخصصة» */}
       <CustomKnowledgeSheet open={sheetOpen} onClose={() => setSheetOpen(false)} onSave={saveCustomKnowledgeOption} />
-      </>
-    </LayoutGroup>
+    </>
   )
 }

@@ -19,7 +19,7 @@ export interface StoredAskResponse {
 }
 
 export type ConversationMessage =
-  | { id: string; role: "user"; question: string; createdAt: string; sendAnimationId?: string }
+  | { id: string; role: "user"; question: string; createdAt: string }
   | { id: string; role: "tibyan"; response: StoredAskResponse; createdAt: string }
 
 export interface ChatSession {

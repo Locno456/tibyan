@@ -222,7 +222,7 @@ export default function ChatSidebar(props: ChatSidebarProps) {
         initial={false}
         animate={{ width: props.collapsed ? 78 : 282 }}
         transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
-        className="relative z-30 hidden h-full shrink-0 flex-col border-l border-[#C9DFE1]/70 bg-white/82 shadow-[0_0_24px_rgba(10,42,51,0.035)] backdrop-blur-xl md:flex"
+        className="relative z-30 hidden h-full shrink-0 flex-col border-l border-[#C9DFE1]/70 bg-white shadow-[0_0_24px_rgba(10,42,51,0.035)] md:flex"
         aria-label="القائمة الجانبية"
       >
         <SidebarContents {...props} />
@@ -246,7 +246,7 @@ export default function ChatSidebar(props: ChatSidebarProps) {
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
                 transition={{ type: "spring", stiffness: 340, damping: 34 }}
-                className="absolute inset-y-0 right-0 flex w-[min(86vw,310px)] max-w-[310px] flex-col border-l border-[#C9DFE1]/70 bg-[#F8FCFB] shadow-[0_18px_55px_rgba(10,42,51,0.2)]"
+                className="absolute inset-y-0 right-0 flex w-[min(86vw,310px)] max-w-[310px] flex-col border-l border-[#C9DFE1]/70 bg-white shadow-[0_18px_55px_rgba(10,42,51,0.2)]"
                 aria-label="القائمة الجانبية للمحادثات"
               >
                 <SidebarContents {...props} collapsed={false} mobile />

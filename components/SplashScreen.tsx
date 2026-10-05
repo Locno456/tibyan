@@ -3,11 +3,10 @@
 import { FormEvent, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import { ArrowUp } from "lucide-react"
-import { createMessageId } from "../lib/chatHistory"
 
 interface SplashScreenProps {
   onFinish: () => void
-  onAsk: (question: string, sendAnimationId: string) => void | Promise<void>
+  onAsk: (question: string) => void | Promise<void>
 }
 
 type SplashPhase = "intro" | "ready" | "sending"
@@ -16,7 +15,6 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
   const [phase, setPhase] = useState<SplashPhase>("intro")
   const [question, setQuestion] = useState("")
   const [sentQuestion, setSentQuestion] = useState("")
-  const [sendAnimationId, setSendAnimationId] = useState("")
   const didSendRef = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const reduceMotion = useReducedMotion()
@@ -42,17 +40,15 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
     const clean = question.trim()
     if (!clean || phase !== "ready") return
 
-    const messageId = createMessageId()
     setSentQuestion(clean)
-    setSendAnimationId(messageId)
     setQuestion("")
     setPhase("sending")
   }
 
   const finishSending = () => {
-    if (didSendRef.current || !sentQuestion || !sendAnimationId) return
+    if (didSendRef.current || !sentQuestion) return
     didSendRef.current = true
-    void onAsk(sentQuestion, sendAnimationId)
+    void onAsk(sentQuestion)
     onFinish()
   }
 
@@ -171,7 +167,7 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
             <motion.div
               key="question-flight"
               initial={{ opacity: 1, x: "-50%", y: 0, scale: 1, filter: "blur(0px)" }}
-              animate={{ opacity: [1, 1, 0.12], x: "-50%", y: "-50vh", scale: 0.94, filter: "blur(0px)" }}
+              animate={{ opacity: [1, 1, 0], x: "-50%", y: "-50vh", scale: 0.94, filter: "blur(0px)" }}
               transition={{ duration: reduceMotion ? 0.22 : 0.52, ease: [0.18, 0.82, 0.25, 1] }}
               onAnimationComplete={finishSending}
               className="pointer-events-none absolute left-1/2 top-[63%] z-30 w-[min(90vw,720px)]"
@@ -179,7 +175,6 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
             >
               <div className="flex justify-start">
                 <motion.div
-                  layoutId={sendAnimationId ? `sent-question-${sendAnimationId}` : undefined}
                   className="max-w-[86%] rounded-[18px] rounded-br-[6px] bg-[#0A2A33] px-4 py-3 text-[14px] font-medium leading-relaxed text-white shadow-[0_10px_28px_rgba(10,42,51,0.2)] sm:px-5 sm:text-[15px]"
                 >
                   {sentQuestion}

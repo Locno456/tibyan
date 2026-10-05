@@ -140,7 +140,7 @@ const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
           </motion.button>
         </div>
 
-        <div className="flex items-center justify-between gap-2 mt-2.5 sm:mt-3 px-2 sm:px-3 text-[11.5px] sm:text-[13px] text-[#8FB0B6]">
+        <div className="hidden items-center justify-between gap-2 px-2 text-[11.5px] text-[#8FB0B6] xl:flex xl:mt-3 xl:px-3 xl:text-[13px]">
           <span className="flex items-center gap-1.5">
             <kbd className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-[7px] bg-white/90 border border-[#C9DFE1] text-[10.5px] sm:text-xs font-bold text-[#4B6A72]">
               Enter
