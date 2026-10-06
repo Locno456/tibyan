@@ -10,7 +10,8 @@
     "lint": "next lint",
     "test": "tsx --test tests/*.test.ts",
     "eval:12": "tsx scripts/eval-12.ts",
-    "eval:12:repeat": "EVAL_RUNS=5 tsx scripts/eval-12.ts"
+    "eval:12:repeat": "EVAL_RUNS=5 tsx scripts/eval-12.ts",
+    "estimate:cost": "tsx scripts/estimate-unit-economics.ts"
   },
   "dependencies": {
     "@google/generative-ai": "0.21.0",
