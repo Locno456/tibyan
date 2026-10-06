@@ -3,6 +3,7 @@ import { detectIntent, LEVELS, type Level } from "../../../lib/levelRouter"
 import { parseSourceModes, parseNoEvidenceMode } from "../../../lib/sourcePreferences"
 import { searchApprovedWeb } from "../../../lib/approvedWebSearch"
 import { planEvidenceSearch } from "../../../lib/agentPolicy"
+import { reportAnswerStage, withAnswerProgress } from "../../../lib/answerProgress"
 import { extractClaimedSacred } from "../../../lib/guard"
 import { hybrid_retrieve, findVerifiedTextMatches, type RetrievedChunk } from "../../../lib/rag"
 import { fullGuard } from "../../../lib/guard"
@@ -212,7 +213,7 @@ async function retrieveGeneralRulingEvidence(question: string, level: Level) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function runAsk(request: NextRequest) {
   let body: any
   try {
     body = await request.json()
@@ -248,6 +249,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Personal rulings are always referred before any generation or retrieval path.
+  reportAnswerStage("classify")
   const initialIntent = detectIntent(question)
   if (initialIntent.level === "D") {
     return finishResponse({
@@ -338,6 +340,7 @@ export async function POST(request: NextRequest) {
       })
     }
     verificationQuote = verificationRequest.quote
+    reportAnswerStage("verify")
     const localMatches = useLocal ? findVerifiedTextMatches(verificationQuote, 3) : []
     const exact = localMatches.find((match) => match.kind === "exact")
     if (exact) {
@@ -367,6 +370,7 @@ export async function POST(request: NextRequest) {
   let forcedQuranDocs: RetrievedChunk[] | undefined
   const quranRequest = parseQuranTextRequest(question)
   if (quranRequest && useLocal) {
+    reportAnswerStage("retrieve")
     if (quranRequest.kind === "ambiguous") {
       return conversationResponse(question, persona, "وجدت رقم آية، لكن أحتاج اسم السورة أيضاً لتحديد النص بدقة. اكتب مثلاً: الآية 255 من سورة البقرة.", startTime)
     }
@@ -448,6 +452,7 @@ export async function POST(request: NextRequest) {
     forcedQuranDocs = quranDocs
   }
 
+  reportAnswerStage("retrieve")
   let retrieval = forcedQuranDocs
     ? { docs: forcedQuranDocs, confidence: 1, source: "quran_full_json" }
     : verificationQuote
@@ -459,6 +464,7 @@ export async function POST(request: NextRequest) {
           : await hybrid_retrieve(retrievalQuestion, level, 5, 0.82)
 
   if (useWeb && !verificationQuote && level !== "D") {
+    reportAnswerStage("web")
     const webDocs = await searchApprovedWeb(retrievalQuestion)
     if (webDocs.length) retrieval = {
       ...retrieval,
@@ -507,6 +513,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.slice(0, 420) }, { status: 400 })
   }
 
+  if (selection && useMcp) reportAnswerStage("mcp")
   const mcpCatalog = selection && useMcp
     ? await discoverMcpToolCatalog()
     : {
@@ -577,9 +584,11 @@ export async function POST(request: NextRequest) {
 
   if (!agentPlan.canAttemptGroundedAnswer && noEvidenceMode === "direct_unverified" && !verificationQuote && (level === "A" || level === "B") && selection) {
     try {
+      reportAnswerStage("generate")
       const direct = await generateWithAIProvider(selection,
         `سؤال المستخدم: ${question.slice(0, 1000)}\nأجب بشرح عام موجز فقط من معرفتك. لا تنسب آية أو حديثاً أو حكماً إلى مصدر، ولا تدّع التحقق أو وجود دليل. إن كان السؤال يحتاج دليلاً محدداً فاطلب تفعيل مصادر.`,
         "أنت تِبْيَان في وضع إجابة غير متحقَّق منها. لا تنقل نصاً قرآنياً أو حديثاً أو تصدر فتوى. لا تذكر مصدراً لم تسترجعه. امتنع عند الحساسية أو الجهل.")
+      reportAnswerStage("verify")
       const text = direct.text.trim()
       // Without evidence there is no basis to confirm any claimed religious quotation.
       const hasSacredClaim = extractClaimedSacred(text).length > 0 || /(?:قال تعالى|قال رسول الله|رواه البخاري|رواه مسلم|حديث صحيح)/.test(text)
@@ -651,6 +660,7 @@ export async function POST(request: NextRequest) {
   let generation: Awaited<ReturnType<typeof generateWithAIProvider>>
 
   const requestGeneration = async (providerSelection: AIProviderSelection) => {
+    reportAnswerStage("generate")
     const result = await generateWithAIProvider(
       providerSelection,
       `${prompt}${quotePolicy}${mcpPolicy}${webPolicy}`,
@@ -732,6 +742,7 @@ export async function POST(request: NextRequest) {
     usedModelId: generation.model,
     usedModelName: actualSelection.modelName || generation.model,
   }
+  reportAnswerStage("verify")
   const evidenceQuery = verificationQuote || retrievalQuestion
   const relevantMcpCalls = filterRelevantMcpCalls(generation.toolCalls, evidenceQuery)
   const mcpSourceCards = buildMcpSourceCards(relevantMcpCalls, evidenceQuery)
@@ -901,5 +912,37 @@ export async function POST(request: NextRequest) {
       mcpToolsUsed: generation.toolCalls.length,
       mcpProviders: mcpCatalog.providers.map((provider: any) => ({ id: provider.id, status: provider.status, toolCount: provider.toolCount })),
     },
+  })
+}
+
+/** Opt-in NDJSON for the browser. Existing /api/ask and /api/v1 clients keep JSON. */
+export async function POST(request: NextRequest): Promise<Response> {
+  if (!request.headers.get("accept")?.toLowerCase().includes("application/x-ndjson")) {
+    return runAsk(request)
+  }
+
+  const encoder = new TextEncoder()
+  let active = true
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const send = (event: Record<string, unknown>) => {
+        if (!active) return
+        try { controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`)) } catch { active = false }
+      }
+      void withAnswerProgress((stage) => send({ type: "stage", stage }), async () => {
+        try {
+          const result = await runAsk(request)
+          send({ type: "result", status: result.status, data: await result.json() })
+        } catch {
+          send({ type: "result", status: 500, data: { error: "تعذّر إكمال الطلب؛ أعد المحاولة." } })
+        } finally {
+          if (active) { active = false; controller.close() }
+        }
+      })
+    },
+    cancel() { active = false },
+  })
+  return new Response(stream, {
+    headers: { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
   })
 }

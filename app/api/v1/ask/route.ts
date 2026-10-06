@@ -5,7 +5,6 @@ import {
   parseNativeAskPayload,
   publicApiError,
   readLimitedJson,
-  setNoStore,
 } from "../../../../lib/publicApi"
 
 export const runtime = "nodejs"
@@ -29,7 +28,8 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(parsedPayload.value),
     })
     const response = await runTibyanAsk(internalRequest)
-    return setNoStore(response)
+    response.headers.set("Cache-Control", "no-store")
+    return response
   } catch {
     return publicApiError("Tibyan could not complete this request.", 500, "tibyan", "internal_error")
   }

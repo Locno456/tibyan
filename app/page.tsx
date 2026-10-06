@@ -7,6 +7,8 @@ import AnimatedLogo from "../components/AnimatedLogo"
 import ChatMessage from "../components/ChatMessage"
 import ChatComposer from "../components/ChatComposer"
 import ThinkingStages from "../components/ThinkingStages"
+import { readAnswerStream } from "../lib/answerStream"
+import type { AnswerStage } from "../lib/answerProgress"
 import KnowledgePicker from "../components/KnowledgePicker"
 import CustomKnowledgeSheet from "../components/CustomKnowledgeSheet"
 import ChatSidebar from "../components/ChatSidebar"
@@ -121,6 +123,7 @@ export default function HomePage() {
   const [activeSessionId, setActiveSessionId] = useState("")
   const [historyReady, setHistoryReady] = useState(false)
   const [pending, setPending] = useState<{ sessionId: string; question: string } | null>(null)
+  const [progressStages, setProgressStages] = useState<AnswerStage[]>([])
   const [showTests, setShowTests] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -704,6 +707,7 @@ export default function HomePage() {
       }
 
       requestLockRef.current = true
+      setProgressStages([])
       setPending({ sessionId, question })
       scrollToBottom()
 
@@ -722,7 +726,7 @@ export default function HomePage() {
 
         const res = await fetch("/api/ask", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
           body: JSON.stringify({
             question,
             persona: knowledge.persona,
@@ -736,7 +740,7 @@ export default function HomePage() {
             noEvidenceMode,
           }),
         })
-        const json = await res.json().catch(() => null)
+        const json = await readAnswerStream(res, (stage) => setProgressStages((previous) => previous.at(-1) === stage ? previous : [...previous, stage]))
         if (!res.ok) throw new Error(String(json?.error || `تعذّر الاتصال بخدمة الإجابة (HTTP ${res.status})`))
         if (!json || typeof json !== "object") throw new Error("أعاد الخادم استجابة غير صالحة؛ أعد المحاولة بعد قليل.")
         if (json.error) throw new Error(String(json.error))
@@ -826,6 +830,7 @@ export default function HomePage() {
         createdAt: new Date().toISOString(),
       })
       setPending((current) => current?.sessionId === sessionId ? null : current)
+      setProgressStages([])
       requestLockRef.current = false
       if (activeSessionId === sessionId) scrollToBottom()
     },
@@ -1138,7 +1143,7 @@ export default function HomePage() {
                 })}
               </AnimatePresence>
 
-              {pendingForActiveSession && pending && <ThinkingStages key={`${pending.sessionId}:${pending.question}`} question={pending.question} />}
+              {pendingForActiveSession && pending && <ThinkingStages key={`${pending.sessionId}:${pending.question}`} question={pending.question} stages={progressStages} />}
             </div>
 
             {/* لوحة الحالات الـ12 */}
