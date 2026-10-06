@@ -12,6 +12,7 @@ import type { AnswerStage } from "../lib/answerProgress"
 import KnowledgePicker from "../components/KnowledgePicker"
 import CustomKnowledgeSheet from "../components/CustomKnowledgeSheet"
 import ChatSidebar from "../components/ChatSidebar"
+import ConversationInfo from "../components/ConversationInfo"
 import ChatSettingsModal from "../components/ChatSettingsModal"
 import ModelPicker from "../components/ModelPicker"
 import AccountAccessModal from "../components/AccountAccessModal"
@@ -608,11 +609,16 @@ export default function HomePage() {
     setMobileSidebarOpen(false)
   }, [])
 
-  const deleteChat = useCallback((sessionId: string) => {
+  const deleteChat = useCallback(async (sessionId: string) => {
     if (pending) return
     const target = sessions.find((session) => session.id === sessionId)
     if (!target || !window.confirm(`هل تريد حذف «${target.title || "محادثة جديدة"}»؟ لا يمكن التراجع عن الحذف.`)) return
-
+    // Revoke public access before removing the local conversation.
+    if (user?.id && client) {
+      const { error } = await client.from("tibyan_shared_conversations").delete().eq("user_id", user.id).eq("session_id", sessionId)
+      if (error) { window.alert("تعذر إلغاء رابط المشاركة؛ لم تُحذف المحادثة. أعد المحاولة."); return }
+      localStorage.removeItem(`tibyan.share.${user.id}.${sessionId}`)
+    }
     const remaining = sessions.filter((session) => session.id !== sessionId)
     const nextSessions = remaining.length ? remaining : [createChatSession()]
     setSessions(nextSessions)
@@ -634,7 +640,7 @@ export default function HomePage() {
       saveActiveChatId(nextSessions[0].id)
     }
     setShowTests(false)
-  }, [activeSessionId, deletedSessionIds, localOnlySessionIds, pending, sessions, user?.id])
+  }, [activeSessionId, client, deletedSessionIds, localOnlySessionIds, pending, sessions, user?.id])
 
   const closeMobileSidebar = useCallback(() => setMobileSidebarOpen(false), [])
   const toggleSidebarCollapsed = useCallback(() => setSidebarCollapsed((value) => !value), [])
@@ -960,6 +966,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <ConversationInfo session={activeSession} knowledge={knowledge} customKnowledge={customKnowledge} userId={user?.id} />
               {/* زر المصباح — معرفة خلفية السائل (بدل المبدل القديم) */}
               <div className="relative" ref={knowledgeBtnRef}>
                 <motion.button
