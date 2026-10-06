@@ -1,5 +1,5 @@
 import type { FunctionDeclaration } from "@google/generative-ai"
-import { APPROVED_MCP_PROVIDERS } from "./sources"
+import { resolveMcpSources } from "./sourceRegistry"
 
 export const MCP_PROTOCOL_VERSION = "2024-11-05"
 const DISCOVERY_TTL_MS = 5 * 60 * 1000
@@ -67,37 +67,7 @@ const MUTATING_TOOL_NAME_WORDS = new Set(Array.from(MUTATING_WORDS).filter((word
 let cachedCatalog: CachedCatalog | undefined
 
 function getProviderConfigs(): ProviderConfig[] {
-  const primary = process.env.ISLAMIC_CONTENT_MCP_URL?.trim() || APPROVED_MCP_PROVIDERS.islamicContent.endpoint
-  const secondarySetting = process.env.TAFSIR_MCP_URL?.trim()
-  const providers: ProviderConfig[] = [
-    {
-      id: APPROVED_MCP_PROVIDERS.islamicContent.id,
-      label: APPROVED_MCP_PROVIDERS.islamicContent.name,
-      endpoint: primary,
-      prefix: "ic",
-    },
-  ]
-
-  if (secondarySetting?.toLowerCase() !== "off" && secondarySetting?.toLowerCase() !== "disabled") {
-    providers.push({
-      id: APPROVED_MCP_PROVIDERS.tafsirCenter.id,
-      label: APPROVED_MCP_PROVIDERS.tafsirCenter.name,
-      endpoint: secondarySetting || APPROVED_MCP_PROVIDERS.tafsirCenter.endpoint,
-      prefix: "tc",
-    })
-  }
-
-  return providers.filter((provider) => isValidMcpEndpoint(provider.endpoint))
-}
-
-function isValidMcpEndpoint(value: string): boolean {
-  try {
-    const url = new URL(value)
-    return (url.protocol === "https:" || (process.env.NODE_ENV !== "production" && url.protocol === "http:")) &&
-      !url.username && !url.password
-  } catch {
-    return false
-  }
+  return resolveMcpSources()
 }
 
 function abortSignal(timeoutMs: number): { signal: AbortSignal; dispose: () => void } {

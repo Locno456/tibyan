@@ -155,13 +155,18 @@ export async function generateWithGeminiTools(
       topK: 40,
     },
   })
-  let chat = createToolModel(limits.requireToolCall === true).startChat({ history: [] })
+  // Do not use chat.sendMessage(functionResponse): this SDK serializes function
+  // replies with role "function", rejected by newer Gemini models. Explicit
+  // generateContent turns keep the tool response as a USER content instead.
+  const contents: import("@google/generative-ai").Content[] = [
+    { role: "user", parts: [{ text: prompt }] },
+  ]
   const toolCalls: GeminiToolCallRecord[] = []
   const maxCalls = Math.max(1, Math.min(limits.maxCalls ?? 8, 16))
   const maxRounds = Math.max(1, Math.min(limits.maxRounds ?? 4, 6))
   let totalCalls = 0
   let toolRounds = 0
-  let result = await chat.sendMessage(prompt)
+  let result = await createToolModel(limits.requireToolCall === true).generateContent({ contents })
 
   while (toolRounds < maxRounds) {
     let calls: Array<{ name: string; args: object }> = []
@@ -205,11 +210,11 @@ export async function generateWithGeminiTools(
       }
     }))
 
-    if (limits.requireToolCall && toolRounds === 1) {
-      const history = await chat.getHistory()
-      chat = createToolModel(false).startChat({ history })
-    }
-    result = await chat.sendMessage(responses as any)
+    const modelContent = result.response.candidates?.[0]?.content
+    if (!modelContent?.parts?.length) throw new Error("لم يُرجع Gemini طلب أداة قابلاً للقراءة")
+    contents.push({ role: "model", parts: modelContent.parts })
+    contents.push({ role: "user", parts: responses })
+    result = await createToolModel(false).generateContent({ contents })
   }
 
   let text = ""

@@ -174,6 +174,9 @@ test("forces one Gemini function call, then returns to automatic tool selection"
 
   assert.equal(requestBodies[0]?.toolConfig?.functionCallingConfig?.mode, "ANY")
   assert.equal(requestBodies[1]?.toolConfig, undefined)
+  assert.deepEqual(requestBodies[1]?.contents?.map((turn: any) => turn.role), ["user", "model", "user"])
+  assert.equal(requestBodies[1]?.contents?.[2]?.parts?.[0]?.functionResponse?.name, tool.alias)
+  assert.equal(requestBodies[1]?.contents?.some((turn: any) => turn.role === "function"), false)
   assert.equal(result.toolCalls.length, 1)
   assert.equal(result.text, "وجدت نتيجة من المصدر.")
 })
