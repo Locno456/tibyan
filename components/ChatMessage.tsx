@@ -1,10 +1,28 @@
 "use client"
-import { useEffect, useMemo, useRef, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import QuranBracket from "./QuranBracket"
+
+import { useEffect, useMemo, useState } from "react"
+import { motion } from "framer-motion"
+import {
+  BookOpen,
+  Check,
+  CircleAlert,
+  CircleCheck,
+  CircleX,
+  Copy,
+  ExternalLink,
+  LoaderCircle,
+  Quote,
+  RefreshCw,
+  Sparkles,
+  Music2,
+} from "lucide-react"
+import VerifiedTextCard from "./VerifiedTextCard"
 import CircularProgress from "./CircularProgress"
 import SourcesModal from "./SourcesModal"
+import QuranAudioPlayer from "./QuranAudioPlayer"
+import QuranAudioRequestCard from "./QuranAudioRequestCard"
 import { Level } from "../lib/levelRouter"
+import { shortenHadithForChat } from "../lib/evidencePresentation"
 
 interface ChatMessageProps {
   question: string
@@ -12,14 +30,18 @@ interface ChatMessageProps {
   levelInfo: any
   blueCards: any[]
   purpleCards: any[]
+  audioCard?: any
+  audioRequest?: any
   confidence: number
   metrics: any
-  status: "ok" | "abstain" | "blocked"
+  status: "ok" | "abstain" | "blocked" | "error"
+  interactionType?: "conversation" | "quran_audio" | "quran_text" | "verification" | "answer" | "referral"
+  verificationStatus?: "confirmed" | "near_match" | "not_found" | "needs_quote"
+  onRetry?: () => void
+  retryDisabled?: boolean
 }
 
-/* ---------------------------------------------------------
-   كشف تدريجي للنص — يعطي إحساس الكتابة الحيّة
-   --------------------------------------------------------- */
+/* كشف تدريجي للشرح مع احترام إعداد تقليل الحركة في الجهاز. */
 function useReveal(text: string, enabled = true) {
   const words = useMemo(() => text.split(/(\s+)/), [text])
   const total = words.length
@@ -30,24 +52,71 @@ function useReveal(text: string, enabled = true) {
       setShown(total)
       return
     }
+
     setShown(0)
-    let i = 0
-    // سرعات مختلفة: النصوص الطويلة تُكشف أسرع
-    const per = total > 220 ? 7 : total > 90 ? 4 : 2
-    const id = setInterval(() => {
-      i += per
-      setShown(i)
-      if (i >= total) clearInterval(id)
+    let index = 0
+    const step = total > 220 ? 7 : total > 90 ? 4 : 2
+    const timer = window.setInterval(() => {
+      index += step
+      setShown(index)
+      if (index >= total) window.clearInterval(timer)
     }, 26)
-    return () => clearInterval(id)
+
+    return () => window.clearInterval(timer)
   }, [text, total, enabled])
 
   return { out: words.slice(0, shown).join(""), done: shown >= total }
 }
 
-function prefersReduced() {
+function prefersReducedMotion() {
   if (typeof window === "undefined") return false
   return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+}
+
+function EvidenceHeading({
+  title,
+  count,
+  tone,
+  icon: Icon,
+}: {
+  title: string
+  count: number
+  tone: "blue" | "green" | "neutral"
+  icon: typeof BookOpen
+}) {
+  const colors = tone === "blue"
+    ? { ink: "#14529E", tint: "#EEF5FF", line: "#D8E4F4" }
+    : tone === "green"
+      ? { ink: "#18794E", tint: "#F1F9F3", line: "#D6E8DA" }
+      : { ink: "#0A2A33", tint: "#EEF6F6", line: "#C9DFE1" }
+
+  return (
+    <div className="mb-2.5 flex items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <span
+          className="relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
+          style={{ color: colors.ink, backgroundColor: colors.tint }}
+        >
+          <Icon size={16} strokeWidth={2} aria-hidden="true" />
+        </span>
+        <h4 className="truncate text-[13px] font-extrabold" style={{ color: colors.ink }}>
+          {title}
+        </h4>
+      </div>
+      {count > 1 && (
+        <span
+          className="shrink-0 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold tabular-nums"
+          style={{ color: colors.ink, borderColor: colors.line, backgroundColor: colors.tint }}
+        >
+          {count}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function copyText(value: string) {
+  return navigator.clipboard.writeText(value)
 }
 
 export default function ChatMessage({
@@ -56,272 +125,388 @@ export default function ChatMessage({
   levelInfo,
   blueCards,
   purpleCards,
+  audioCard,
+  audioRequest,
   confidence,
-  metrics,
   status,
+  interactionType,
+  verificationStatus,
+  metrics,
+  onRetry,
+  retryDisabled = false,
 }: ChatMessageProps) {
   const [showSources, setShowSources] = useState(false)
   const [copiedNote, setCopiedNote] = useState(false)
   const [reduce, setReduce] = useState(false)
 
-  useEffect(() => setReduce(prefersReduced()), [])
+  useEffect(() => setReduce(prefersReducedMotion()), [])
 
-  const safeBlueCards = Array.isArray(blueCards) ? blueCards.filter((c) => c) : []
-  const safePurpleCards = Array.isArray(purpleCards) ? purpleCards.filter((c) => c) : []
-  const safeConfidence = Number(confidence) || 0
+  const safeBlueCards = Array.isArray(blueCards) ? blueCards.filter(Boolean) : []
+  const safePurpleCards = Array.isArray(purpleCards) ? purpleCards.filter(Boolean) : []
+  const safeConfidence = Math.max(0, Math.min(1, Number(confidence) || 0))
   const safeQuestion = question || ""
-  const mainExplanation = safePurpleCards[0]?.explanation || ""
-  const safeMetrics = metrics || {}
+  const mainExplanation = typeof safePurpleCards[0]?.explanation === "string"
+    ? safePurpleCards[0].explanation
+    : ""
   const safeLevel = level || "abstain"
-  const safeLevelInfo = levelInfo || { name: "عام" }
+  const safeLevelName = levelInfo?.name || "عام"
+  const isAudioInteraction = !!audioCard || !!audioRequest || interactionType === "quran_audio"
+  const isConversational = interactionType === "conversation"
+  const showEvidenceFooter = !isAudioInteraction && !isConversational && (safeBlueCards.length > 0 || (status !== "error" && safeConfidence > 0))
+  const { out, done } = useReveal(mainExplanation, !reduce && status !== "error")
 
-  const { out, done } = useReveal(mainExplanation, !reduce)
+  const quranCards = safeBlueCards.filter((card) => card.type === "quran")
+  const hadithCards = safeBlueCards.filter((card) => card.type === "hadith")
+  const otherCards = safeBlueCards.filter((card) => card.type !== "quran" && card.type !== "hadith")
 
-  const quranCards = safeBlueCards.filter((c) => c.type === "quran")
-  const hadithCards = safeBlueCards.filter((c) => c.type === "hadith")
-  const otherCards = safeBlueCards.filter((c) => c.type !== "quran" && c.type !== "hadith")
+  const statusMeta = status === "error"
+    ? {
+        label: "خطأ تقني",
+        detail: "لم يُصدر النظام حكماً أو امتناعاً عن السؤال",
+        tone: "#B4233F",
+        background: "#FFF1F2",
+        border: "#F4CDD4",
+        Icon: CircleX,
+      }
+    : verificationStatus === "confirmed"
+      ? {
+          label: "تطابق حرفي",
+          detail: "وُجدت الصياغة حرفياً في المرجع المعروض",
+          tone: "#087A5B",
+          background: "#ECF8F2",
+          border: "#CFE9DD",
+          Icon: CircleCheck,
+        }
+      : verificationStatus === "near_match"
+        ? {
+            label: "صياغة قريبة",
+            detail: "ليست مطابقة حرفية؛ النسبة غير مؤكدة",
+            tone: "#9A6700",
+            background: "#FFF8E6",
+            border: "#F0E0B9",
+            Icon: CircleAlert,
+          }
+        : verificationStatus === "not_found"
+          ? {
+              label: "لم يُعثر على تطابق",
+              detail: "عدم العثور لا يثبت بطلان النسبة",
+              tone: "#9A6700",
+              background: "#FFF8E6",
+              border: "#F0E0B9",
+              Icon: CircleAlert,
+            }
+          : verificationStatus === "needs_quote"
+            ? {
+                label: "أرسل نص الاقتباس",
+                detail: "يلزم نص محدد للتحقق",
+                tone: "#9A6700",
+                background: "#FFF8E6",
+                border: "#F0E0B9",
+                Icon: CircleAlert,
+              }
+            : isConversational
+              ? {
+                  label: "محادثة",
+                  detail: "تبادل حواري بلا استشهادات",
+                  tone: "#0A8F94",
+                  background: "#EAF7F5",
+                  border: "#C9DFE1",
+                  Icon: Sparkles,
+                }
+              : isAudioInteraction
+                ? {
+                    label: "تلاوة قرآنية",
+                    detail: "تشغيل المقطع أو تنزيل آياته",
+                    tone: "#0A8F94",
+                    background: "#EAF7F5",
+                    border: "#C9DFE1",
+                    Icon: Music2,
+                  }
+                : status === "ok"
+                  ? {
+                      label: "إجابة موثّقة",
+                      detail: "شرح مدعوم بمصادر معتمدة",
+                      tone: "#087A5B",
+                      background: "#ECF8F2",
+                      border: "#CFE9DD",
+                      Icon: CircleCheck,
+                    }
+                  : status === "abstain"
+                    ? {
+                        label: "امتناع",
+                        detail: "لا تتوفر مرجعية كافية للإجابة",
+                        tone: "#9A6700",
+                        background: "#FFF8E6",
+                        border: "#F0E0B9",
+                        Icon: CircleAlert,
+                      }
+                    : {
+                        label: "تعذّر التحقق",
+                        detail: "حُجبت الإجابة لعدم كفاية التحقق",
+                        tone: "#B4233F",
+                        background: "#FFF1F2",
+                        border: "#F4CDD4",
+                        Icon: CircleX,
+                      }
 
-  const statusMeta =
-    status === "ok"
-      ? { badge: "✓ موثق", tone: "#059669", bg: "#ECFDF5", line: "linear-gradient(90deg,#19D6C4 0%,#0A8F94 50%,#14529E 100%)" }
-      : status === "abstain"
-      ? { badge: "⊘ امتناع", tone: "#B45309", bg: "#FFFBEB", line: "linear-gradient(90deg,#E0B450,#B45309)" }
-      : { badge: "⛔ حجب", tone: "#BE123C", bg: "#FFF1F2", line: "linear-gradient(90deg,#E0B450,#E11D48)" }
+  const StatusIcon = statusMeta.Icon
+  const fallbackLabel = metrics?.fallbackUsed
+    ? `تم التبديل تلقائياً إلى ${metrics.usedProviderName || metrics.usedProviderId || "النموذج الاحتياطي"} · ${metrics.usedModelName || metrics.usedModelId || ""}`.trim()
+    : statusMeta.detail
 
-  const copyNote = async () => {
+  const copyExplanation = async () => {
     try {
-      await navigator.clipboard.writeText(mainExplanation)
+      await copyText(mainExplanation)
     } catch {
-      /* تجاهل */
+      const textarea = document.createElement("textarea")
+      textarea.value = mainExplanation
+      textarea.setAttribute("readonly", "")
+      textarea.style.position = "fixed"
+      textarea.style.opacity = "0"
+      document.body.appendChild(textarea)
+      textarea.select()
+      try {
+        document.execCommand("copy")
+      } catch {
+        // تجاهل فشل النسخ في المتصفحات التي تمنعه.
+      }
+      document.body.removeChild(textarea)
     }
     setCopiedNote(true)
-    setTimeout(() => setCopiedNote(false), 1800)
+    window.setTimeout(() => setCopiedNote(false), 1800)
   }
 
   return (
     <>
-      <div className="w-full max-w-[800px] mx-auto">
-        {/* فقاعة المستخدم */}
-        <div className="flex justify-end mb-4">
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ type: "spring", stiffness: 320, damping: 26 }}
-            className="max-w-[85%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]"
-          >
-            <div className="text-[14px] font-medium leading-relaxed">{safeQuestion}</div>
-            <div className="text-[10px] opacity-60 mt-2 flex items-center gap-2 flex-wrap">
-              <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
-                مستوى {safeLevel} • {safeLevelInfo.name || ""}
-              </span>
-              {safeMetrics.responseTime !== undefined && <span className="tabular-nums">{safeMetrics.responseTime}ms</span>}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* فقاعة تِبْيَان */}
-        <motion.div
-          initial={{ opacity: 0, y: 16, scale: 0.99 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 0.06, type: "spring", stiffness: 240, damping: 26 }}
-          className="bg-white rounded-[18px] rounded-bl-[6px] border border-[#C9DFE1]/60 shadow-[0_10px_30px_rgba(10,42,51,0.07)] overflow-hidden"
+      <div className="mx-auto w-full max-w-[800px]">
+        <motion.article
+          initial={reduce ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: "easeOut" }}
+          className="overflow-hidden rounded-2xl border border-[#DCE7E8] bg-white shadow-[0_8px_28px_rgba(10,42,51,0.055)]"
         >
-          <div className="h-[3px] w-full" style={{ background: statusMeta.line }} />
+          <div
+            className="h-[3px] w-full"
+            style={{
+              background: status === "ok"
+                ? "linear-gradient(90deg,#19D6C4 0%,#0A8F94 48%,#14529E 100%)"
+                : status === "abstain"
+                  ? "linear-gradient(90deg,#FFF0B8 0%,#E0B450 100%)"
+                  : status === "error"
+                    ? "linear-gradient(90deg,#F9A8B4 0%,#B4233F 100%)"
+                    : "linear-gradient(90deg,#F4CDD4 0%,#B4233F 100%)",
+            }}
+          />
 
-          <div className="p-5">
-            {/* ترويسة */}
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="relative w-8 h-8 shrink-0">
-                <motion.span
-                  className="absolute inset-0 rounded-[10px]"
-                  style={{ background: "linear-gradient(135deg,#19D6C4,#0A8F94)" }}
-                  animate={reduce ? {} : { opacity: [0.35, 0.7, 0.35], scale: [1, 1.12, 1] }}
-                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <div
-                  className="absolute inset-0 rounded-[10px] flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg,#19D6C4,#0A8F94)" }}
+          <div className="p-4 sm:p-5">
+            <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#19D6C4] to-[#0A8F94] p-2 shadow-sm">
+                  <img src="/tibyan-logo-white.svg" alt="" aria-hidden="true" className="h-full w-full object-contain" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-[14px] font-extrabold leading-tight text-[#0A2A33]">تِبْيَان</h3>
+                  <p className={`mt-1 truncate text-[11.5px] ${status === "error" ? "text-rose-700" : "text-[#647C83]"}`}>{fallbackLabel}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11.5px] font-bold"
+                  style={{ color: statusMeta.tone, backgroundColor: statusMeta.background, borderColor: statusMeta.border }}
                 >
-                  <img src="/tibyan-logo-white.svg" alt="" className="w-5 h-5 object-contain" />
-                </div>
+                  <StatusIcon size={14} strokeWidth={2.2} aria-hidden="true" />
+                  {statusMeta.label}
+                </span>
+                {!isConversational && status !== "error" && (
+                  <span
+                    title={safeLevelName}
+                    className="inline-flex items-center gap-1 rounded-full border border-[#DCE7E8] bg-[#F8FAFA] px-2.5 py-1.5 text-[11px] font-semibold text-[#536B73]"
+                  >
+                    مستوى {safeLevel} · {safeLevelName}
+                  </span>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-extrabold text-[#0A2A33]">تِبْيَان</div>
-                <div className="text-[10px] text-[#4B6A72] flex items-center gap-1.5">
-                  {!done && !reduce ? (
-                    <span className="inline-flex gap-[3px] items-end h-2.5">
-                      {[0, 1, 2].map((i) => (
-                        <span
-                          key={i}
-                          className="tb-dot w-[3px] h-[3px] rounded-full bg-[#0A8F94]"
-                          style={{ animationDelay: `${i * 0.16}s` }}
-                        />
-                      ))}
-                    </span>
-                  ) : (
-                    <span
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: statusMeta.tone }}
-                    />
-                  )}
-                  {status === "ok"
-                    ? "إجابة موثقة • صفر اختلاق"
-                    : status === "abstain"
-                    ? "امتناع — لا توجد مرجعية كافية"
-                    : "محجوب — حارس صفر اختلاق"}
-                </div>
-              </div>
-              <motion.span
-                initial={{ scale: 0.85, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="hidden sm:inline-flex px-2 py-1 rounded-full text-[10px] font-bold border"
-                style={{ background: statusMeta.bg, color: statusMeta.tone, borderColor: `${statusMeta.tone}33` }}
-              >
-                {statusMeta.badge}
-              </motion.span>
-            </div>
+            </header>
 
-            {/* الشرح — يُكشف تدريجياً */}
             {mainExplanation && (
-              <div className="relative mb-4">
-                <div
-                  className="body-font text-[14px] leading-[1.9] text-[#0A2A33]"
-                  style={{ whiteSpace: "pre-wrap" }}
-                >
-                  {out}
-                  {!done && !reduce && <span className="tb-caret" aria-hidden />}
+              <motion.section
+                initial={reduce ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.04, duration: 0.28 }}
+                className={`mt-5 overflow-hidden rounded-2xl border ${status === "error" ? "border-rose-200 bg-rose-50/80" : "border-[#E5DAFA] bg-[#FCFAFF]"}`}
+                aria-label={status === "error" ? "خطأ في إنشاء الرد" : "شرح الإجابة"}
+              >
+                <div className={`flex items-center gap-2 border-b px-3.5 py-2.5 sm:px-4 ${status === "error" ? "border-rose-200 bg-rose-50" : "border-[#EAE2F8]"}`}>
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${status === "error" ? "bg-rose-100 text-rose-700" : "bg-[#F1EAFC] text-[#7B4FD6]"}`}>
+                    {status === "error" ? <CircleX size={15} aria-hidden="true" /> : <Sparkles size={15} aria-hidden="true" />}
+                  </span>
+                  <h4 className={`text-[12.5px] font-extrabold ${status === "error" ? "text-rose-800" : "text-[#6840B5]"}`}>
+                    {status === "error" ? "تعذّر توليد الرد" : "الشرح"}
+                  </h4>
                 </div>
 
-                <AnimatePresence>
+                <div className="px-3.5 py-3 sm:px-4 sm:py-3.5">
+                  <p
+                    dir="auto"
+                    aria-live="polite"
+                    className={`body-font whitespace-pre-wrap text-[14.5px] leading-[1.9] sm:text-[15px] ${status === "error" ? "text-rose-950" : "text-[#302847]"}`}
+                  >
+                    {out}
+                    {!done && !reduce && <span className="tb-caret" aria-hidden="true" />}
+                  </p>
+
                   {done && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="flex items-center gap-1.5 mt-2.5"
-                    >
+                    <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
                       <button
                         type="button"
-                        onClick={copyNote}
-                        className="px-2 py-1 rounded-full bg-[#EEF6F6] border border-[#C9DFE1] text-[10px] font-bold text-[#4B6A72] hover:text-[#0A8F94] hover:border-[#0A8F94]/40 transition-colors"
+                        onClick={copyExplanation}
+                        className={`inline-flex h-8 items-center gap-1.5 rounded-lg border bg-white px-2.5 text-[11.5px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 ${status === "error" ? "border-rose-200 text-rose-800 hover:border-rose-400 hover:bg-rose-50 focus-visible:ring-rose-300" : "border-[#E5DAFA] text-[#6840B5] hover:border-[#7B4FD6]/50 hover:bg-[#F8F5FF] focus-visible:ring-[#7B4FD6]/30"}`}
                       >
-                        {copiedNote ? "✓ نُسخ الشرح" : "⧉ نسخ الشرح"}
+                        {copiedNote ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                        {copiedNote ? "نُسخت الرسالة" : "نسخ الرسالة"}
                       </button>
-                      <span className="text-[9.5px] text-[#8FB0B6]">
-                        {safePurpleCards[0]?.llm ? String(safePurpleCards[0].llm).slice(0, 34) : "شرح منظَّم من المصادر"}
-                      </span>
-                    </motion.div>
+                      {onRetry && (
+                        <button
+                          type="button"
+                          onClick={onRetry}
+                          disabled={retryDisabled}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#C9DFE1] bg-white px-2.5 text-[11.5px] font-semibold text-[#0A8F94] transition-colors hover:border-[#0A8F94]/50 hover:bg-[#EFF9F7] disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A8F94]/30"
+                        >
+                          {retryDisabled ? <LoaderCircle size={14} className="animate-spin" aria-hidden="true" /> : <RefreshCw size={13} aria-hidden="true" />}
+                          {status === "error" ? "إعادة المحاولة" : "إعادة التوليد"}
+                        </button>
+                      )}
+                    </div>
                   )}
-                </AnimatePresence>
-              </div>
+                </div>
+              </motion.section>
             )}
 
-            {/* الآيات */}
+            {audioCard && <QuranAudioPlayer card={audioCard} />}
+            {audioRequest && !audioCard && <QuranAudioRequestCard initialRequest={audioRequest} />}
+
             {quranCards.length > 0 && (
               <motion.section
-                initial={{ opacity: 0, y: 8 }}
+                initial={reduce ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mb-4"
+                transition={{ delay: 0.08, duration: 0.3 }}
+                className="mt-5"
+                aria-label="آيات من القرآن الكريم"
               >
-                <div className="text-[11px] font-bold text-[#14529E] mb-2 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-[6px] bg-[#14529E] text-white flex items-center justify-center text-[10px]">﴿</span>
-                  آيات قرآنية موثقة
-                  <span className="text-[9px] font-bold text-[#8FB0B6]">({quranCards.length})</span>
+                <EvidenceHeading title="القرآن الكريم" count={quranCards.length} tone="blue" icon={BookOpen} />
+                <div className="space-y-2.5">
+                  {quranCards.map((card, index) => (
+                    <VerifiedTextCard
+                      key={card.id || index}
+                      kind="quran"
+                      text={card.text || ""}
+                      source={card.source || ""}
+                      sourceUrl={card.source_url || card.sourceUrl}
+                      surah={card.surah}
+                      ayah={card.ayah}
+                      index={index}
+                      ornament={index === 0}
+                    />
+                  ))}
                 </div>
-                {quranCards.map((card, i) => (
-                  <QuranBracket key={card.id || i} {...card} index={i} />
-                ))}
               </motion.section>
             )}
 
-            {/* الأحاديث */}
             {hadithCards.length > 0 && (
               <motion.section
-                initial={{ opacity: 0, y: 8 }}
+                initial={reduce ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.16 }}
-                className="mb-4"
+                transition={{ delay: 0.12, duration: 0.3 }}
+                className="mt-5"
+                aria-label="أحاديث نبوية"
               >
-                <div className="text-[11px] font-bold text-[#0A8F94] mb-2 flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-[6px] bg-[#0A8F94] text-white flex items-center justify-center text-[10px]">ﷺ</span>
-                  أحاديث شريفة موثقة
-                  <span className="text-[9px] font-bold text-[#8FB0B6]">({hadithCards.length})</span>
+                <EvidenceHeading title="أحاديث نبوية" count={hadithCards.length} tone="green" icon={Quote} />
+                <div className="space-y-2.5">
+                  {hadithCards.map((card, index) => {
+                    const fullText = card.text || ""
+                    const previewText = shortenHadithForChat(fullText)
+                    return (
+                      <VerifiedTextCard
+                        key={card.id || index}
+                        kind="hadith"
+                        text={fullText}
+                        displayText={previewText}
+                        onShowFullText={() => setShowSources(true)}
+                        source={card.source || ""}
+                        sourceUrl={card.source_url || card.sourceUrl}
+                        grade={card.grade}
+                        index={index}
+                      />
+                    )
+                  })}
                 </div>
-                {hadithCards.map((card, i) => (
-                  <QuranBracket key={card.id || i} {...card} index={i} />
-                ))}
               </motion.section>
             )}
 
-            {/* مصادر إضافية */}
             {otherCards.length > 0 && (
               <motion.section
-                initial={{ opacity: 0, y: 8 }}
+                initial={reduce ? false : { opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.22 }}
-                className="mb-4 p-3 rounded-[12px] bg-[#EEF6F6]/60 border border-[#C9DFE1]/40"
+                transition={{ delay: 0.16, duration: 0.3 }}
+                className="mt-5"
+                aria-label="مراجع إضافية"
               >
-                <div className="text-[11px] font-bold text-[#0A2A33] mb-2">📚 مصادر إضافية موثقة</div>
-                {otherCards.map((card, i) => (
-                  <motion.div
-                    key={card.id || i}
-                    initial={{ opacity: 0, x: 8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.24 + i * 0.05 }}
-                    className="body-font text-[13px] leading-[1.75] text-[#0A2A33] mb-2 p-2.5 rounded-[8px] bg-white border border-[#C9DFE1]/30"
-                  >
-                    {card.text || ""}
-                    <div className="text-[10px] text-[#8FB0B6] mt-1">{card.source || ""}</div>
-                  </motion.div>
-                ))}
+                <EvidenceHeading title="مراجع أخرى" count={otherCards.length} tone="neutral" icon={BookOpen} />
+                <div className="space-y-2">
+                  {otherCards.map((card, index) => (
+                    <article
+                      key={card.id || index}
+                      className="rounded-xl border border-[#E1E9E9] bg-[#FAFCFC] px-3.5 py-3"
+                    >
+                      <p dir="auto" className="body-font whitespace-pre-wrap text-[13.5px] leading-[1.8] text-[#263D43]">
+                        {card.text || ""}
+                      </p>
+                      {(card.source || card.source_url || card.sourceUrl) && (
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[#E6EEEE] pt-2">
+                          {card.source && <span className="text-[11px] text-[#647C83]">{card.source}</span>}
+                          {(card.source_url || card.sourceUrl) && (
+                            <a
+                              href={card.source_url || card.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0A8F94] hover:underline hover:underline-offset-4"
+                            >
+                              تحقق من المصدر <ExternalLink size={12} aria-hidden="true" />
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
               </motion.section>
             )}
 
-            {/* التذييل */}
-            <div className="mt-5 pt-4 border-t border-[#C9DFE1]/40 flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <motion.button
-                  type="button"
-                  onClick={() => setShowSources(true)}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#0A2A33] text-white text-[12px] font-bold hover:bg-black hover:shadow-[0_6px_16px_rgba(0,0,0,0.18)] transition-all group"
-                >
-                  <span className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center text-[11px] group-hover:bg-white/25">
-                    📚
-                  </span>
-                  عرض المصادر ({safeBlueCards.length})
-                  <svg
-                    width="12" height="12" viewBox="0 0 12 12" fill="none"
-                    className="opacity-60 group-hover:opacity-100 transition-all group-hover:-translate-x-0.5"
-                    aria-hidden
+            {showEvidenceFooter && (
+              <footer className="mt-5 flex items-center justify-between gap-3 border-t border-[#E6EEEE] pt-4">
+                {safeBlueCards.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowSources(true)}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#0A2A33] px-3.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-[#05495A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A8F94]/40 focus-visible:ring-offset-2"
                   >
-                    <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </motion.button>
-
-                <div className="hidden md:flex items-center gap-1.5 text-[10px] text-[#8FB0B6]">
-                  <span className="w-px h-4 bg-[#C9DFE1]" />
-                  <span className="font-mono">{safeMetrics.retrievalSource || "hybrid"}</span>
-                  <span>•</span>
-                  <span className="tabular-nums">{safeBlueCards.length} مصادر</span>
-                </div>
-              </div>
-
-              <CircularProgress value={safeConfidence * 100} size={48} />
-            </div>
-
-            {/* مفتاح الألوان */}
-            <div className="mt-4 flex items-center justify-center gap-3 text-[9px] text-[#8FB0B6] flex-wrap">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#14529E]" />أزرق = نص حرفي 100%</span>
-              <span className="w-px h-3 bg-[#C9DFE1]" />
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#7B4FD6]" />بنفسجي = شرح AI</span>
-              <span className="w-px h-3 bg-[#C9DFE1]" />
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] rotate-45 bg-[#E0B450]" />ذهبي = نور المعرفة</span>
-            </div>
+                    <BookOpen size={15} aria-hidden="true" />
+                    تفاصيل المصادر
+                    <span className="rounded-full bg-white/15 px-1.5 py-0.5 text-[10.5px] tabular-nums">
+                      {safeBlueCards.length}
+                    </span>
+                  </button>
+                ) : <span />}
+                {safeConfidence > 0 && status !== "error" && (
+                  <div className="shrink-0">
+                    <CircularProgress value={safeConfidence * 100} size={50} />
+                  </div>
+                )}
+              </footer>
+            )}
           </div>
-        </motion.div>
+        </motion.article>
       </div>
 
       <SourcesModal

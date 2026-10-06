@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { AccountProvider } from '../components/AccountProvider'
 
 export const metadata: Metadata = {
-  title: 'تِبْيَان | Tibyan - محرك الحوار المعرفي الموثق',
-  description: 'منصة تِبْيَان - محرك الحوار المعرفي والاستدلال الشرعي الموثق - هوية بصرية حقيقية: علامة صح ✓ = موثوقية، كتاب مفتوح = قرآن، نقطتان ذهبيتان = تاء تِبْيَان - تحدي باذل 2026 - ألوان #19D6C4 #0A8F94 #14529E #E0B450 - مع Gemini Flash Lite مجاني',
+  title: 'تِبْيَان | Tibyan - نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ',
+  description: 'تِبْيَان: نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ. أداة مدعومة بالذكاء الاصطناعي وتستند إجاباتها إلى المصادر المعتمدة.',
   keywords: ['تِبْيَان', 'Tibyan', 'باذل', 'الحوار المعرفي', 'RAG', 'القرآن', 'الحديث', 'بينات', 'الجمهرة', 'هوية بصرية', 'Gemini Flash Lite'],
   icons: {
     icon: [
@@ -31,7 +32,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon-180.png" />
         <meta name="theme-color" content="#0A8F94" />
       </head>
-      <body>{children}</body>
+      <body><AccountProvider>{children}</AccountProvider></body>
     </html>
   )
 }

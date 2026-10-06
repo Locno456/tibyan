@@ -29,9 +29,9 @@ export default function PersonaSelector({ selected, onSelect }: PersonaSelectorP
   return (
     <div className="w-full">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#19D6C4] to-[#0A8F94] flex items-center justify-center text-white text-[11px]">👥</div>
-        <span className="text-[12px] font-bold text-[#0A2A33]" style={{ fontFamily: 'Tajawal, sans-serif' }}>خلفية السائل</span>
-        <span className="text-[10px] text-[#8FB0B6] mr-1">لملاءمة الإجابة • ابتكار 15%</span>
+        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#19D6C4] to-[#0A8F94] flex items-center justify-center text-white text-[12.5px]">👥</div>
+        <span className="text-[13px] font-bold text-[#0A2A33]" style={{ fontFamily: 'Tajawal, sans-serif' }}>خلفية السائل</span>
+        <span className="text-[11.5px] text-[#8FB0B6] mr-1">لملاءمة الإجابة • ابتكار 15%</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -41,7 +41,7 @@ export default function PersonaSelector({ selected, onSelect }: PersonaSelectorP
             <motion.button
               key={persona.id}
               onClick={() => onSelect(persona.id)}
-              className={`relative p-3 rounded-[14px] border text-right transition-all duration-200 text-[11px] group`}
+              className={`relative p-3 rounded-[14px] border text-right transition-all duration-200 text-[12.5px] group`}
               style={{
                 background: isSelected ? `linear-gradient(135deg, ${persona.bg} 0%, white 100%)` : 'rgba(255,255,255,0.7)',
                 borderColor: isSelected ? `${persona.color}30` : 'rgba(37,99,235,0.08)',
@@ -62,16 +62,16 @@ export default function PersonaSelector({ selected, onSelect }: PersonaSelectorP
 
               <div className="relative flex items-start gap-2">
                 <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[13px] shrink-0"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[14px] shrink-0"
                   style={{ background: persona.bg, border: `1px solid ${persona.color}15` }}
                 >
                   {persona.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-[11px] leading-tight" style={{ color: isSelected ? persona.color : '#334155' }}>
+                  <div className="font-bold text-[12.5px] leading-tight" style={{ color: isSelected ? persona.color : '#334155' }}>
                     {persona.label}
                   </div>
-                  <div className="text-[9px] text-slate-500 leading-tight mt-0.5 line-clamp-2">
+                  <div className="text-[10.5px] text-slate-500 leading-tight mt-0.5 line-clamp-2">
                     {persona.desc}
                   </div>
                 </div>

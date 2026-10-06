@@ -1,17 +1,17 @@
 {
   "summary": {
-    "generated_at": "2026-10-04T10:56:33.805Z",
-    "runs": 5,
+    "generated_at": "2026-10-06T13:22:32.515Z",
+    "runs": 1,
     "total_cases": 12,
-    "level_routing_correct": 10,
-    "level_routing_rate": 83.3,
-    "expected_sources_hit": 13,
+    "level_routing_correct": 11,
+    "level_routing_rate": 91.7,
+    "expected_sources_hit": 10,
     "expected_sources_total": 18,
-    "source_recall_rate": 72.2,
+    "source_recall_rate": 55.6,
     "guard_behaviour_correct": 12,
     "guard_probes_passed": 3,
     "guard_probes_total": 4,
-    "avg_latency_ms": 0.42
+    "avg_latency_ms": 124.5
   },
   "guardProbes": [
     {
@@ -59,23 +59,23 @@
       "docs_returned": 5,
       "retrieved_ids": [
         "shubha_kaaba_001",
-        "shubha_takhalluf_001",
-        "fiqh_khilaf_001",
-        "shubha_quran_authorship_001",
-        "shubha_sword_001"
+        "quran-11-109",
+        "quran-37-22",
+        "quran-34-40",
+        "quran-2-144"
       ],
       "sources_expected": 2,
       "sources_found": 1,
       "sources_missing": [
         "quran_002_144"
       ],
-      "confidence": 1,
-      "retrieval_source": "vector_primary",
+      "confidence": 0.99,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 164
     },
     {
       "id": "02",
@@ -88,23 +88,23 @@
       "docs_returned": 5,
       "retrieved_ids": [
         "shubha_quran_authorship_001",
-        "fiqh_ijma_khilaf_001",
-        "hadith_arkan_islam",
-        "shubha_sword_001",
-        "sira_basic_001"
+        "hadith-330110",
+        "hadith-317180",
+        "hadith-372340",
+        "hadith-318810"
       ],
       "sources_expected": 2,
       "sources_found": 1,
       "sources_missing": [
         "quran_002_255"
       ],
-      "confidence": 1,
-      "retrieval_source": "hybrid_mock",
+      "confidence": 0.99,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 1
+      "ms": 135
     },
     {
       "id": "03",
@@ -117,48 +117,48 @@
       "docs_returned": 5,
       "retrieved_ids": [
         "shubha_sword_001",
-        "shubha_takhalluf_001",
         "hadith_arkan_islam",
-        "fiqh_ijma_khilaf_001",
-        "shubha_quran_authorship_001"
+        "hadith-301200",
+        "shubha_takhalluf_001",
+        "hadith-301080"
       ],
       "sources_expected": 1,
       "sources_found": 1,
       "sources_missing": [],
-      "confidence": 1,
-      "retrieval_source": "vector_primary",
+      "confidence": 0.97,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 123
     },
     {
       "id": "04",
       "question": "لماذا أحكام مختلفة بين العلماء؟",
       "persona": "general",
       "level_expected": "C",
-      "level_detected": "B",
-      "level_ok": false,
-      "intent": "general_explain",
+      "level_detected": "C",
+      "level_ok": true,
+      "intent": "khilaf",
       "docs_returned": 5,
       "retrieved_ids": [
+        "quran-20-110",
+        "quran-65-12",
         "fiqh_khilaf_001",
-        "shubha_kaaba_001",
-        "shubha_quran_authorship_001",
-        "shubha_sword_001",
-        "shubha_takhalluf_001"
+        "quran-7-89",
+        "hadith-370660"
       ],
       "sources_expected": 1,
       "sources_found": 1,
       "sources_missing": [],
-      "confidence": 0.674,
-      "retrieval_source": "vector_primary",
+      "confidence": 0.461,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 1
+      "ms": 106
     },
     {
       "id": "05",
@@ -174,7 +174,7 @@
       "sources_found": 0,
       "sources_missing": [],
       "confidence": 0,
-      "retrieval_source": "hybrid_mock",
+      "retrieval_source": "abstain",
       "guard_status": "blocked",
       "guard_action": "refer",
       "guard_expected": "blocked",
@@ -191,24 +191,24 @@
       "intent": "original_info",
       "docs_returned": 5,
       "retrieved_ids": [
-        "hadith_arkan_iman",
-        "shubha_quran_authorship_001",
-        "shubha_kaaba_001",
-        "fiqh_khilaf_001",
-        "sira_basic_001"
+        "hadith-350840",
+        "hadith-317531",
+        "hadith-303180",
+        "hadith-315260",
+        "hadith-140480"
       ],
       "sources_expected": 1,
       "sources_found": 0,
       "sources_missing": [
         "hadith_bukhari_tawhid"
       ],
-      "confidence": 1,
-      "retrieval_source": "hybrid_mock",
+      "confidence": 0.598,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 1
+      "ms": 101
     },
     {
       "id": "07",
@@ -222,9 +222,9 @@
       "retrieved_ids": [
         "jamhara_tawhid_en",
         "concept_tawhid_def",
-        "shubha_kaaba_001",
-        "fiqh_khilaf_001",
-        "fiqh_ijma_khilaf_001"
+        "hadith-303360",
+        "hadith-113210",
+        "hadith-126580"
       ],
       "sources_expected": 3,
       "sources_found": 1,
@@ -232,13 +232,13 @@
         "quran_002_255",
         "quran_112_001"
       ],
-      "confidence": 0.72,
-      "retrieval_source": "hybrid_mock",
+      "confidence": 0.762,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 131
     },
     {
       "id": "08",
@@ -252,20 +252,20 @@
       "retrieved_ids": [
         "jamhara_tawhid_en",
         "concept_tawhid_def",
-        "hadith_bukhari_tawhid",
-        "jamhara_ibada_en",
-        "shubha_kaaba_001"
+        "quran-40-44",
+        "quran-2-207",
+        "quran-4-135"
       ],
       "sources_expected": 2,
       "sources_found": 2,
       "sources_missing": [],
-      "confidence": 1,
-      "retrieval_source": "hybrid_mock",
+      "confidence": 0.882,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 1
+      "ms": 149
     },
     {
       "id": "09",
@@ -277,22 +277,22 @@
       "intent": "general_explain",
       "docs_returned": 5,
       "retrieved_ids": [
+        "hadith-110840",
+        "quran-26-152",
+        "quran-27-48",
         "shubha_takhalluf_001",
-        "hadith_arkan_islam",
-        "shubha_sword_001",
-        "fiqh_khilaf_001",
-        "fiqh_ijma_khilaf_001"
+        "hadith-181120"
       ],
       "sources_expected": 1,
       "sources_found": 1,
       "sources_missing": [],
-      "confidence": 1,
-      "retrieval_source": "hybrid_mock",
+      "confidence": 0.497,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 160
     },
     {
       "id": "10",
@@ -304,22 +304,24 @@
       "intent": "khilaf",
       "docs_returned": 5,
       "retrieved_ids": [
+        "quran-16-76",
         "fiqh_ijma_khilaf_001",
-        "shubha_sword_001",
-        "concept_ibada_def",
-        "fiqh_khilaf_001",
-        "shubha_quran_authorship_001"
+        "quran-13-16",
+        "quran-39-62",
+        "quran-27-91"
       ],
       "sources_expected": 2,
-      "sources_found": 2,
-      "sources_missing": [],
-      "confidence": 1,
-      "retrieval_source": "hybrid_mock",
+      "sources_found": 1,
+      "sources_missing": [
+        "fiqh_khilaf_001"
+      ],
+      "confidence": 0.622,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 114
     },
     {
       "id": "11",
@@ -331,22 +333,24 @@
       "intent": "original_info",
       "docs_returned": 5,
       "retrieved_ids": [
-        "quran_003_085",
-        "quran_002_144",
-        "quran_002_255",
-        "shubha_quran_authorship_001",
-        "shubha_sword_001"
+        "quran-3-85",
+        "hadith-133340",
+        "hadith-338920",
+        "hadith-139970",
+        "hadith-163850"
       ],
       "sources_expected": 1,
-      "sources_found": 1,
-      "sources_missing": [],
-      "confidence": 1,
-      "retrieval_source": "bm25_primary",
+      "sources_found": 0,
+      "sources_missing": [
+        "quran_003_085"
+      ],
+      "confidence": 0.672,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 1
+      "ms": 172
     },
     {
       "id": "12",
@@ -359,21 +363,23 @@
       "docs_returned": 5,
       "retrieved_ids": [
         "concept_karma_tawtin",
-        "fiqh_ijma_khilaf_001",
-        "shubha_kaaba_001",
-        "jamhara_tawhid_en",
-        "fiqh_khilaf_001"
+        "hadith-181120",
+        "hadith-113210",
+        "hadith-100500",
+        "hadith-174640"
       ],
       "sources_expected": 2,
-      "sources_found": 2,
-      "sources_missing": [],
-      "confidence": 0.912,
-      "retrieval_source": "hybrid_mock",
+      "sources_found": 1,
+      "sources_missing": [
+        "jamhara_tawhid_en"
+      ],
+      "confidence": 0.702,
+      "retrieval_source": "hybrid_bm25_rrf",
       "guard_status": "ok",
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 0
+      "ms": 140
     }
   ]
 }

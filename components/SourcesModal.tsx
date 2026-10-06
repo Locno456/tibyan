@@ -1,6 +1,7 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect } from "react"
+import { buildSourceUrl, sourceDomain } from "../lib/sourceLinks"
 
 interface SourceDetail {
   id: string
@@ -11,7 +12,7 @@ interface SourceDetail {
   type: string
   surah?: number
   ayah?: number
-  confidence: number
+  confidence?: number
   bm25_score?: number
   vector_score?: number
 }
@@ -22,6 +23,22 @@ interface SourcesModalProps {
   sources: SourceDetail[]
   question: string
   confidence: number
+}
+
+function presentSacredText(text: string, type: string) {
+  if (type === "quran") {
+    return text.startsWith("﴿") && text.endsWith("﴾") ? text : `﴿${text}﴾`
+  }
+  if (type === "hadith") {
+    return text.startsWith("«") && text.endsWith("»") ? text : `«${text}»`
+  }
+  return text
+}
+
+function getSurahReference(source: string, surah?: number, ayah?: number) {
+  const match = source.match(/سورة\s+(.+?)\s*-\s*(?:الآية|آيه|آية)\s*\d+/)
+  const name = match?.[1]?.trim() || (surah ? String(surah) : "")
+  return name && ayah ? `سورة ${name} · الآية ${ayah}` : ""
 }
 
 export default function SourcesModal({ isOpen, onClose, sources, question, confidence }: SourcesModalProps) {
@@ -53,14 +70,15 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
       shubha: "رد الشبهات - بينات",
       concept: "مفهوم شرعي",
       fiqh: "فقه",
-      sira: "سيرة"
+      sira: "سيرة",
+      mcp: "مصدر إسلامي عبر MCP"
     }
     return map[type] || type || "مصدر"
   }
 
   const getTypeColor = (type: string) => {
     if (type === "quran") return { bg: "#EEF6F6", border: "#C9DFE1", text: "#14529E", dot: "#14529E" }
-    if (type === "hadith") return { bg: "#EEF6F6", border: "#C9DFE1", text: "#0A8F94", dot: "#0A8F94" }
+    if (type === "hadith") return { bg: "#F3FAF5", border: "#D6E8DA", text: "#18794E", dot: "#18794E" }
     if (type === "shubha") return { bg: "#F5F3FF", border: "#DDD6FE", text: "#7B4FD6", dot: "#7B4FD6" }
     return { bg: "#EEF6F6", border: "#C9DFE1", text: "#0A2A33", dot: "#0A8F94" }
   }
@@ -87,7 +105,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
             <div
               role="dialog"
               aria-modal="true"
-              aria-label="تفاصيل المصادر الموثقة"
+              aria-label="تفاصيل المواد والمراجع"
               className="bg-white rounded-t-[20px] sm:rounded-[16px] w-full max-w-[700px] max-h-[85vh] sm:max-h-[80vh] flex flex-col shadow-[0_20px_60px_rgba(10,42,51,0.2)] border border-[#C9DFE1]/50 overflow-hidden"
             >
               {/* Header */}
@@ -95,27 +113,23 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2.5 mb-2">
-                      <div className="w-8 h-8 rounded-[10px] bg-[#0A8F94] text-white flex items-center justify-center text-[14px]">📚</div>
+                      <div className="w-8 h-8 rounded-[10px] bg-[#0A8F94] text-white flex items-center justify-center text-[15px]">📚</div>
                       <h3 className="text-[16px] font-extrabold text-[#0A2A33]" style={{ fontFamily: 'Tajawal, sans-serif' }}>
-                        تفاصيل المصادر الموثقة
+                        تفاصيل المواد والمراجع
                       </h3>
-                      <span className="px-2.5 py-1 rounded-full bg-white border border-[#C9DFE1] text-[11px] font-bold text-[#0A8F94]">
-                        {safeSources.length} مصادر
+                      <span className="px-2.5 py-1 rounded-full bg-white border border-[#C9DFE1] text-[12.5px] font-bold text-[#0A8F94]">
+                        {safeSources.length} مواد
                       </span>
                     </div>
-                    <p className="text-[12px] text-[#4B6A72] leading-relaxed">
+                    <p className="text-[13px] text-[#4B6A72] leading-relaxed">
                       السؤال: <span className="font-bold text-[#0A2A33]">{question || ""}</span>
                     </p>
                     <div className="mt-2 flex items-center gap-2">
-                      <span className="text-[11px] text-[#4B6A72]">موثوقية إجمالية:</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${
-                        safeConfidence >= 0.9 ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-                        safeConfidence >= 0.7 ? 'bg-[#EEF6F6] border-[#C9DFE1] text-[#0A8F94]' :
-                        'bg-amber-50 border-amber-100 text-amber-700'
-                      }`}>
-                        {(safeConfidence * 100).toFixed(0)}% - {safeConfidence >= 0.9 ? 'ممتاز' : safeConfidence >= 0.7 ? 'جيد' : 'متوسط'}
+                      <span className="text-[12.5px] text-[#4B6A72]">مؤشر استرجاع داخلي:</span>
+                      <span className="rounded-full border border-[#C9DFE1] bg-white px-2 py-0.5 text-[12.5px] font-bold text-[#4B6A72]">
+                        {(safeConfidence * 100).toFixed(0)}% · غير مُعاير
                       </span>
-                      <span className="text-[10px] text-[#8FB0B6]">• صفر اختلاق • استرجاع حرفي</span>
+                      <span className="text-[11.5px] text-[#8FB0B6]">لا يقيس صحة النص أو الاستدلال</span>
                     </div>
                   </div>
                   
@@ -132,19 +146,19 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
               {/* Sources list */}
               <div className="flex-1 overflow-y-auto tb-scroll p-4 space-y-3">
                 {safeSources.length === 0 ? (
-                  <div className="text-center py-8 text-[#8FB0B6] text-[13px]">
+                  <div className="text-center py-8 text-[#8FB0B6] text-[14px]">
                     لا يوجد مصادر - تم الامتناع لعدم وجود مرجعية كافية
                   </div>
                 ) : (
                   safeSources.map((src, idx) => {
                     if (!src) return null
                     const colors = getTypeColor(src.type || "")
-                    const domain = (() => {
-                      try {
-                        if (!src.source_url) return ""
-                        return src.source_url.replace('https://', '').split('/')[0]
-                      } catch { return "" }
-                    })()
+                    const link = src.source_url || buildSourceUrl(src)
+                    const domain = sourceDomain(link)
+                    const isQuran = src.type === "quran"
+                    const isHadith = src.type === "hadith"
+                    const sacredText = presentSacredText(src.text || "", src.type || "")
+                    const surahReference = getSurahReference(src.source || "", src.surah, src.ayah)
 
                     return (
                       <motion.div
@@ -155,50 +169,63 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                         className="rounded-[12px] border p-4 bg-white hover:shadow-[0_4px_12px_rgba(10,143,148,0.08)] transition-all"
                         style={{ borderColor: colors.border, background: `linear-gradient(135deg, white 0%, ${colors.bg} 100%)` }}
                       >
-                        <div className="flex items-center justify-between mb-2.5">
-                          <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-[8px] flex items-center justify-center text-white text-[10px] font-bold" style={{ background: colors.dot }}>
+                        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <span className="w-6 h-6 rounded-[8px] flex items-center justify-center text-white text-[11.5px] font-bold" style={{ background: colors.dot }}>
                               {idx + 1}
                             </span>
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border bg-white" style={{ borderColor: colors.border, color: colors.text }}>
+                            <span className="px-2.5 py-1 rounded-full text-[11.5px] font-bold border bg-white" style={{ borderColor: colors.border, color: colors.text }}>
                               {getTypeLabel(src.type)}
                             </span>
                             {src.grade && (
-                              <span className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[9px] font-bold">
+                              <span className="px-2 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10.5px] font-bold">
                                 {src.grade}
                               </span>
                             )}
+                            {isHadith && (
+                              <span className="rounded-full border border-[#D6E8DA] bg-[#F3FAF5] px-2 py-1 text-[10.5px] font-semibold text-[#18794E]">
+                                النص الكامل
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] px-2 py-1 rounded-full bg-white border border-[#C9DFE1] text-[#4B6A72]">
-                              ثقة {((Number(src.confidence) || 0) * 100).toFixed(0)}%
-                            </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {typeof src.confidence === "number" && Number.isFinite(src.confidence) && (
+                              <span className="text-[11.5px] px-2 py-1 rounded-full bg-white border border-[#C9DFE1] text-[#4B6A72]">
+                                ترتيب البحث {(src.confidence * 100).toFixed(0)}%
+                              </span>
+                            )}
                             {src.surah && src.ayah && (
-                              <span className="text-[10px] px-2 py-1 rounded-full bg-[#14529E] text-white font-bold">
-                                {src.surah}:{src.ayah}
+                              <span className="rounded-full bg-[#14529E] px-2 py-1 text-[11.5px] font-bold text-white">
+                                {surahReference || `سورة ${src.surah} · الآية ${src.ayah}`}
                               </span>
                             )}
                           </div>
                         </div>
 
                         <div
-                          className="text-[15px] leading-[1.8] p-3 rounded-[10px] bg-white border border-[#C9DFE1]/50 mb-2.5"
-                          style={{ fontFamily: src.type === 'quran' || src.type === 'hadith' ? 'Amiri, serif' : 'IBM Plex Sans Arabic, sans-serif', color: '#0A2A33' }}
+                          dir="rtl"
+                          className="mb-2.5 whitespace-pre-wrap rounded-[10px] border p-3 text-[16px] leading-[1.9]"
+                          style={{
+                            fontFamily: isQuran || isHadith ? "Amiri, serif" : "IBM Plex Sans Arabic, sans-serif",
+                            color: isQuran ? "#14529E" : isHadith ? "#18794E" : "#0A2A33",
+                            backgroundColor: isQuran ? "#F4F8FF" : isHadith ? "#F3FAF5" : "#FFFFFF",
+                            borderColor: isQuran ? "#D8E4F4" : isHadith ? "#D6E8DA" : "#C9DFE1",
+                          }}
                         >
-                          {src.text || ""}
+                          {sacredText}
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <div className="text-[11px] text-[#4B6A72] flex-1">
+                          <div className="text-[12.5px] text-[#4B6A72] flex-1">
                             <div className="font-bold text-[#0A2A33]">{src.source || ""}</div>
-                            {domain && <div className="text-[10px] text-[#8FB0B6] mt-0.5">{domain}</div>}
+                            {domain && <div className="text-[11.5px] text-[#8FB0B6] mt-0.5">{domain}</div>}
                           </div>
-                          {src.source_url && (
+                          {link && (
                             <a
-                              href={src.source_url}
+                              href={link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="shrink-0 px-3 py-1.5 rounded-full bg-[#0A8F94] text-white text-[11px] font-bold hover:bg-[#05495A] transition-colors flex items-center gap-1"
+                              className="shrink-0 px-3 py-1.5 rounded-full bg-[#0A8F94] text-white text-[12.5px] font-bold hover:bg-[#05495A] transition-colors flex items-center gap-1"
                             >
                               تحقق
                               <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -209,7 +236,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                         </div>
 
                         {(src.bm25_score !== undefined || src.vector_score !== undefined) && (
-                          <div className="mt-2 pt-2 border-t border-[#C9DFE1]/30 flex gap-3 text-[9px] text-[#8FB0B6]">
+                          <div className="mt-2 pt-2 border-t border-[#C9DFE1]/30 flex gap-3 text-[10.5px] text-[#8FB0B6]">
                             {src.bm25_score !== undefined && <span>BM25: {Number(src.bm25_score).toFixed(2)}</span>}
                             {src.vector_score !== undefined && <span>Vector: {Number(src.vector_score).toFixed(2)}</span>}
                             <span>• استرجاع هجين</span>
@@ -223,12 +250,12 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
 
               {/* Footer */}
               <div className="shrink-0 p-4 border-t border-[#C9DFE1]/50 bg-[#EEF6F6]/50">
-                <div className="flex items-center justify-between text-[10px] text-[#8FB0B6]">
+                <div className="flex items-center justify-between text-[11.5px] text-[#8FB0B6]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#0A8F94]" />
-                    8 مصادر معتمدة: quranpedia.net, dorar.net, shamela.ws, dawa.center, islamic-content.com
+                    المواد المحلية أو نتائج MCP المرفقة
                   </span>
-                  <span className="hidden sm:inline">صفر اختلاق • Guard فعال</span>
+                  <span className="hidden sm:inline">راجع المرجع؛ المؤشر لا يثبت صحة الاستدلال</span>
                 </div>
               </div>
             </div>
