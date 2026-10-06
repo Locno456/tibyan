@@ -148,11 +148,11 @@ export default function ChatSettingsModal({
               </section>
 
               <section className="rounded-[14px] border border-[#C9DFE1]/70 bg-white p-4" aria-labelledby="advanced-mode-title">
-                <h3 id="advanced-mode-title" className="text-sm font-bold">الوضع المتقدم</h3>
+                <h3 id="advanced-mode-title" className="text-sm font-bold text-[#0A2A33]">الوضع المتقدم</h3>
                 <p className="mt-1 text-xs text-[#54747A]">عندما لا يجد تِبْيَان دليلاً محلياً أو أداة بحث قابلة للاستخدام:</p>
                 <select aria-label="سلوك الإجابة بلا مصادر" value={noEvidenceMode}
                   onChange={(event) => onNoEvidenceModeChange?.(event.target.value as NoEvidenceMode)}
-                  className="mt-2 w-full rounded-lg border border-[#C9DFE1] bg-white p-2 text-sm">
+                  className="mt-2 w-full rounded-lg border border-[#91BEC2] bg-white p-2 text-sm font-medium text-[#0A2A33]">
                   <option value="request_sources">توقف واطلب تفعيل مصادر (الافتراضي)</option>
                   <option value="direct_unverified">أجب مباشرة مع تحذير: غير متحقق منها</option>
                 </select>

@@ -7,7 +7,8 @@ import { NextRequest } from "next/server"
 test("source selection defaults to legacy mode and rejects unknown connector names", () => {
   assert.deepEqual(parseSourceModes(undefined), ["local", "mcp"])
   assert.deepEqual(parseSourceModes(["mcp", "mcp"]), ["mcp"])
-  assert.deepEqual(parseSourceModes(["local", "web"]), [])
+  assert.deepEqual(parseSourceModes(["local", "web"]), ["local", "web"])
+  assert.deepEqual(parseSourceModes(["local", "https://example.com"]), [])
   assert.equal(parseNoEvidenceMode("direct_unverified"), "direct_unverified")
   assert.equal(parseNoEvidenceMode("unexpected"), "request_sources")
 })

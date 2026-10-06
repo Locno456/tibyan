@@ -125,16 +125,16 @@ const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
                 المصادر
               </button>
               {sourcesOpen && (
-                <div className="absolute bottom-full left-0 z-50 mb-3 w-64 rounded-xl border border-[#C9DFE1] bg-white p-3 text-right shadow-xl" dir="rtl">
+                <div className="absolute bottom-full left-0 z-50 mb-3 w-64 rounded-xl border border-[#91BEC2] bg-white p-3 text-right text-[#0A2A33] shadow-xl" dir="rtl">
                   <p className="mb-2 text-xs font-bold">مصادر البحث (اختر أكثر من مصدر)</p>
-                  {([ ["local", "البيانات المحلية"], ["mcp", "أدوات MCP المعتمدة"] ] as const).map(([id, label]) => (
-                    <label key={id} className={`flex items-center gap-2 py-2 text-xs ${id === "mcp" && mcpModelCapable === false ? "cursor-not-allowed opacity-45" : "cursor-pointer"}`}>
+                  {([ ["local", "البيانات المحلية"], ["mcp", "أدوات MCP المعتمدة"], ["web", "بحث مباشر: الدرر السنية"] ] as const).map(([id, label]) => (
+                    <label key={id} className={`flex items-center gap-2 py-2 text-xs ${id === "mcp" && mcpModelCapable === false ? "cursor-not-allowed text-[#4B6A72]" : "cursor-pointer text-[#0A2A33]"}`}>
                       <input type="checkbox" disabled={id === "mcp" && mcpModelCapable === false} checked={sourceModes.includes(id) && !(id === "mcp" && mcpModelCapable === false)} onChange={() => onSourceModesChange(sourceModes.includes(id) ? sourceModes.filter((item) => item !== id) : [...sourceModes, id])} />
                       {label}
                     </label>
                   ))}
                   {mcpModelCapable === false && <p className="text-[11px] text-amber-700">النموذج المحدد لا يدعم الأدوات؛ اختر نموذجاً يدعمها لتفعيل MCP.</p>}
-                  <p className="border-t pt-2 text-[11px] text-[#6D8A90]">بحث المواقع المخصصة قيد التطوير؛ لن نعرضه كمصدر عامل قبل تفعيله.</p>
+                  <p className="border-t border-[#C9DFE1] pt-2 text-[11px] font-medium text-[#35545B]">بحث الويب يعرض مقتطفات من صفحات بحث الدرر فقط؛ ليست توثيقاً لصحة النص. مواقع الباحث المخصصة قيد التطوير.</p>
                   <button type="button" onClick={() => setSourcesOpen(false)} className="mt-2 text-xs font-bold text-[#087A7F]">تم</button>
                 </div>
               )}
