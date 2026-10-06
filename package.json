@@ -1,22 +1,24 @@
 {
   "name": "tibyan-mvp",
   "version": "2.0.0",
-  "description": "منصة تِبْيَان - محرك الحوار المعرفي الموثق - هوية فاتحة زجاجية #2563EB + #06B6D4 + #7C3AED - تحدي باذل 2026 - Gemini Flash Lite Free",
+  "description": "منصة تِبْيَان - حوار معرفي عربي بأدلة محلية ومزودات نماذج متعددة قابلة للاختيار",
   "private": false,
   "scripts": {
     "dev": "next dev -p 3000 -H 0.0.0.0",
     "build": "next build",
     "start": "next start -p 3000 -H 0.0.0.0",
     "lint": "next lint",
+    "test": "tsx --test tests/*.test.ts",
     "eval:12": "tsx scripts/eval-12.ts",
     "eval:12:repeat": "EVAL_RUNS=5 tsx scripts/eval-12.ts"
   },
   "dependencies": {
-    "next": "14.2.5",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "@google/generative-ai": "0.21.0",
     "framer-motion": "11.3.2",
-    "@google/generative-ai": "0.21.0"
+    "lucide-react": "^1.52.0",
+    "next": "14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
     "@types/node": "20.14.10",
@@ -28,7 +30,18 @@
     "tsx": "4.19.2",
     "typescript": "5.5.3"
   },
-  "keywords": ["islamic", "RAG", "badel", "tibyan", "glassmorphism", "quran", "hadith", "AI", "gemini", "flash-lite"],
+  "keywords": [
+    "islamic",
+    "RAG",
+    "badel",
+    "tibyan",
+    "glassmorphism",
+    "quran",
+    "hadith",
+    "AI",
+    "gemini",
+    "flash-lite"
+  ],
   "author": "فريق تِبْيَان - تحدي باذل 2026",
   "license": "MIT"
 }

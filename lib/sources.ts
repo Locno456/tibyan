@@ -74,3 +74,25 @@ export const APPROVED_SOURCES = {
 }
 
 export const ALL_SOURCE_URLS = Object.values(APPROVED_SOURCES).flatMap(s => s.urls)
+
+// موفرو MCP إسلاميون إضافيون؛ يكملون المجالات الثمانية ولا يستبدلون corpus المحلي.
+// النص القرآني الحرفي يبقى من data/quran_full.json فقط.
+export const APPROVED_MCP_PROVIDERS = {
+  islamicContent: {
+    id: "islamic_content",
+    name: "جمعية خدمة المحتوى الإسلامي",
+    endpoint: "https://mcp.islamiccontent.org/mcp",
+    website: "https://islamic-content.com",
+    scope: "القرآن والترجمة والصوت، الحديث، المكتبة والمواد الدعوية",
+    access: "read-only",
+  },
+  tafsirCenter: {
+    id: "tafsir_center",
+    name: "مركز تفسير للدراسات القرآنية",
+    endpoint: "https://mcp.tafsir.net/mcp",
+    website: "https://tafsir.net",
+    scope: "القرآن والتفسير والبحث اللغوي وأسباب النزول والقراءات",
+    access: "read-only",
+    attribution: "بيانات مركز تفسير؛ ترخيص CC BY 4.0 بحسب وثائق الخادم",
+  },
+} as const

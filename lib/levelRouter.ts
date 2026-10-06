@@ -94,9 +94,12 @@ export function detectIntent(query: string): {intent: string, level: Level, keyw
     return {intent: "shubha_or_concept", level: "B", keywords: [...shubhaKeywords, ...conceptKeywords].filter(k => query.includes(k))}
   }
   
-  // Level C — خلافية
-  const khilafKeywords = ["اختلاف العلماء", "خلاف فقهي", "هل كل المسلمين يتفقون", "مسألة خلافية", "عقيدة تفصيلية", "تاريخ جدلي"]
-  if (khilafKeywords.some(k => query.includes(k))) {
+  // Level C — خلافية. Include common inflections, not only one exact phrase.
+  const khilafKeywords = ["اختلاف العلماء", "خلاف فقهي", "هل كل المسلمين يتفقون", "مسألة خلافية", "عقيدة تفصيلية", "تاريخ جدلي", "بين العلماء", "المذاهب"]
+  if (
+    khilafKeywords.some(k => query.includes(k)) ||
+    /(?:احكام|اراء|اقوال)\s+(?:مختلفه|متباينه)|(?:لماذا|سبب)\s+.{0,20}(?:مختلف|اختلاف).{0,24}(?:العلماء|الاحكام|المذاهب)|(?:اختلاف|خلاف)\s+.{0,24}(?:العلماء|المذاهب)/i.test(q)
+  ) {
     return {intent: "khilaf", level: "C", keywords: khilafKeywords.filter(k => query.includes(k))}
   }
   

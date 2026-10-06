@@ -6,35 +6,29 @@ import AnimatedLogo from "../components/AnimatedLogo"
 import ChatMessage from "../components/ChatMessage"
 import ChatComposer from "../components/ChatComposer"
 import ThinkingStages from "../components/ThinkingStages"
+import KnowledgePicker from "../components/KnowledgePicker"
+import CustomKnowledgeSheet from "../components/CustomKnowledgeSheet"
+import ChatSidebar from "../components/ChatSidebar"
+import ChatSettingsModal from "../components/ChatSettingsModal"
+import ModelPicker from "../components/ModelPicker"
+import ProviderLogo from "../components/ProviderLogo"
+import type { AIModelSelection } from "../lib/aiProviderTypes"
+import { ChevronDown, Lightbulb, Menu } from "lucide-react"
+import {
+  KnowledgeOption, PRESET_KNOWLEDGE, getKnowledgeIcon,
+  loadCustomKnowledge, saveCustomKnowledge, loadSelectedKnowledgeId, saveSelectedKnowledgeId,
+} from "../lib/knowledge"
 import { Level, LEVELS } from "../lib/levelRouter"
+import {
+  ChatSession, ConversationMessage, StoredAskResponse,
+  createChatSession, createMessageId, loadChatSessions, loadActiveChatId,
+  loadSidebarCollapsed, makeChatTitle, saveActiveChatId, saveChatSessions,
+  saveSidebarCollapsed,
+} from "../lib/chatHistory"
 
-interface AskResponse {
-  question: string
-  level: Level
-  levelInfo: any
-  intent: string
-  status: "ok" | "abstain" | "blocked"
-  action: string
-  blueCards: any[]
-  purpleCards: any[]
-  confidence: number
-  guard: any
-  metrics: any
-}
-
-type Persona = "general" | "new_muslim" | "non_muslim" | "teen" | "researcher"
-
-type ThreadItem =
-  | { id: string; role: "user"; question: string }
-  | { id: string; role: "tibyan"; response: AskResponse }
-
-const PERSONAS: { id: Persona; label: string; hint: string }[] = [
-  { id: "general", label: "عام", hint: "خطاب متوازن للجميع" },
-  { id: "new_muslim", label: "حديث الإسلام", hint: "تدرّج ولطف" },
-  { id: "non_muslim", label: "غير مسلم", hint: "تعريف أولي" },
-  { id: "teen", label: "ناشئة", hint: "لغة قريبة" },
-  { id: "researcher", label: "باحث", hint: "تحرير علمي" },
-]
+type AskResponse = StoredAskResponse
+type ThreadItem = ConversationMessage
+const MODEL_SELECTION_STORAGE_KEY = "tibyan.ai-model-selection.v1"
 
 const QUICK_QUESTIONS = [
   { q: "ما معنى التوحيد؟", tag: "مستوى أ" },
@@ -58,32 +52,132 @@ const ALL_TESTS = [
   "ما معنى كلمة karma في الإسلام؟",
 ]
 
-let seq = 0
-const uid = () => `m${Date.now()}_${seq++}`
-
 export default function HomePage() {
   const [showSplash, setShowSplash] = useState(true)
-  const [persona, setPersona] = useState<Persona>("general")
-  const [thread, setThread] = useState<ThreadItem[]>([])
-  const [pending, setPending] = useState<string | null>(null)
+  const [splashDraft, setSplashDraft] = useState<string | undefined>()
+  const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [activeSessionId, setActiveSessionId] = useState("")
+  const [historyReady, setHistoryReady] = useState(false)
+  const [pending, setPending] = useState<{ sessionId: string; question: string } | null>(null)
   const [showTests, setShowTests] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [modelPickerOpen, setModelPickerOpen] = useState(false)
+  const [modelSelection, setModelSelection] = useState<AIModelSelection | null>(null)
+  const [modelSelectionReady, setModelSelectionReady] = useState(false)
+  const [storageWarning, setStorageWarning] = useState(false)
+
+  const activeSession = useMemo(
+    () => sessions.find((session) => session.id === activeSessionId) || null,
+    [sessions, activeSessionId]
+  )
+  const thread = activeSession?.messages || []
+  const pendingForActiveSession = pending?.sessionId === activeSessionId
+
+  // معرفة خلفية السائل — زر المصباح
+  const [knowledge, setKnowledge] = useState<KnowledgeOption>(PRESET_KNOWLEDGE[0])
+  const [customKnowledge, setCustomKnowledge] = useState<KnowledgeOption[]>([])
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  const finishSplash = useCallback((draft?: string) => {
+    setSplashDraft(draft?.trim() ? draft : undefined)
+    setShowSplash(false)
+  }, [])
+
+  // استعادة سجل المحادثات والتفضيلات محلياً عند أول تحميل (من دون أي طلب للخادم).
+  useEffect(() => {
+    const customs = loadCustomKnowledge()
+    setCustomKnowledge(customs)
+    const selectedKnowledgeId = loadSelectedKnowledgeId()
+    if (selectedKnowledgeId) {
+      const found =
+        customs.find((option) => option.id === selectedKnowledgeId) ||
+        PRESET_KNOWLEDGE.find((option) => option.id === selectedKnowledgeId)
+      if (found) setKnowledge(found)
+    }
+
+    const storedSessions = loadChatSessions()
+    const preferredId = loadActiveChatId()
+    const selectedSession = storedSessions.find((session) => session.id === preferredId) || storedSessions[0]
+    const initialSessions = storedSessions.length > 0 ? storedSessions : [createChatSession()]
+    setSessions(initialSessions)
+    setActiveSessionId(selectedSession?.id || initialSessions[0].id)
+    setSidebarCollapsed(loadSidebarCollapsed())
+    setHistoryReady(true)
+  }, [])
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(MODEL_SELECTION_STORAGE_KEY)
+      if (raw) {
+        const saved = JSON.parse(raw)
+        const providerIds = ["google", "anthropic", "openai", "openrouter", "groq", "zai", "mistral", "deepseek"]
+        if (providerIds.includes(saved?.providerId) && typeof saved?.modelId === "string") {
+          setModelSelection({
+            providerId: saved.providerId,
+            modelId: saved.modelId,
+            modelName: typeof saved.modelName === "string" ? saved.modelName : saved.modelId,
+            providerName: typeof saved.providerName === "string" ? saved.providerName : saved.providerId,
+          })
+        }
+      }
+    } catch {
+      // A stale or malformed model preference is ignored; no key is stored here.
+    } finally {
+      setModelSelectionReady(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!modelSelectionReady || !modelSelection) return
+    try {
+      window.localStorage.setItem(MODEL_SELECTION_STORAGE_KEY, JSON.stringify(modelSelection))
+    } catch {
+      // Model preference is optional; it is safe to continue without local storage.
+    }
+  }, [modelSelection, modelSelectionReady])
+
+  useEffect(() => {
+    if (!historyReady) return
+    setStorageWarning(!saveChatSessions(sessions))
+  }, [sessions, historyReady])
+
+  useEffect(() => {
+    if (historyReady && activeSessionId) saveActiveChatId(activeSessionId)
+  }, [activeSessionId, historyReady])
+
+  useEffect(() => {
+    if (historyReady) saveSidebarCollapsed(sidebarCollapsed)
+  }, [sidebarCollapsed, historyReady])
 
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const composerRef = useRef<HTMLTextAreaElement | null>(null)
+  const knowledgeBtnRef = useRef<HTMLDivElement | null>(null)
 
   const { scrollYProgress } = useScroll({ container: scrollerRef })
   useMotionValueEvent(scrollYProgress, "change", (v) => setAtBottom(v > 0.985))
 
-  const activePersona = useMemo(
-    () => PERSONAS.find((p) => p.id === persona) ?? PERSONAS[0],
-    [persona]
-  )
+  // handlers نظام المعرفة
+  const selectKnowledge = (k: KnowledgeOption) => {
+    setKnowledge(k)
+    saveSelectedKnowledgeId(k.id)
+    setPickerOpen(false)
+  }
 
-  useEffect(() => {
-    const t = setTimeout(() => setShowSplash(false), 2800)
-    return () => clearTimeout(t)
-  }, [])
+  const saveCustomKnowledgeOption = (k: KnowledgeOption) => {
+    setCustomKnowledge((prev) => {
+      const next = [...prev, k]
+      saveCustomKnowledge(next)
+      return next
+    })
+    setSheetOpen(false)
+    selectKnowledge(k)
+  }
+
+  const CurrentKnowledgeIcon = getKnowledgeIcon(knowledge.icon)
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const el = scrollerRef.current
@@ -92,6 +186,66 @@ export default function HomePage() {
       el.scrollTo({ top: el.scrollHeight, behavior })
     })
   }, [])
+
+  const appendToSession = useCallback((sessionId: string, message: ThreadItem) => {
+    setSessions((previous) => {
+      const current = previous.find((session) => session.id === sessionId)
+      if (!current) return previous
+      const messages = [...current.messages, message]
+      const firstQuestion = messages.find((entry) => entry.role === "user")
+      const next: ChatSession = {
+        ...current,
+        title: current.title === "محادثة جديدة" && firstQuestion?.role === "user"
+          ? makeChatTitle(firstQuestion.question)
+          : current.title,
+        updatedAt: new Date().toISOString(),
+        messages,
+      }
+      return [next, ...previous.filter((session) => session.id !== sessionId)]
+    })
+  }, [])
+
+  const startNewChat = useCallback(() => {
+    if (!historyReady || pending) return
+    const fresh = createChatSession()
+    setSessions((previous) => [fresh, ...previous])
+    setActiveSessionId(fresh.id)
+    saveActiveChatId(fresh.id)
+    setShowTests(false)
+    setMobileSidebarOpen(false)
+    setAtBottom(true)
+  }, [historyReady, pending])
+
+  const selectChat = useCallback((sessionId: string) => {
+    setActiveSessionId(sessionId)
+    saveActiveChatId(sessionId)
+    setShowTests(false)
+    setAtBottom(true)
+    setMobileSidebarOpen(false)
+  }, [])
+
+  const closeMobileSidebar = useCallback(() => setMobileSidebarOpen(false), [])
+  const toggleSidebarCollapsed = useCallback(() => setSidebarCollapsed((value) => !value), [])
+  const openSettings = useCallback(() => {
+    setPickerOpen(false)
+    setSettingsOpen(true)
+  }, [])
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
+  const selectModel = useCallback((selection: AIModelSelection) => {
+    setModelSelection(selection)
+    setModelPickerOpen(false)
+  }, [])
+  const acceptDefaultModel = useCallback((selection: AIModelSelection) => {
+    setModelSelection((current) => current || selection)
+  }, [])
+
+  useEffect(() => {
+    if (!historyReady) return
+    requestAnimationFrame(() => {
+      const el = scrollerRef.current
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" })
+    })
+  }, [activeSessionId, historyReady])
 
   // اختصار لوحة المفاتيح: تركيز المُدخل
   useEffect(() => {
@@ -108,61 +262,140 @@ export default function HomePage() {
   const handleAsk = useCallback(
     async (raw: string) => {
       const question = (raw || "").trim()
-      if (!question || pending) return
+      const sessionId = activeSessionId
+      const currentSession = sessions.find((session) => session.id === sessionId)
+      if (!question || !historyReady || !sessionId || !currentSession || pending) return
 
-      setThread((t) => [...t, { id: uid(), role: "user", question }])
-      setPending(question)
+      appendToSession(sessionId, {
+        id: createMessageId(),
+        role: "user",
+        question,
+        createdAt: new Date().toISOString(),
+      })
+      setPending({ sessionId, question })
       scrollToBottom()
 
       let data: AskResponse
       try {
+        const history = currentSession.messages
+          .slice(-8)
+          .map((message) => message.role === "user"
+            ? { role: "user", text: message.question }
+            : {
+                role: "model",
+                text: (message.response?.purpleCards?.[0]?.explanation || "").slice(0, 1000),
+              }
+          )
+          .filter((turn) => turn.text && turn.text.trim())
+
         const res = await fetch("/api/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question, persona }),
+          body: JSON.stringify({
+            question,
+            persona: knowledge.persona,
+            background: knowledge.kind === "custom" ? knowledge.background : undefined,
+            history,
+            providerId: modelSelection?.providerId,
+            modelId: modelSelection?.modelId,
+          }),
         })
         const json = await res.json()
-        if (!res.ok || !json || json.error) throw new Error(json?.error || `HTTP ${res.status}`)
-        data = json as AskResponse
-      } catch (e: any) {
+        if (!res.ok || !json || json.error) throw new Error(String(json?.error || "تعذّر معالجة السؤال الآن"))
+
+        data = {
+          question: String(json.question || question),
+          level: (json.level || "abstain") as Level,
+          levelInfo: json.levelInfo || LEVELS.abstain,
+          intent: String(json.intent || "general"),
+          interactionType: ["conversation", "quran_audio", "quran_text", "verification", "answer", "referral"].includes(json.interactionType)
+            ? json.interactionType
+            : undefined,
+          verificationStatus: ["confirmed", "near_match", "not_found", "needs_quote"].includes(json.verificationStatus)
+            ? json.verificationStatus
+            : undefined,
+          status: json.status === "ok" || json.status === "blocked" ? json.status : "abstain",
+          action: String(json.action || "proceed"),
+          blueCards: Array.isArray(json.blueCards) ? json.blueCards : [],
+          audioCard: json.audioCard && typeof json.audioCard === "object" ? json.audioCard : undefined,
+          audioRequest: json.audioRequest && typeof json.audioRequest === "object" ? json.audioRequest : undefined,
+          purpleCards: Array.isArray(json.purpleCards) ? json.purpleCards.map((card: any) => ({
+            explanation: String(card?.explanation || ""),
+            persona: card?.persona || knowledge.persona,
+            level: card?.level || json.level || "abstain",
+            references: Array.isArray(card?.references) ? card.references : [],
+            llm: card?.llm,
+          })) : [],
+          confidence: Number(json.confidence) || 0,
+          guard: json.guard ? { status: json.guard.status, action: json.guard.action } : {},
+          metrics: {
+            responseTime: Number(json.metrics?.responseTime) || 0,
+            confidence: Number(json.metrics?.confidence) || 0,
+            sourcesCount: Number(json.metrics?.sourcesCount) || 0,
+            retrievalSource: json.metrics?.retrievalSource,
+            llm: json.metrics?.llm,
+          },
+        }
+      } catch (error: any) {
         data = {
           question,
           level: "abstain",
-          levelInfo: LEVELS?.abstain || { name: "امتناع" },
+          levelInfo: LEVELS.abstain,
           intent: "error",
           status: "abstain",
           action: "abstain",
+          interactionType: "answer",
           blueCards: [],
-          purpleCards: [
-            {
-              explanation:
-                "تعذّر الاتصال بخدمة المعالجة. تحقّق من الاتصال ثم أعد المحاولة.\n\nتفصيل: " +
-                String(e?.message || e),
-              persona,
-              level: "abstain",
-            },
-          ],
+          purpleCards: [{
+            explanation: String(error?.message || "تعذّر الاتصال بخدمة الإجابة الآن. تحقّق من الاتصال ثم حاول مرة أخرى."),
+            persona: knowledge.persona,
+            level: "abstain",
+          }],
           confidence: 0,
           guard: { status: "error" },
           metrics: { responseTime: 0 },
         }
       }
 
-      setPending(null)
-      setThread((t) => [...t, { id: uid(), role: "tibyan", response: data }])
-      scrollToBottom()
+      appendToSession(sessionId, {
+        id: createMessageId(),
+        role: "tibyan",
+        response: data,
+        createdAt: new Date().toISOString(),
+      })
+      setPending((current) => current?.sessionId === sessionId ? null : current)
+      if (activeSessionId === sessionId) scrollToBottom()
     },
-    [pending, persona, scrollToBottom]
+    [activeSessionId, appendToSession, historyReady, knowledge, modelSelection, pending, scrollToBottom, sessions]
   )
 
-  const isEmpty = thread.length === 0 && !pending
-  const answeredCount = thread.filter((m) => m.role === "tibyan").length
+  const isEmpty = thread.length === 0 && !pendingForActiveSession
+  const answeredCount = thread.filter((message) => message.role === "tibyan").length
+  const appVisible = historyReady && !showSplash
+  const splashVisible = showSplash || !historyReady
 
   return (
     <>
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} duration={2800} />}
+      <AnimatePresence initial={false}>
+          {splashVisible && (
+            <SplashScreen
+              key="tibyan-splash"
+              onFinish={finishSplash}
+              onAsk={handleAsk}
+            />
+          )}
+        </AnimatePresence>
 
-      <main className="h-[100dvh] flex flex-col relative overflow-hidden">
+      {appVisible && (
+      <motion.main
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          opacity: { duration: 0.68, delay: 0.08 },
+          y: { duration: 0.74, delay: 0.04, ease: [0.16, 1, 0.3, 1] },
+        }}
+        className="relative flex h-[100dvh] flex-row overflow-hidden"
+      >
         {/* خلفية حيّة */}
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
           <div className="tb-orb tb-orb--a" />
@@ -182,58 +415,98 @@ export default function HomePage() {
           />
         </div>
 
+        <ChatSidebar
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          collapsed={sidebarCollapsed}
+          mobileOpen={mobileSidebarOpen}
+          visible={appVisible}
+          disabled={!historyReady || !!pending || !appVisible}
+          storageWarning={storageWarning}
+          onToggleCollapsed={toggleSidebarCollapsed}
+          onCloseMobile={closeMobileSidebar}
+          onNewChat={startNewChat}
+          onSelectSession={selectChat}
+          onOpenSettings={openSettings}
+        />
+
+        <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
         {/* الترويسة */}
         <header className="shrink-0 z-30 backdrop-blur-[14px] border-b bg-white/72">
-          <div className="max-w-[940px] mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <motion.div
-                whileHover={{ rotate: -6, scale: 1.06 }}
-                transition={{ type: "spring", stiffness: 300, damping: 14 }}
-                className="w-9 h-9 shrink-0 rounded-[11px] bg-white shadow-[0_3px_10px_rgba(10,143,148,0.18)] p-1 flex items-center justify-center border border-[#C9DFE1]/60"
+          <div className="flex w-full items-center justify-between gap-2 px-2 py-2.5 sm:gap-3 sm:px-6 sm:py-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <motion.button
+                type="button"
+                onClick={() => setMobileSidebarOpen(true)}
+                whileTap={{ scale: 0.94 }}
+                aria-label="فتح سجل المحادثات"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#C9DFE1]/80 bg-white/80 text-[#0A8F94] shadow-sm md:hidden"
               >
-                <img src="/tibyan-logo-color.svg" alt="تِبْيَان" className="w-full h-full object-contain" />
-              </motion.div>
+                <Menu size={18} />
+              </motion.button>
               <div className="min-w-0">
-                <div className="font-extrabold text-[15px] leading-tight text-[#0A2A33]">تِبْيَان</div>
-                <div className="text-[9.5px] text-[#4B6A72] truncate">
-                  الحوار المعرفي الموثق • صفر اختلاق
+                <div className="truncate text-[15px] font-extrabold leading-tight text-[#0A2A33] sm:text-[17px]">
+                  {activeSession?.title || "محادثة جديدة"}
+                </div>
+                <div className="truncate text-[10.5px] text-[#6D8A90] sm:text-[12px]">
+                  نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ
                 </div>
               </div>
-              <div className="hidden lg:flex items-center gap-1.5 ms-2 px-2.5 py-1 rounded-full bg-emerald-50/80 border border-emerald-100">
-                <span className="relative flex w-1.5 h-1.5">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-emerald-500" />
+              <button
+                type="button"
+                onClick={() => setModelPickerOpen(true)}
+                aria-label={modelSelection ? `النموذج الحالي: ${modelSelection.modelName || modelSelection.modelId}. تغيير المزود أو النموذج` : "اختيار مزود ونموذج ذكاء اصطناعي"}
+                title={modelSelection ? `${modelSelection.providerName || modelSelection.providerId} · ${modelSelection.modelName || modelSelection.modelId}` : "اختيار مزود ونموذج"}
+                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[#C9DFE1] bg-white/85 px-1.5 text-[#0A8F94] shadow-sm transition-colors hover:bg-[#EFF9F7] sm:h-10 sm:gap-2 sm:px-2.5"
+              >
+                <ProviderLogo providerId={modelSelection?.providerId} size={23} />
+                <span className="hidden max-w-[130px] truncate text-[11px] font-bold text-[#35545B] sm:inline">
+                  {modelSelection?.modelName || "اختيار نموذج"}
                 </span>
-                <span className="text-[9.5px] font-bold text-emerald-700">المصادر حيّة</span>
-              </div>
+                <ChevronDown size={13} className="hidden text-[#719095] sm:block" />
+              </button>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* منتقي الشخصية — مؤشر منزلق */}
-              <div className="hidden md:flex items-center gap-0.5 p-1 rounded-full bg-[#EEF6F6]/80 border border-[#C9DFE1]/70">
-                {PERSONAS.map((p) => {
-                  const isActive = persona === p.id
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setPersona(p.id)}
-                      title={p.hint}
-                      className="relative px-2.5 py-1 rounded-full text-[10.5px] font-bold transition-colors"
-                      style={{ color: isActive ? "#fff" : "#4B6A72" }}
-                    >
-                      {isActive && (
-                        <motion.span
-                          layoutId="persona-pill"
-                          className="absolute inset-0 rounded-full"
-                          style={{ background: "linear-gradient(135deg,#19D6C4,#0A8F94)" }}
-                          transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                        />
-                      )}
-                      <span className="relative z-10">{p.label}</span>
-                    </button>
-                  )
-                })}
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              {/* زر المصباح — معرفة خلفية السائل (بدل المبدل القديم) */}
+              <div className="relative" ref={knowledgeBtnRef}>
+                <motion.button
+                  type="button"
+                  onClick={() => setPickerOpen((s) => !s)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  aria-haspopup="menu"
+                  aria-expanded={pickerOpen}
+                  title="معرفة خلفية السائل"
+                  className="relative flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-[12.5px] sm:text-[14px] font-bold border transition-colors"
+                  style={{
+                    background: pickerOpen ? "#0A8F94" : "#fff",
+                    color: pickerOpen ? "#fff" : "#0A2A33",
+                    borderColor: pickerOpen ? "#0A8F94" : "#C9DFE1",
+                  }}
+                >
+                  <Lightbulb size={17} strokeWidth={2.4} className="text-[#E0B450]" />
+                  <CurrentKnowledgeIcon
+                    size={16}
+                    strokeWidth={2.3}
+                    className={pickerOpen ? "text-white" : "text-[#0A8F94]"}
+                  />
+                  <span className="max-w-[110px] truncate">{knowledge.label}</span>
+                </motion.button>
+
+                <KnowledgePicker
+                  open={pickerOpen}
+                  onClose={() => setPickerOpen(false)}
+                  selectedId={knowledge.id}
+                  presets={PRESET_KNOWLEDGE}
+                  customOptions={customKnowledge}
+                  onSelect={selectKnowledge}
+                  onAddCustom={() => {
+                    setPickerOpen(false)
+                    setSheetOpen(true)
+                  }}
+                  anchorRef={knowledgeBtnRef}
+                />
               </div>
 
               <motion.button
@@ -241,7 +514,7 @@ export default function HomePage() {
                 onClick={() => setShowTests((s) => !s)}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.95 }}
-                className="relative px-3 py-1.5 rounded-full text-[10.5px] font-bold border transition-colors"
+                className="relative px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[12.5px] sm:text-[14px] font-bold border transition-colors"
                 style={{
                   background: showTests ? "#0A8F94" : "#fff",
                   color: showTests ? "#fff" : "#0A8F94",
@@ -257,34 +530,14 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* شريط الشخصية على الشاشات الصغيرة */}
-          <div className="md:hidden px-4 pb-2 flex items-center gap-1.5 overflow-x-auto tb-scroll">
-            {PERSONAS.map((p) => {
-              const isActive = persona === p.id
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPersona(p.id)}
-                  className="shrink-0 px-2.5 py-1 rounded-full text-[10.5px] font-bold border transition-colors"
-                  style={{
-                    background: isActive ? "#0A8F94" : "#fff",
-                    color: isActive ? "#fff" : "#4B6A72",
-                    borderColor: isActive ? "#0A8F94" : "#C9DFE1",
-                  }}
-                >
-                  {p.label}
-                </button>
-              )
-            })}
-          </div>
+          {/* أُزيل شريط الشخصية للجوال — زر المصباح في الترويسة يفتح المنتقي على كل المقاسات */}
         </header>
 
         {/* منطقة المحادثة */}
         <div ref={scrollerRef} className="flex-1 overflow-y-auto tb-scroll relative">
           <div className="max-w-[940px] mx-auto px-4 pt-6 pb-4">
             <AnimatePresence initial={false} mode="popLayout">
-              {isEmpty && !pending && (
+              {isEmpty && (
                 <motion.section
                   key="empty"
                   initial={{ opacity: 0, y: 16 }}
@@ -298,14 +551,14 @@ export default function HomePage() {
                   <h1 className="mt-5 text-[30px] font-extrabold leading-tight">
                     <span className="tb-grad-text">مرحباً في تِبْيَان</span>
                   </h1>
-                  <p className="body-font mt-2 text-[14px] text-[#4B6A72] max-w-[500px] leading-relaxed">
+                  <p className="body-font mt-2 text-[15px] text-[#4B6A72] max-w-[500px] leading-relaxed">
                     اسأل سؤالاً شرعياً أو فكرياً، فيرجع إليك الجواب بنصٍّ حرفي من مصدر معتمد،
-                    وشرح منظم، ودائرة موثوقية — أو امتناع صريح عند غياب المرجعية.
+                    وشرح منظم، ومؤشر استرجاع داخلي غير مُعاير — أو امتناع صريح عند غياب المرجعية.
                   </p>
 
-                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#C9DFE1] text-[10.5px] text-[#0A8F94] font-bold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E0B450] rotate-45" />
-                    الخطاب الحالي: {activePersona.label} — {activePersona.hint}
+                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#C9DFE1] text-[12px] text-[#0A8F94] font-bold">
+                    <CurrentKnowledgeIcon size={14} strokeWidth={2.4} />
+                    الخطاب الحالي: {knowledge.label} — {knowledge.kind === "custom" ? knowledge.background : knowledge.hint}
                   </div>
 
                   <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-[560px]">
@@ -325,10 +578,10 @@ export default function HomePage() {
                           className="absolute inset-y-0 start-0 w-[3px] opacity-0 group-hover:opacity-100 transition-opacity"
                           style={{ background: "linear-gradient(180deg,#19D6C4,#0A8F94)" }}
                         />
-                        <span className="block text-[13.5px] font-bold text-[#0A2A33] group-hover:text-[#0A8F94] transition-colors">
+                        <span className="block text-[14.5px] font-bold text-[#0A2A33] group-hover:text-[#0A8F94] transition-colors">
                           {item.q}
                         </span>
-                        <span className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] text-[#8FB0B6]">
+                        <span className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-[#8FB0B6]">
                           <span className="px-1.5 py-0.5 rounded-full bg-[#EEF6F6] border border-[#C9DFE1]">
                             {item.tag}
                           </span>
@@ -340,14 +593,14 @@ export default function HomePage() {
                     ))}
                   </div>
 
-                  <div className="mt-7 flex items-center gap-3 text-[10px] text-[#8FB0B6] flex-wrap justify-center">
+                  <div className="mt-7 flex items-center gap-3 text-[11.5px] text-[#8FB0B6] flex-wrap justify-center">
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#14529E]" />أزرق = نص موثق ﴿…﴾</span>
                     <span className="w-px h-3 bg-[#C9DFE1]" />
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#7B4FD6]" />بنفسجي = شرح AI</span>
                     <span className="w-px h-3 bg-[#C9DFE1]" />
                     <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-[2px] rotate-45 bg-[#E0B450]" />ذهبي = نور</span>
                     <span className="w-px h-3 bg-[#C9DFE1]" />
-                    <span>◯ دائرة = موثوقية</span>
+                    <span>◯ المؤشر = ترتيب الاسترجاع (غير مُعاير)</span>
                   </div>
                 </motion.section>
               )}
@@ -365,10 +618,10 @@ export default function HomePage() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                      className="flex justify-end"
+                      className="flex justify-start"
                     >
                       <div className="max-w-[85%] sm:max-w-[70%] bg-[#0A2A33] text-white rounded-[18px] rounded-br-[6px] px-4 py-3 shadow-[0_6px_18px_rgba(10,42,51,0.18)]">
-                        <div className="text-[14px] font-medium leading-relaxed">{item.question}</div>
+                        <div className="text-[15px] font-medium leading-relaxed">{item.question}</div>
                       </div>
                     </motion.div>
                   ) : (
@@ -386,16 +639,20 @@ export default function HomePage() {
                         levelInfo={item.response.levelInfo}
                         blueCards={item.response.blueCards}
                         purpleCards={item.response.purpleCards}
+                        audioCard={item.response.audioCard}
+                        audioRequest={item.response.audioRequest}
                         confidence={item.response.confidence}
                         metrics={item.response.metrics}
                         status={item.response.status}
+                        interactionType={item.response.interactionType}
+                        verificationStatus={item.response.verificationStatus}
                       />
                     </motion.div>
                   )
                 )}
               </AnimatePresence>
 
-              {pending && <ThinkingStages key={pending} question={pending} />}
+              {pendingForActiveSession && pending && <ThinkingStages key={`${pending.sessionId}:${pending.question}`} question={pending.question} />}
             </div>
 
             {/* لوحة الحالات الـ12 */}
@@ -410,10 +667,10 @@ export default function HomePage() {
                 >
                   <div className="rounded-[16px] bg-white/85 backdrop-blur border border-[#C9DFE1]/70 p-4 shadow-[0_6px_20px_rgba(10,42,51,0.06)]">
                     <div className="flex items-center justify-between gap-3 mb-3">
-                      <div className="text-[12.5px] font-extrabold text-[#0A2A33]">
+                      <div className="text-[14px] font-extrabold text-[#0A2A33]">
                         🧪 الحالات المعيارية الـ12
                       </div>
-                      <span className="text-[10px] text-[#8FB0B6]">
+                      <span className="text-[11.5px] text-[#8FB0B6]">
                         الحزمة العلمية — صفحة 6
                       </span>
                     </div>
@@ -430,7 +687,7 @@ export default function HomePage() {
                           whileTap={{ scale: 0.985 }}
                           className="text-right p-2.5 rounded-[10px] bg-white border border-[#C9DFE1]/60 hover:border-[#0A8F94]/45 hover:bg-[#EEF6F6]/50 transition-colors group"
                         >
-                          <span className="text-[11.5px] font-bold text-[#0A2A33] group-hover:text-[#0A8F94] transition-colors">
+                          <span className="text-[13px] font-bold text-[#0A2A33] group-hover:text-[#0A8F94] transition-colors">
                             <span className="tabular-nums text-[#8FB0B6] me-1.5">
                               {String(i + 1).padStart(2, "0")}
                             </span>
@@ -456,7 +713,7 @@ export default function HomePage() {
               exit={{ opacity: 0, y: 12, scale: 0.8 }}
               onClick={() => scrollToBottom()}
               aria-label="النزول إلى آخر رسالة"
-              className="fixed bottom-[132px] inset-inline-start-1/2 -translate-x-1/2 z-30 w-9 h-9 rounded-full bg-[#0A2A33] text-white shadow-[0_6px_18px_rgba(10,42,51,0.25)] flex items-center justify-center"
+              className="fixed bottom-[132px] left-1/2 -translate-x-1/2 z-30 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#0A2A33]/90 backdrop-blur text-white shadow-[0_8px_24px_rgba(10,42,51,0.3)] border border-white/10 flex items-center justify-center hover:bg-[#0A2A33] transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
                 <path d="M7 2v10M3 8l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -465,13 +722,32 @@ export default function HomePage() {
           )}
         </AnimatePresence>
 
-        {/* المُدخل */}
-        <div className="shrink-0 z-20 backdrop-blur-[16px] border-t bg-white/80">
-          <div className="max-w-[860px] mx-auto px-4 py-3">
-            <ChatComposer ref={composerRef} onSend={handleAsk} disabled={!!pending} />
+        {/* المُدخل — بلا خلفية ولا حد علوي ولا ضبابية: الصندوق يطفو فوق خلفية الصفحة */}
+        <div className="z-20 shrink-0">
+          <div className="mx-auto max-w-[860px] px-4 py-4 sm:px-6 sm:py-6">
+            <ChatComposer
+              ref={composerRef}
+              onSend={handleAsk}
+              disabled={!historyReady || !!pending || !appVisible}
+              initialValue={splashDraft}
+            />
           </div>
         </div>
-      </main>
+        </div>
+      </motion.main>
+      )}
+
+      <ChatSettingsModal open={settingsOpen} sessions={sessions} onClose={closeSettings} />
+      <ModelPicker
+        open={modelPickerOpen}
+        selected={modelSelection}
+        onSelect={selectModel}
+        onDefaultSelection={acceptDefaultModel}
+        onClose={() => setModelPickerOpen(false)}
+      />
+
+      {/* مودال / Bottom sheet «معرفة مخصصة» */}
+      <CustomKnowledgeSheet open={sheetOpen} onClose={() => setSheetOpen(false)} onSave={saveCustomKnowledgeOption} />
     </>
   )
 }
