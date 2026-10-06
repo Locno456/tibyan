@@ -57,6 +57,15 @@ export function zeroHallucinationGuard(
     }
   }
 
+  // The explanatory model is not the source of hadith text. Literal hadiths
+  // belong in separately attributed evidence cards, not in generated prose.
+  // Block even a potentially genuine attribution here: verifying free-form
+  // paraphrases by regex is unsafe and previously let fabricated ones pass.
+  const literallyCopiedEvidence = llmOutput.trim() === retrievedDocs.map((doc) => doc.payload.text).join(" ").trim()
+  if (!literallyCopiedEvidence && /(?:قال\s+(?:رسول\s+الله|النبي)|عن\s+(?:رسول\s+الله|النبي)|رواه\s+(?:البخاري|مسلم)|حديث\s+(?:صحيح|حسن))/.test(llmOutput)) {
+    return { status: "blocked", action: "abstain", message: "لا أعرض حديثاً من صياغة النموذج؛ راجع بطاقة النص المسترجع ومصدره.", confidence: maxScore }
+  }
+
   // 2. استخرج كل نص يدعي أنه آية/حديث من إخراج LLM
   const claimedTexts = extractClaimedSacred(llmOutput)
   

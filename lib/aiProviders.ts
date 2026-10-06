@@ -374,7 +374,7 @@ function requestedModelFor(provider: ProviderDefinition): string | undefined {
 
 function modelPreference(providerId: AIProviderId, models: AIModelInfo[]): AIModelInfo | undefined {
   const preferredPatterns: Partial<Record<AIProviderId, RegExp[]>> = {
-    google: [/flash-lite/i, /flash/i],
+    google: [/^gemini-flash-lite-latest$/i, /flash-lite/i, /flash/i],
     anthropic: [/haiku/i, /sonnet/i],
     openai: [/gpt-4o-mini/i, /mini/i, /nano/i, /^gpt-/i],
     openrouter: [/:free$/i, /gpt-4o-mini/i, /:nitro$/i],
@@ -393,7 +393,7 @@ function modelPreference(providerId: AIProviderId, models: AIModelInfo[]): AIMod
 
 function normalizeRequestedGoogleModel(value: string): string {
   const aliases: Record<string, string> = {
-    flashLite: "gemini-3.5-flash-lite",
+    flashLite: "gemini-flash-lite-latest",
     flash31Lite: "gemini-3.1-flash-lite",
     flash: "gemini-3.8-flash",
   }

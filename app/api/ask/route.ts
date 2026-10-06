@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { detectIntent, LEVELS, type Level } from "../../../lib/levelRouter"
 import { parseSourceModes, parseNoEvidenceMode } from "../../../lib/sourcePreferences"
 import { searchApprovedWeb } from "../../../lib/approvedWebSearch"
+import { planEvidenceSearch } from "../../../lib/agentPolicy"
 import { extractClaimedSacred } from "../../../lib/guard"
 import { hybrid_retrieve, findVerifiedTextMatches, type RetrievedChunk } from "../../../lib/rag"
 import { fullGuard } from "../../../lib/guard"
@@ -522,7 +523,8 @@ export async function POST(request: NextRequest) {
         }),
       }
 
-  const localHasEvidence = retrieval.docs.length > 0
+  const localHasEvidence = retrieval.docs.some((doc) => !doc.id.startsWith("web-"))
+  const webHasPreview = retrieval.docs.some((doc) => doc.id.startsWith("web-"))
   if (
     !localHasEvidence &&
     mcpCatalog.tools.length > 0 &&
@@ -539,7 +541,7 @@ export async function POST(request: NextRequest) {
   const primarySupportsTools = selection?.supportsTools !== false
   const fallbackSupportsTools = !!fallbackSelection && fallbackSelection.supportsTools !== false
   const canUseTools = !!selection && (primarySupportsTools || fallbackSupportsTools) && mcpCatalog.tools.length > 0
-  const requireMcpSearch = !localHasEvidence && canUseTools
+  const agentPlan = planEvidenceSearch({ hasLocalEvidence: localHasEvidence, hasWebPreview: webHasPreview, hasTools: canUseTools, verifyingQuote: !!verificationQuote })
   const relevantLocalCards = retrieval.docs.map(mapRetrievedCard)
 
   if (!selection) {
@@ -573,7 +575,7 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  if (!localHasEvidence && !canUseTools && noEvidenceMode === "direct_unverified" && !verificationQuote && (level === "A" || level === "B") && selection) {
+  if (!agentPlan.canAttemptGroundedAnswer && noEvidenceMode === "direct_unverified" && !verificationQuote && (level === "A" || level === "B") && selection) {
     try {
       const direct = await generateWithAIProvider(selection,
         `سؤال المستخدم: ${question.slice(0, 1000)}\nأجب بشرح عام موجز فقط من معرفتك. لا تنسب آية أو حديثاً أو حكماً إلى مصدر، ولا تدّع التحقق أو وجود دليل. إن كان السؤال يحتاج دليلاً محدداً فاطلب تفعيل مصادر.`,
@@ -595,7 +597,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  if (!localHasEvidence && !canUseTools) {
+  if (!agentPlan.canAttemptGroundedAnswer) {
     const hasLocalNear = verificationQuote ? localQuoteMatches.length > 0 : false
     return finishResponse({
       question,
@@ -655,7 +657,7 @@ export async function POST(request: NextRequest) {
       `${systemInstruction}${quotePolicy}${mcpPolicy}${webPolicy}`,
       mcpCatalog.tools,
       mcpCatalog.runTool,
-      { maxCalls: 8, maxRounds: 4, requireToolCall: requireMcpSearch },
+      { maxCalls: agentPlan.maxCalls, maxRounds: agentPlan.maxRounds, requireToolCall: agentPlan.requireToolCall },
     )
     if (!result.text.trim()) throw new Error("لم يُرجع مزود النموذج نصاً قابلاً للعرض")
     return result
@@ -802,7 +804,7 @@ export async function POST(request: NextRequest) {
     : generation.text
   const explicitlyAbstained = /(?:لم\s+أجد\s+(?:مصدر|دليل|مرجع)|لم\s+أعثر\s+على\s+(?:مصدر|دليل)|لا\s+تتوفر?\s+أدلة?\s+كافية|لا\s+يتوفر\s+دليل\s+كاف|الأدلة?\s+غير\s+كافية|insufficient\s+(?:evidence|sources)|could not find\s+(?:a\s+)?(?:source|evidence))/i.test(explanation)
 
-  if ((!localHasEvidence && !mcpHasEvidence) || explicitlyAbstained || !explanation) {
+  if ((!localHasEvidence && !mcpHasEvidence && !webHasPreview) || explicitlyAbstained || !explanation) {
     const abstentionText = explanation && explicitlyAbstained
       ? explanation
       : "لم يظهر دليل مباشر كافٍ ومرتبط بالسؤال في النصوص المحلية أو النتائج الحية القابلة للفحص؛ لذلك أمتنع عن الجزم."

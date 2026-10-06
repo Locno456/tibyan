@@ -7,7 +7,7 @@ import { buildSourceUrl } from "./sourceLinks"
 // Legacy aliases only. For the provider picker, use model IDs returned at runtime by the Google models API.
 const GEMINI_MODELS = {
   // الافتراضي: أسرع نموذج منخفض التكلفة (الأنسب للخطة المجانية)
-  flashLite: "gemini-3.5-flash-lite",
+  flashLite: "gemini-flash-lite-latest",
   flash31Lite: "gemini-3.1-flash-lite",
   // أقوى، للاستدلال الأطول
   flash: "gemini-3.8-flash",
