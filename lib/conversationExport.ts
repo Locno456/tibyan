@@ -12,7 +12,7 @@ export function conversationSnapshot(session: ChatSession, knowledge: KnowledgeO
       : {
           role: "tibyan", createdAt: message.createdAt, status: message.response.status,
           text: (message.response.purpleCards || []).map((card) => card.explanation).filter((text): text is string => typeof text === "string").join("\n"),
-          sources: (message.response.blueCards || []).map((card) => ({ text: String(card.text || ""), source: String(card.source || ""), sourceUrl: String(card.sourceUrl || "") })),
+          sources: (message.response.blueCards || []).map((card) => ({ text: String(card.text || ""), source: String(card.source || ""), sourceUrl: String(card.sourceUrl || card.source_url || "") })),
         }),
   }
 }

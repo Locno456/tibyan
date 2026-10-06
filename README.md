@@ -57,7 +57,7 @@ npm run eval:12
 - `POST /api/v1/ask` — استجابة تِبْيَان الأصلية مع المصادر والبيانات المنظمة.
 - `POST /api/v1/chat/completions` — صيغة متوافقة مع OpenAI غير المتدفقة، وتُرفق الاستجابة الأصلية في `tibyan`.
 
-المسارات تستدعي `/api/ask` نفسه ولا تنسخ RAG أو Guard. عطّلها بضبط `TIBYAN_API_ENABLED=false`. إعداد المنصات، أمثلة curl، وخطوات الاختبار موثقة في [`docs/public-api.md`](docs/public-api.md). لمشاركة نسخة قراءة فقط من محادثة واحدة أو تصدير سياقها مع معرفة المستخدم، راجع [إعدادات المشاركة وحدود الخصوصية](docs/conversation-sharing.md). للاستعداد للتحكيم راجع [خطة العرض](docs/judging-demo.md)، [معايير الجاهزية](docs/judging-readiness.md)، و[حدود الجدوى التجارية وحساب تكلفتها](docs/commercial-readiness.md). رابط الموقع: [تِبْيَان | Tibyan - نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ](https://tibyan-demo.vercel.app/). لم يُختبر اتصال مزود حي من بيئة التطوير.
+المسارات تستدعي `/api/ask` نفسه ولا تنسخ RAG أو Guard. عطّلها بضبط `TIBYAN_API_ENABLED=false`. إعداد المنصات، أمثلة curl، وخطوات الاختبار موثقة في [`docs/public-api.md`](docs/public-api.md). لمشاركة نسخة قراءة فقط من محادثة واحدة أو تصدير سياقها مع معرفة المستخدم، راجع [إعدادات المشاركة وحدود الخصوصية](docs/conversation-sharing.md). إعداد إحالة الحالات الشخصية إلى مختص عبر واتساب/تيليجرام موثق في [دليل الإحالة](docs/specialist-referral.md)، ولا تُضبط وجهة اتصال افتراضية. للاستعداد للتحكيم راجع [خطة العرض](docs/judging-demo.md)، [معايير الجاهزية](docs/judging-readiness.md)، و[حدود الجدوى التجارية وحساب تكلفتها](docs/commercial-readiness.md). رابط الموقع: [تِبْيَان | Tibyan - نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ](https://tibyan-demo.vercel.app/). لم يُختبر اتصال مزود حي من بيئة التطوير.
 
 ### الحساب الاختياري ومزامنة Supabase
 

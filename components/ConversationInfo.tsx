@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { Info, X } from "lucide-react"
 import type { ChatSession } from "../lib/chatHistory"
 import type { KnowledgeOption } from "../lib/knowledge"
@@ -76,8 +77,8 @@ export default function ConversationInfo({ session, knowledge, customKnowledge, 
   }
   return <>
     <button type="button" onClick={() => setOpen(true)} aria-label="معلومات المحادثة الحالية" title="معلومات المحادثة" className="rounded-xl border border-[#C9DFE1] p-2 text-[#0A737C] hover:bg-[#EEF6F6]"><Info size={19} /></button>
-    {open && <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[#071F27]/50 p-4" onClick={() => setOpen(false)}>
-      <section role="dialog" aria-modal="true" aria-label="معلومات المحادثة" dir="rtl" onClick={(event) => event.stopPropagation()} className="w-full max-w-md rounded-2xl bg-white p-6 text-[#0A2A33] shadow-xl">
+    {open && typeof document !== "undefined" && createPortal(<div className="fixed inset-0 z-[150] flex items-center justify-center overflow-y-auto overscroll-contain bg-[#071F27]/50 p-3 sm:p-4" onClick={() => setOpen(false)}>
+      <section role="dialog" aria-modal="true" aria-label="معلومات المحادثة" dir="rtl" onClick={(event) => event.stopPropagation()} className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md min-h-0 overflow-y-auto overscroll-contain break-words rounded-2xl bg-white p-4 text-[#0A2A33] shadow-xl sm:max-h-[calc(100dvh-2rem)] sm:p-6">
         <div className="flex items-center justify-between"><h2 className="font-bold">معلومات المحادثة</h2><button type="button" aria-label="إغلاق" onClick={() => setOpen(false)}><X size={20}/></button></div>
         <p className="mt-3 break-words text-sm">{session.title} · {session.messages.length} رسائل</p>
         <p className="mt-1 text-sm">المعرفة المختارة حالياً: {knowledge.label}</p>
@@ -92,6 +93,6 @@ export default function ConversationInfo({ session, knowledge, customKnowledge, 
           {error && <p role="status" className="mt-2 text-xs text-rose-700">{error}</p>}
         </div>
       </section>
-    </div>}
+    </div>, document.body)}
   </>
 }

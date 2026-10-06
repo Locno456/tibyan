@@ -13,6 +13,7 @@ import KnowledgePicker from "../components/KnowledgePicker"
 import CustomKnowledgeSheet from "../components/CustomKnowledgeSheet"
 import ChatSidebar from "../components/ChatSidebar"
 import ConversationInfo from "../components/ConversationInfo"
+import SpecialistReferral from "../components/SpecialistReferral"
 import ChatSettingsModal from "../components/ChatSettingsModal"
 import ModelPicker from "../components/ModelPicker"
 import AccountAccessModal from "../components/AccountAccessModal"
@@ -87,7 +88,7 @@ const ALL_TESTS = [
 
 export default function HomePage() {
   const router = useRouter()
-  const { user, client, authLoading, accountType } = useAccount()
+  const { user, client, authLoading, accountType, profile } = useAccount()
   const [sourceModes, setSourceModes] = useState<SourceMode[]>(DEFAULT_SOURCE_MODES)
   const [agentEnabled, setAgentEnabled] = useState(false)
   useEffect(() => {
@@ -744,6 +745,10 @@ export default function HomePage() {
           body: JSON.stringify({
             question,
             persona: knowledge.persona,
+            accountType,
+            referralContactComplete: !!(user?.id && profile?.display_name && user.email && (() => {
+              try { const saved = JSON.parse(localStorage.getItem(`tibyan.referral.contact.${user.id}`) || "{}"); return saved.country && saved.language } catch { return false }
+            })()),
             background: knowledge.kind === "custom" ? knowledge.background : undefined,
             history,
             providerId: modelSelection?.providerId,
@@ -848,7 +853,7 @@ export default function HomePage() {
       requestLockRef.current = false
       if (activeSessionId === sessionId) scrollToBottom()
     },
-    [activeSessionId, appendToSession, historyReady, knowledge, modelFallbackSelection, modelSelection, pending, scrollToBottom, sessions, syncLocked, sourceModes, noEvidenceMode, mcpModelCapable, agentEnabled]
+    [activeSessionId, appendToSession, historyReady, knowledge, modelFallbackSelection, modelSelection, pending, scrollToBottom, sessions, syncLocked, sourceModes, noEvidenceMode, mcpModelCapable, agentEnabled, accountType, profile?.display_name, user?.id, user?.email]
   )
 
   const isEmpty = thread.length === 0 && !pendingForActiveSession
@@ -1153,6 +1158,9 @@ export default function HomePage() {
                         onRetry={canRetry ? () => void handleAsk(item.response.question, { retryMessageId: item.id }) : undefined}
                         retryDisabled={!!pending}
                       />
+                      {item.response.interactionType === "referral" && activeSession && (
+                        <SpecialistReferral session={activeSession} knowledge={knowledge} userId={user?.id} name={profile?.display_name || undefined} email={user?.email} />
+                      )}
                     </motion.div>
                   )
                 })}
