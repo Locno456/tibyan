@@ -154,7 +154,7 @@ export default function ChatMessage({
   const statusMeta = verificationStatus === "confirmed"
     ? {
         label: "تطابق حرفي",
-        detail: "وُجد النص في مصدر محلي مفهرس",
+        detail: "وُجدت الصياغة حرفياً في المرجع المعروض",
         tone: "#087A5B",
         background: "#ECF8F2",
         border: "#CFE9DD",

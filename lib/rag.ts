@@ -388,7 +388,9 @@ export function compareQuoteToText(quote: string, sourceText: string): { kind: V
   const normalizedSource = normalizeArabic(sourceText)
   if (normalizedQuote.length < 8 || normalizedSource.length < 8) return null
 
-  if (normalizedSource.includes(normalizedQuote) || normalizedQuote.includes(normalizedSource)) {
+  // Exact attribution requires the complete submitted quotation to occur inside
+  // the source. A longer user quote containing only a short known fragment is not exact.
+  if (normalizedSource.includes(normalizedQuote)) {
     return { kind: "exact", similarity: 1 }
   }
 

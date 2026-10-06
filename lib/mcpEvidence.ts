@@ -80,7 +80,45 @@ function findTrustedUrl(value: any, depth = 0): string | undefined {
   return undefined
 }
 
-export function buildMcpSourceCards(calls: McpCallRecord[]): any[] {
+function findSourceLabel(value: any, fields: Set<string>, depth = 0): string | undefined {
+  if (depth > 7) return undefined
+  if (Array.isArray(value)) {
+    for (const item of value.slice(0, 60)) {
+      const label = findSourceLabel(item, fields, depth + 1)
+      if (label) return label
+    }
+    return undefined
+  }
+  if (!isPlainObject(value)) return undefined
+  for (const [key, item] of Object.entries(value)) {
+    if (fields.has(key.toLowerCase()) && typeof item === "string" && item.trim().length >= 2 && item.trim().length <= 180) {
+      return item.replace(/\s+/g, " ").trim()
+    }
+  }
+  for (const item of Object.values(value).slice(0, 80)) {
+    const label = findSourceLabel(item, fields, depth + 1)
+    if (label) return label
+  }
+  return undefined
+}
+
+function selectEvidenceExcerpt(value: unknown, query: string): string | undefined {
+  const candidates: string[] = []
+  collectEvidenceText(value, candidates)
+  const terms = queryTerms(query)
+  const ranked = candidates
+    .map((text) => {
+      const normalized = normalizeMcpArabic(text)
+      const matched = terms.filter((term) => normalized.includes(term)).length
+      const coverage = terms.length ? matched / terms.length : 0
+      return { text: text.replace(/\s+/g, " ").trim(), matched, coverage }
+    })
+    .filter((item) => item.text.length >= 40 && (!terms.length || item.matched > 0))
+    .sort((a, b) => b.coverage - a.coverage || Math.min(b.text.length, 1_200) - Math.min(a.text.length, 1_200))
+  return ranked[0]?.text.slice(0, 1_200)
+}
+
+export function buildMcpSourceCards(calls: McpCallRecord[], query = ""): any[] {
   const cards: any[] = []
   calls.forEach((call, index) => {
     if (call.error || !call.result || call.result.isError) return
@@ -88,14 +126,21 @@ export function buildMcpSourceCards(calls: McpCallRecord[]): any[] {
     if (!isUsableEvidenceValue(data)) return
 
     const providerUrl = call.providerId === "tafsir_center" ? "https://tafsir.net/" : "https://islamic-content.com/"
-    const sourceUrl = findTrustedUrl(data) || providerUrl
+    const directSourceUrl = findTrustedUrl(data)
+    const sourceUrl = directSourceUrl || providerUrl
+    const excerpt = selectEvidenceExcerpt(data, query)
+    const sourceTitle = findSourceLabel(data, new Set(["title", "book", "book_name", "collection", "reference", "source_name"]))
+    const sourceAuthor = findSourceLabel(data, new Set(["author", "scholar", "compiler"]))
+    const resultAttribution = [sourceTitle, sourceAuthor ? `بقلم ${sourceAuthor}` : undefined].filter(Boolean).join(" · ")
 
     cards.push({
       id: `mcp-${call.providerId}-${call.toolName}-${index}`,
       type: "mcp",
-      text: `مرجع مُستخدم في الإجابة عبر أداة القراءة ${call.toolName}؛ افتح الرابط لمراجعة المادة الأصلية.`,
-      source: `${call.providerLabel} · ${call.toolName}`,
+      text: excerpt || `نتيجة ذات صلة من أداة القراءة ${call.toolName}؛ افتح الرابط لمراجعة المادة الأصلية.`,
+      evidenceExcerpt: !!excerpt,
+      source: `${call.providerLabel} · ${call.toolName}${resultAttribution ? ` · ${resultAttribution}` : ""}${directSourceUrl ? "" : " · رابط الجهة العام؛ لم تُرجع الأداة رابطاً مباشراً"}`,
       source_url: sourceUrl,
+      sourceUrlIsDirect: !!directSourceUrl,
       provider: call.providerId,
       tool: call.toolName,
     })

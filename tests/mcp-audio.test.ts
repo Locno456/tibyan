@@ -125,11 +125,26 @@ test("empty MCP searches do not count as evidence, while cited results get a sou
   }]), true)
   const cards = buildMcpSourceCards([{
     ...base,
-    result: { title: "شرح المسألة", description: "ملخص من المصدر", source_url: "https://islamic-content.com/item/1" },
-  }])
+    result: {
+      title: "شرح المسألة",
+      author: "اللجنة العلمية",
+      description: "ملخص من المصدر",
+      content: "يوضح المصدر أن حكم زكاة الفطر واجب على المسلم القادر، ويذكر مقدارها ووقت إخراجها مع إحالة إلى المرجع الأصلي.",
+      source_url: "https://islamic-content.com/item/1",
+    },
+  }], "حكم زكاة الفطر")
   assert.equal(cards.length, 1)
-  assert.doesNotMatch(cards[0].text, /ملخص من المصدر|شرح المسألة/)
+  assert.match(cards[0].text, /حكم زكاة الفطر واجب/)
+  assert.equal(cards[0].evidenceExcerpt, true)
+  assert.match(cards[0].source, /شرح المسألة.*اللجنة العلمية/)
   assert.equal(cards[0].source_url, "https://islamic-content.com/item/1")
+  assert.equal(cards[0].sourceUrlIsDirect, true)
+  const fallbackCard = buildMcpSourceCards([{
+    ...base,
+    result: { content: "هذا مقتطف مرتبط من النتيجة، لكن الأداة لم توفر رابطاً مباشراً للمادة الأصلية." },
+  }])[0]
+  assert.equal(fallbackCard.sourceUrlIsDirect, false)
+  assert.match(fallbackCard.source, /لم تُرجع الأداة رابطاً مباشراً/)
   assert.equal("confidence" in cards[0], false)
 })
 

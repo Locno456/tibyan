@@ -12,6 +12,7 @@ import { detectQuranAudioRequest, getVerifiedAyah } from "../../../lib/quranAudi
 import { resolveAudioRequest } from "../../../lib/quranAudioService"
 import { getDirectQuranVerses, parseQuranTextRequest } from "../../../lib/quranRequests"
 import { findMcpQuoteMatches, parseVerificationRequest } from "../../../lib/textVerification"
+import { extractRulingTopic, buildGeneralRulingQueries, isRulingEvidenceRelevant } from "../../../lib/questionPlanning"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -126,22 +127,85 @@ function conversationResponse(question: string, persona: string, explanation: st
 
 function verificationExplanation(kind: "exact" | "near", source: string, type: string): string {
   if (kind === "exact") {
-    const sourceKind = type === "quran" ? "في نص القرآن المحلي الموثق" : "في النصوص المحلية المفهرسة للمصادر المعتمدة"
+    const sourceKind = type === "quran"
+      ? "في نص القرآن المحلي الموثق"
+      : type === "hadith"
+        ? "في نص الحديث المحلي المفهرس"
+        : type === "mcp"
+          ? "في المادة التي أعادتها أداة MCP في هذه الجولة"
+          : "في المادة المحلية المفهرسة"
     return `تطابق حرفي بعد تجاهل التشكيل وعلامات الترقيم ${sourceKind}. راجع النص وبيانات المصدر في البطاقة؛ هذا يثبت وجود هذه الصياغة في الموضع المذكور، لا صحة أي صياغة أطول أو سياق لم يُطابق. المصدر: ${source}.`
   }
   return `وجدت صياغة قريبة في «${source}»، لكنها لا تطابق النص الذي أرسلته حرفياً. لذلك لا أؤكد صحة النسبة بهذه الصياغة؛ قارن النصين في البطاقة، أو أرسل اللفظ الكامل ومصدره للتحقق الأدق.`
 }
 
-function noQuoteMatchExplanation(quote: string, searchedMcp: boolean): string {
+function noQuoteMatchExplanation(quote: string, searchedMcp: boolean, mcpFailed = false): string {
   const local = "لم أعثر على تطابق حرفي أو صياغة قريبة في ملف القرآن المحلي وفهرس الصحيحين والنصوص المعتمدة المفهرسة."
   const external = searchedMcp
     ? " ولم يظهر تطابق مباشر في نتائج أدوات البحث التي استُرجعت لهذه المحاولة."
-    : " ولم أتحقق من مصدر خارجي حي في هذه المحاولة."
+    : mcpFailed
+      ? " تعذّر إكمال البحث عبر أدوات MCP، لذلك لا أصف النتيجة بأنها بحث خارجي ناجح."
+      : " ولم أتحقق من مصدر خارجي حي في هذه المحاولة."
   return `${local}${external}\n\nعدم العثور ليس دليلاً قاطعاً على أن النص غير صحيح أو أنه لم يرد في أي مصدر؛ لا أستطيع تأكيد نسبته دون موضع موثوق. النص المطلوب التحقق منه: «${quote.slice(0, 240)}».`
 }
 
 function makeLocalVerificationCards(matches: ReturnType<typeof findVerifiedTextMatches>) {
   return matches.slice(0, 3).map((match, index) => mapRetrievedCard(match.doc, index))
+}
+
+function localNearMatchExplanation(matches: ReturnType<typeof findVerifiedTextMatches>, note: string): string {
+  const best = matches[0]
+  if (!best) return note
+  return `${verificationExplanation("near", best.doc.payload.source, best.doc.payload.type)}\n\n${note}`
+}
+
+async function retrieveGeneralRulingEvidence(question: string, level: Level) {
+  const topic = extractRulingTopic(question)
+  const queries = buildGeneralRulingQueries(question)
+  if (!queries.length) return hybrid_retrieve(question, level, 8, 0.82)
+
+  const results = await Promise.all(queries.map((query) => hybrid_retrieve(query, level, 8, 0.82)))
+  const candidates = new Map<string, { doc: RetrievedChunk; relevance: number }>()
+
+  results.forEach((result) => {
+    for (const doc of result.docs) {
+      const text = `${doc.payload.text} ${doc.payload.title || ""} ${doc.payload.source}`
+      // Keep every candidate, including expanded searches, anchored to the issue's topic.
+      if (!isRulingEvidenceRelevant(topic, text)) continue
+
+      const relevance = Math.max(0, Math.min(1, doc.relevance ?? doc.score / 5))
+      const prior = candidates.get(doc.payload.id)
+      if (!prior || relevance > prior.relevance) candidates.set(doc.payload.id, { doc, relevance })
+    }
+  })
+
+  const ranked = Array.from(candidates.values()).sort((a, b) => {
+    const priority = (type: string) => type === "quran" ? 0 : type === "hadith" ? 1 : type === "fiqh" ? 2 : 3
+    return priority(a.doc.payload.type) - priority(b.doc.payload.type) || b.relevance - a.relevance
+  })
+  const selected: RetrievedChunk[] = []
+  const selectedIds = new Set<string>()
+
+  // Prefer a relevant evidence bundle across Quran, hadith, and fiqh when the index has one.
+  for (const type of ["quran", "hadith", "fiqh"] as const) {
+    const match = ranked.find((candidate) => candidate.doc.payload.type === type && candidate.relevance >= 0.28)
+    if (match && !selectedIds.has(match.doc.payload.id)) {
+      selected.push({ ...match.doc, relevance: match.relevance, score: match.relevance * 5 })
+      selectedIds.add(match.doc.payload.id)
+    }
+  }
+  for (const candidate of ranked) {
+    if (selected.length >= 8) break
+    if (selectedIds.has(candidate.doc.payload.id)) continue
+    selected.push({ ...candidate.doc, relevance: candidate.relevance, score: candidate.relevance * 5 })
+    selectedIds.add(candidate.doc.payload.id)
+  }
+
+  return {
+    docs: selected,
+    confidence: selected.length ? Math.max(...selected.map((doc) => doc.relevance ?? 0)) : 0,
+    source: `general_ruling_multi_query_${queries.length}`,
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -242,6 +306,7 @@ export async function POST(request: NextRequest) {
   // A quote-check is matched against literal local Quran/Hadith/curated text first.
   const verificationRequest = parseVerificationRequest(question)
   let verificationQuote: string | undefined
+  let localQuoteMatches: ReturnType<typeof findVerifiedTextMatches> = []
   if (verificationRequest.requested) {
     if (!verificationRequest.quote) {
       return finishResponse({
@@ -259,26 +324,27 @@ export async function POST(request: NextRequest) {
     }
     verificationQuote = verificationRequest.quote
     const localMatches = findVerifiedTextMatches(verificationQuote, 3)
-    if (localMatches.length) {
-      const exact = localMatches.find((match) => match.kind === "exact")
-      const best = exact || localMatches[0]
+    const exact = localMatches.find((match) => match.kind === "exact")
+    if (exact) {
       const cards = makeLocalVerificationCards(localMatches)
       return finishResponse({
         question,
         level: "A",
         intent: "quote_verification",
         interactionType: "verification",
-        verificationStatus: best.kind === "exact" ? "confirmed" : "near_match",
-        status: best.kind === "exact" ? "ok" : "abstain",
-        action: best.kind === "exact" ? "proceed" : "abstain",
-        explanation: verificationExplanation(best.kind, best.doc.payload.source, best.doc.payload.type),
+        verificationStatus: "confirmed",
+        status: "ok",
+        action: "proceed",
+        explanation: verificationExplanation("exact", exact.doc.payload.source, exact.doc.payload.type),
         blueCards: cards,
-        confidence: best.kind === "exact" ? 1 : 0,
+        confidence: 1,
         persona,
-        guard: { status: best.kind === "exact" ? "ok" : "low_confidence", action: best.kind === "exact" ? "proceed" : "abstain" },
-        metrics: { responseTime: Date.now() - startTime, retrievalSource: `local_quote_match_${best.kind}`, llm: "none - literal corpus match" },
+        guard: { status: "ok", action: "proceed" },
+        metrics: { responseTime: Date.now() - startTime, retrievalSource: "local_quote_match_exact", llm: "none - literal corpus match" },
       })
     }
+    // A near match is useful evidence, but not enough to stop a search of the configured MCP tools.
+    localQuoteMatches = localMatches
     retrievalQuestion = verificationQuote
   }
 
@@ -371,7 +437,9 @@ export async function POST(request: NextRequest) {
     ? { docs: forcedQuranDocs, confidence: 1, source: "quran_full_json" }
     : verificationQuote
       ? { docs: [] as RetrievedChunk[], confidence: 0, source: "quote_not_found_local" }
-      : await hybrid_retrieve(retrievalQuestion, level, 5, 0.82)
+      : effectiveIntent.intent === "general_ruling"
+        ? await retrieveGeneralRulingEvidence(retrievalQuestion, level)
+        : await hybrid_retrieve(retrievalQuestion, level, 5, 0.82)
 
   let selection: Awaited<ReturnType<typeof resolveAISelection>>
   try {
@@ -401,8 +469,11 @@ export async function POST(request: NextRequest) {
   const relevantLocalCards = retrieval.docs.map(mapRetrievedCard)
 
   if (!selection) {
+    const hasLocalNear = verificationQuote ? localQuoteMatches.length > 0 : false
     const explanation = verificationQuote
-      ? noQuoteMatchExplanation(verificationQuote, false)
+      ? hasLocalNear
+        ? localNearMatchExplanation(localQuoteMatches, "وجدت مرجعاً محلياً بصياغة قريبة، لكن لم أُجر بحثاً خارجياً عبر MCP أو مزود في هذه المحاولة؛ لا أؤكد النسبة.")
+        : noQuoteMatchExplanation(verificationQuote, false)
       : localHasEvidence
         ? "عثرت على نصوص محلية مرشحة ذات صلة، لكن لم يُهيّأ مزود نموذج على الخادم لصياغة جواب مسؤول. راجع النصوص وروابطها، أو أضف مفتاح مزود من الإعدادات البيئية للخادم."
         : "لم أجد نصاً محلياً ذا صلة كافية، ولا يوجد مزود نموذج مهيأ على الخادم. لذلك أمتنع عن التخمين؛ أعد صياغة السؤال أو تحقق من إعداد مفاتيح المزودات."
@@ -411,34 +482,38 @@ export async function POST(request: NextRequest) {
       level: verificationQuote ? "A" : level,
       intent: verificationQuote ? "quote_verification" : effectiveIntent.intent,
       interactionType: verificationQuote ? "verification" : "answer",
-      verificationStatus: verificationQuote ? "not_found" : undefined,
+      verificationStatus: verificationQuote ? (hasLocalNear ? "near_match" : "not_found") : undefined,
       status: "abstain",
       explanation,
-      blueCards: verificationQuote ? [] : relevantLocalCards,
+      blueCards: verificationQuote ? (hasLocalNear ? makeLocalVerificationCards(localQuoteMatches) : []) : relevantLocalCards,
       confidence: verificationQuote ? 0 : retrieval.confidence,
       persona,
       guard: { status: "low_confidence", action: "abstain", confidence: retrieval.confidence },
-      metrics: { responseTime: Date.now() - startTime, retrievalSource: retrieval.source, llm: "none - no configured provider" },
+      metrics: { responseTime: Date.now() - startTime, retrievalSource: hasLocalNear ? "local_quote_match_near_only" : retrieval.source, llm: "none - no configured provider" },
     })
   }
 
   if (!localHasEvidence && !canUseTools) {
+    const hasLocalNear = verificationQuote ? localQuoteMatches.length > 0 : false
     return finishResponse({
       question,
       level: verificationQuote ? "A" : level,
       intent: verificationQuote ? "quote_verification" : effectiveIntent.intent,
       interactionType: verificationQuote ? "verification" : "answer",
-      verificationStatus: verificationQuote ? "not_found" : undefined,
+      verificationStatus: verificationQuote ? (hasLocalNear ? "near_match" : "not_found") : undefined,
       status: "abstain",
       explanation: verificationQuote
-        ? noQuoteMatchExplanation(verificationQuote, false)
-        : `لم أجد مصدراً محلياً مرتبطاً بما يكفي بهذا السؤال، كما لا تتوفر أداة بحث خارجية قابلة للاستخدام في هذه الجولة. لا أستطيع الإجابة بثقة أو عرض مصادر لا تدعم السؤال.`,
+        ? hasLocalNear
+          ? localNearMatchExplanation(localQuoteMatches, "لم تتوفر أداة قراءة MCP قابلة للاستخدام، لذلك لم أستطع إكمال البحث الخارجي أو تأكيد النسبة.")
+          : noQuoteMatchExplanation(verificationQuote, false)
+        : "لم أجد مصدراً محلياً مرتبطاً بما يكفي بهذا السؤال، كما لا تتوفر أداة بحث خارجية قابلة للاستخدام في هذه الجولة. لا أستطيع الإجابة بثقة أو عرض مصادر لا تدعم السؤال.",
+      blueCards: verificationQuote && hasLocalNear ? makeLocalVerificationCards(localQuoteMatches) : [],
       confidence: 0,
       persona,
       guard: { status: "low_confidence", action: "abstain", confidence: 0 },
       metrics: {
         responseTime: Date.now() - startTime,
-        retrievalSource: retrieval.source,
+        retrievalSource: hasLocalNear ? "local_quote_match_near_no_mcp" : retrieval.source,
         llm: `${selection.providerId}/${selection.modelId} not called - no evidence/tool`,
         mcpProviders: mcpCatalog.providers.map((provider: any) => ({ id: provider.id, status: provider.status, toolCount: provider.toolCount })),
       },
@@ -457,7 +532,7 @@ export async function POST(request: NextRequest) {
     history,
     background,
     { available: liveDeclarationsAvailable, providers: connectedMcpProviders },
-    { followupInstruction },
+    { followupInstruction, answerIntent: effectiveIntent.intent },
   )
 
   const quotePolicy = verificationQuote
@@ -484,12 +559,14 @@ export async function POST(request: NextRequest) {
       level: verificationQuote ? "A" : level,
       intent: verificationQuote ? "quote_verification" : effectiveIntent.intent,
       interactionType: verificationQuote ? "verification" : "answer",
-      verificationStatus: verificationQuote ? "not_found" : undefined,
+      verificationStatus: verificationQuote ? (localQuoteMatches.length ? "near_match" : "not_found") : undefined,
       status: "abstain",
       explanation: verificationQuote
-        ? `${noQuoteMatchExplanation(verificationQuote, false)}\n\nتعذّر إكمال بحث خارجي عبر مزود النموذج: ${message}`
+        ? localQuoteMatches.length
+          ? localNearMatchExplanation(localQuoteMatches, `تعذّر إكمال بحث خارجي عبر مزود النموذج؛ لا أؤكد النسبة. التفصيل: ${message}`)
+          : `${noQuoteMatchExplanation(verificationQuote, false)}\n\nتعذّر إكمال بحث خارجي عبر مزود النموذج: ${message}`
         : `تعذّر الاتصال بمزود النموذج المحدد (${selection.providerName})؛ لم أستبدل الفشل بقالب أو إجابة غير متحققة. يمكنك تغيير المزود أو إعادة المحاولة.\n\nالتفصيل: ${message}`,
-      blueCards: verificationQuote ? [] : relevantLocalCards,
+      blueCards: verificationQuote ? makeLocalVerificationCards(localQuoteMatches) : relevantLocalCards,
       confidence: verificationQuote ? 0 : retrieval.confidence,
       persona,
       guard: { status: "low_confidence", action: "abstain", confidence: retrieval.confidence },
@@ -504,7 +581,7 @@ export async function POST(request: NextRequest) {
 
   const evidenceQuery = verificationQuote || retrievalQuestion
   const relevantMcpCalls = filterRelevantMcpCalls(generation.toolCalls, evidenceQuery)
-  const mcpSourceCards = buildMcpSourceCards(relevantMcpCalls)
+  const mcpSourceCards = buildMcpSourceCards(relevantMcpCalls, evidenceQuery)
   const mcpHasEvidence = hasUsableMcpEvidence(relevantMcpCalls)
 
   if (verificationQuote) {
@@ -512,7 +589,8 @@ export async function POST(request: NextRequest) {
     if (externalMatches.length) {
       const exact = externalMatches.find((match) => match.kind === "exact")
       const best = exact || externalMatches[0]
-      const matchedCards = buildMcpSourceCards([best.call])
+      const matchedCards = buildMcpSourceCards([best.call], verificationQuote)
+      const localCards = best.kind === "exact" ? [] : makeLocalVerificationCards(localQuoteMatches)
       return finishResponse({
         question,
         level: "A",
@@ -521,7 +599,7 @@ export async function POST(request: NextRequest) {
         verificationStatus: best.kind === "exact" ? "confirmed" : "near_match",
         status: best.kind === "exact" ? "ok" : "abstain",
         explanation: verificationExplanation(best.kind, best.call.providerLabel, "mcp"),
-        blueCards: matchedCards,
+        blueCards: [...localCards, ...matchedCards],
         confidence: best.kind === "exact" ? 1 : 0,
         persona,
         guard: { status: best.kind === "exact" ? "ok" : "low_confidence", action: best.kind === "exact" ? "proceed" : "abstain" },
@@ -535,15 +613,24 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    const hasLocalNear = localQuoteMatches.length > 0
+    const mcpSearchSucceeded = generation.toolCalls.some((call) => !call.error && !!call.result && !call.result.isError)
+    const mcpSearchFailed = generation.toolCalls.length > 0 && !mcpSearchSucceeded
     return finishResponse({
       question,
       level: "A",
       intent: "quote_verification",
       interactionType: "verification",
-      verificationStatus: "not_found",
+      verificationStatus: hasLocalNear ? "near_match" : "not_found",
       status: "abstain",
-      explanation: noQuoteMatchExplanation(verificationQuote, generation.toolCalls.length > 0),
-      blueCards: mcpSourceCards,
+      explanation: hasLocalNear
+        ? localNearMatchExplanation(localQuoteMatches, `${mcpSearchSucceeded
+            ? "لم يظهر تطابق مؤكد في نتائج الأدوات الخارجية التي أعادت محتوى لهذه الجولة."
+            : mcpSearchFailed
+              ? "تعذّر إكمال البحث الخارجي عبر أدوات MCP لهذه الجولة."
+              : "لم تُنفذ أداة بحث خارجية في هذه الجولة."} لا أؤكد النسبة.`)
+        : noQuoteMatchExplanation(verificationQuote, mcpSearchSucceeded, mcpSearchFailed),
+      blueCards: [...(hasLocalNear ? makeLocalVerificationCards(localQuoteMatches) : []), ...mcpSourceCards],
       confidence: 0,
       persona,
       guard: { status: "low_confidence", action: "abstain", confidence: 0 },

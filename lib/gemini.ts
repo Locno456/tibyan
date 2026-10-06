@@ -259,18 +259,22 @@ export function buildTibyanPrompt(
   history: ChatTurn[] = [],
   background?: string,
   liveMcp?: { available: boolean; providers?: string[] },
-  interaction?: { followupInstruction?: string }
+  interaction?: { followupInstruction?: string; answerIntent?: string }
 ): { prompt: string, systemInstruction: string } {
   
-  const docsContext = retrievedDocs.map((doc, i) => 
-    `[مصدر ${i+1} - ${doc.payload.type} - ${doc.payload.source} - ثقة ${(doc.score/5*100).toFixed(0)}%]
-النص الحرفي الموثق 100%:
-${doc.payload.text}
-المصدر: ${buildSourceUrl(doc.payload)}
----`
+  const docsContext = retrievedDocs.map((doc, i) =>
+    `[مادة مرجعية ${i + 1} - النوع: ${doc.payload.type} - الوصف: ${doc.payload.source}]\nالنص المفهرس كما ورد في مجموعة البيانات؛ وجوده هنا لا يثبت وحده صحة الاستدلال:\n${doc.payload.text}\nالمصدر/الرابط: ${buildSourceUrl(doc.payload)}\n---`
   ).join("\n\n")
+  const hasQuran = retrievedDocs.some((doc) => doc.payload.type === "quran")
+  const hasHadith = retrievedDocs.some((doc) => doc.payload.type === "hadith")
+  const hasScholarMaterial = retrievedDocs.some((doc) =>
+    doc.payload.type === "fiqh" || !!doc.payload.author || /(?:قال|الإمام|ابن\s+[\u0621-\u064A]+)/.test(doc.payload.text)
+  )
+  const generalRulingInstructions = interaction?.answerIntent === "general_ruling"
+    ? `\n\nنمط الإجابة: حكم عام مستند إلى الأدلة\n- أجب عن القاعدة العامة ولا تُصدر حكماً لحالة شخصية. إذا ظهر من التفاصيل أنها شخصية، أوقف الفتوى وأحل إلى مختص.\n- اعرض خلاصة مقيدة، ثم أدلة القرآن والحديث وأقوال العلماء فقط إذا وُجد لكل منها نص أو إحالة صريحة في المواد المسترجعة أو نتائج MCP.\n- تغطية المواد المحلية في هذه الجولة: القرآن ${hasQuran ? "موجود" : "غير موجود"}؛ الحديث ${hasHadith ? "موجود" : "غير موجود"}؛ مادة فقهية/قول عالم ${hasScholarMaterial ? "موجود" : "غير موجود"}. هذه مؤشرات وجود لا تعني كفاية الدليل.\n- ابحث بأدوات القراءة الآمنة عن أنواع الأدلة الناقصة إذا كانت متاحة. إذا لم تجدها، اذكر النقص صراحة ولا تخترع آية أو حديثاً أو قول عالم أو إجماعاً.\n- انسب كل قول إلى الاسم والكتاب/الرابط الظاهرين فقط؛ ميّز بين نص القرآن، الحديث ودرجته كما وردت، ورأي العالم، ولا تدّعِ إجماعاً بلا مصدر صريح. عند خلاف العلماء اعرض ما ثبت من الأقوال دون ترجيح مستقل.`
+    : ""
   const mcpProviderContext = liveMcp?.available
-    ? `أدوات MCP للقراءة فقط متاحة من: ${(liveMcp.providers || []).join("، ") || "مصادر إسلامية معتمدة"}. استخدمها لجلب الدليل قبل الإجابة عند نقص الاسترجاع المحلي.`
+    ? `أدوات MCP للقراءة فقط متاحة من: ${(liveMcp.providers || []).join("، ") || "المصادر المكتشفة"}. الأدوات المتاحة لا تعني أن نتائج بحث بعينها قد نُفذت؛ استدعِ ما يلزم لجلب الدليل عند نقص الاسترجاع المحلي.`
     : "لا توجد أدوات MCP متاحة في هذه الجولة؛ لا تستنتج وجود مصدر حي لم يتم استرجاعه."
   const retrievedContext = docsContext || (liveMcp?.available
     ? "لا يوجد مصدر محلي مطابق كافٍ بعد. استعمل أدوات MCP المناسبة أولاً؛ إذا لم تُرجع دليلاً مباشراً، امتنع."
@@ -296,6 +300,7 @@ ${doc.payload.text}
 ${personaInstructions[persona] || personaInstructions.general}
 ${background ? `- خلفية السائل المخصصة: «${background}» — كيّف أسلوبك وأمثلة ومستوى التفصيل لتناسب هذه الخلفية تحديداً` : ""}
 ${interaction?.followupInstruction ? `\nتعليمات متابعة خاصة:\n- ${interaction.followupInstruction}` : ""}
+${generalRulingInstructions}
 
 مهم جداً:
 - لا تستخدم زخرفة ﴿ ﴾ إلا إذا كانت موجودة حرفياً في المصادر المعطاة؛ والنص القرآني الحرفي يُعرض من ملف JSON المحلي الموثق فقط، لا تنقله من مخرجات MCP.
@@ -324,7 +329,7 @@ ${interaction?.followupInstruction ? `\nتعليمات متابعة خاصة:\n-
 
   const prompt = `${historyBlock}السؤال الحالي: ${question}
 
-المصادر الموثقة المسترجعة (Hybrid RAG - BM25 + Vector):
+المواد المرشحة المسترجعة محلياً (استرجاع هجين BM25 + خريطة دلالية يدوية):
 ${retrievedContext}
 
 ${mcpProviderContext}
