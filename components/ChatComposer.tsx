@@ -1,12 +1,16 @@
 "use client"
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { motion } from "framer-motion"
+import type { SourceMode } from "../lib/sourcePreferences"
 
 interface ChatComposerProps {
   onSend: (text: string) => void
   disabled?: boolean
   placeholder?: string
   initialValue?: string
+  sourceModes?: SourceMode[]
+  onSourceModesChange?: (value: SourceMode[]) => void
+  mcpModelCapable?: boolean | null
 }
 
 const MAX = 500
@@ -16,10 +20,11 @@ const MAX = 500
  * يحل محل الوصول المباشر إلى DOM في النسخة السابقة.
  */
 const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
-  function ChatComposer({ onSend, disabled = false, placeholder, initialValue }, ref) {
+  function ChatComposer({ onSend, disabled = false, placeholder, initialValue, sourceModes = ["local", "mcp"], onSourceModesChange, mcpModelCapable }, ref) {
     const inner = useRef<HTMLTextAreaElement | null>(null)
     const [value, setValue] = useState(initialValue || "")
     const [focused, setFocused] = useState(false)
+    const [sourcesOpen, setSourcesOpen] = useState(false)
 
     useImperativeHandle(ref, () => inner.current as HTMLTextAreaElement)
 
@@ -112,6 +117,29 @@ const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
             </motion.span>
           )}
 
+          {onSourceModesChange && (
+            <div className="relative shrink-0 self-center">
+              <button type="button" aria-label="اختيار مصادر البحث" aria-expanded={sourcesOpen}
+                onClick={() => setSourcesOpen(!sourcesOpen)}
+                className="rounded-full border border-[#C9DFE1] bg-[#EFF9F7] px-3 py-2 text-xs font-bold text-[#087A7F]">
+                المصادر
+              </button>
+              {sourcesOpen && (
+                <div className="absolute bottom-full left-0 z-50 mb-3 w-64 rounded-xl border border-[#C9DFE1] bg-white p-3 text-right shadow-xl" dir="rtl">
+                  <p className="mb-2 text-xs font-bold">مصادر البحث (اختر أكثر من مصدر)</p>
+                  {([ ["local", "البيانات المحلية"], ["mcp", "أدوات MCP المعتمدة"] ] as const).map(([id, label]) => (
+                    <label key={id} className={`flex items-center gap-2 py-2 text-xs ${id === "mcp" && mcpModelCapable === false ? "cursor-not-allowed opacity-45" : "cursor-pointer"}`}>
+                      <input type="checkbox" disabled={id === "mcp" && mcpModelCapable === false} checked={sourceModes.includes(id) && !(id === "mcp" && mcpModelCapable === false)} onChange={() => onSourceModesChange(sourceModes.includes(id) ? sourceModes.filter((item) => item !== id) : [...sourceModes, id])} />
+                      {label}
+                    </label>
+                  ))}
+                  {mcpModelCapable === false && <p className="text-[11px] text-amber-700">النموذج المحدد لا يدعم الأدوات؛ اختر نموذجاً يدعمها لتفعيل MCP.</p>}
+                  <p className="border-t pt-2 text-[11px] text-[#6D8A90]">بحث المواقع المخصصة قيد التطوير؛ لن نعرضه كمصدر عامل قبل تفعيله.</p>
+                  <button type="button" onClick={() => setSourcesOpen(false)} className="mt-2 text-xs font-bold text-[#087A7F]">تم</button>
+                </div>
+              )}
+            </div>
+          )}
           <motion.button
             type="button"
             onClick={submit}

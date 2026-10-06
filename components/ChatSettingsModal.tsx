@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import { Brain, ChevronLeft, Download, FileJson, HardDrive, ShieldCheck, X } from "lucide-react"
 import type { AIModelSelection } from "../lib/aiProviderTypes"
+import type { NoEvidenceMode } from "../lib/sourcePreferences"
 import type { ChatSession } from "../lib/chatHistory"
 import { downloadChatHistory } from "../lib/chatHistory"
 import ProviderLogo from "./ProviderLogo"
@@ -14,6 +15,9 @@ interface ChatSettingsModalProps {
   sessions: ChatSession[]
   modelSelection?: AIModelSelection | null
   fallbackSelection?: AIModelSelection | null
+  noEvidenceMode?: NoEvidenceMode
+  onNoEvidenceModeChange?: (value: NoEvidenceMode) => void
+  isResearcher?: boolean
   onOpenModels: () => void
   onClose: () => void
 }
@@ -23,6 +27,9 @@ export default function ChatSettingsModal({
   sessions,
   modelSelection,
   fallbackSelection,
+  noEvidenceMode = "request_sources",
+  onNoEvidenceModeChange,
+  isResearcher = false,
   onOpenModels,
   onClose,
 }: ChatSettingsModalProps) {
@@ -138,6 +145,19 @@ export default function ChatSettingsModal({
                 >
                   إدارة النماذج والبديل التلقائي <ChevronLeft size={15} aria-hidden="true" />
                 </button>
+              </section>
+
+              <section className="rounded-[14px] border border-[#C9DFE1]/70 bg-white p-4" aria-labelledby="advanced-mode-title">
+                <h3 id="advanced-mode-title" className="text-sm font-bold">الوضع المتقدم</h3>
+                <p className="mt-1 text-xs text-[#54747A]">عندما لا يجد تِبْيَان دليلاً محلياً أو أداة بحث قابلة للاستخدام:</p>
+                <select aria-label="سلوك الإجابة بلا مصادر" value={noEvidenceMode}
+                  onChange={(event) => onNoEvidenceModeChange?.(event.target.value as NoEvidenceMode)}
+                  className="mt-2 w-full rounded-lg border border-[#C9DFE1] bg-white p-2 text-sm">
+                  <option value="request_sources">توقف واطلب تفعيل مصادر (الافتراضي)</option>
+                  <option value="direct_unverified">أجب مباشرة مع تحذير: غير متحقق منها</option>
+                </select>
+                <p className="mt-2 text-xs text-[#856514]">الإجابة المباشرة ليست دليلاً شرعياً ولا تسمح باختلاق نص أو فتوى شخصية.</p>
+                {isResearcher && <p className="mt-2 text-xs text-[#54747A]">إضافة مواقع الباحث ستتاح بعد تفعيل البحث الآمن على الخادم؛ لم تُفعّل بعد.</p>}
               </section>
 
               <div className="flex items-start gap-3 rounded-[14px] border border-[#0A8F94]/15 bg-[#EFF9F7] p-3.5">

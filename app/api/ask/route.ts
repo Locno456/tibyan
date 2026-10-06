@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { detectIntent, LEVELS, type Level } from "../../../lib/levelRouter"
+import { parseSourceModes, parseNoEvidenceMode } from "../../../lib/sourcePreferences"
+import { extractClaimedSacred } from "../../../lib/guard"
 import { hybrid_retrieve, findVerifiedTextMatches, type RetrievedChunk } from "../../../lib/rag"
 import { fullGuard } from "../../../lib/guard"
 import { generateWithAIProvider, type AIProviderSelection } from "../../../lib/aiRuntime"
@@ -220,6 +222,10 @@ export async function POST(request: NextRequest) {
   if (question.length < 2) return NextResponse.json({ error: "السؤال مطلوب" }, { status: 400 })
 
   const startTime = Date.now()
+  const sourceModes = parseSourceModes(body.sourceModes)
+  const useLocal = sourceModes.includes("local")
+  const useMcp = sourceModes.includes("mcp")
+  const noEvidenceMode = parseNoEvidenceMode(body.noEvidenceMode)
   const personaOptions = new Set(["general", "new_muslim", "non_muslim", "teen", "researcher"])
   const persona = typeof body.persona === "string" && personaOptions.has(body.persona) ? body.persona : "general"
   const background = typeof body.background === "string" && body.background.trim()
@@ -290,6 +296,12 @@ export async function POST(request: NextRequest) {
     })
   }
 
+  if (!sourceModes.length && noEvidenceMode !== "direct_unverified") {
+    return finishResponse({ question, level: initialIntent.level as Level, intent: initialIntent.intent,
+      status: "abstain", explanation: "لم تحدد مصدراً للبحث. فعّل البيانات المحلية أو أدوات MCP، أو اختر الإجابة المباشرة غير المتحقق منها في الوضع المتقدم.",
+      confidence: 0, persona, metrics: { responseTime: Date.now() - startTime, retrievalSource: "sources_disabled", llm: "none" } })
+  }
+
   let followupInstruction: string | undefined
   let promptQuestion = question
   let retrievalQuestion = question
@@ -323,7 +335,7 @@ export async function POST(request: NextRequest) {
       })
     }
     verificationQuote = verificationRequest.quote
-    const localMatches = findVerifiedTextMatches(verificationQuote, 3)
+    const localMatches = useLocal ? findVerifiedTextMatches(verificationQuote, 3) : []
     const exact = localMatches.find((match) => match.kind === "exact")
     if (exact) {
       const cards = makeLocalVerificationCards(localMatches)
@@ -351,7 +363,7 @@ export async function POST(request: NextRequest) {
   // Explicit text requests are resolved only from the verified local Quran JSON.
   let forcedQuranDocs: RetrievedChunk[] | undefined
   const quranRequest = parseQuranTextRequest(question)
-  if (quranRequest) {
+  if (quranRequest && useLocal) {
     if (quranRequest.kind === "ambiguous") {
       return conversationResponse(question, persona, "وجدت رقم آية، لكن أحتاج اسم السورة أيضاً لتحديد النص بدقة. اكتب مثلاً: الآية 255 من سورة البقرة.", startTime)
     }
@@ -437,9 +449,11 @@ export async function POST(request: NextRequest) {
     ? { docs: forcedQuranDocs, confidence: 1, source: "quran_full_json" }
     : verificationQuote
       ? { docs: [] as RetrievedChunk[], confidence: 0, source: "quote_not_found_local" }
-      : effectiveIntent.intent === "general_ruling"
-        ? await retrieveGeneralRulingEvidence(retrievalQuestion, level)
-        : await hybrid_retrieve(retrievalQuestion, level, 5, 0.82)
+      : !useLocal
+        ? { docs: [] as RetrievedChunk[], confidence: 0, source: "local_disabled" }
+        : effectiveIntent.intent === "general_ruling"
+          ? await retrieveGeneralRulingEvidence(retrievalQuestion, level)
+          : await hybrid_retrieve(retrievalQuestion, level, 5, 0.82)
 
   type ResolvedAISelection = Awaited<ReturnType<typeof resolveAISelection>>
   let selection: ResolvedAISelection = null
@@ -480,7 +494,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.slice(0, 420) }, { status: 400 })
   }
 
-  const mcpCatalog = selection
+  const mcpCatalog = selection && useMcp
     ? await discoverMcpToolCatalog()
     : {
         tools: [],
@@ -545,6 +559,28 @@ export async function POST(request: NextRequest) {
         providerError: "لم يُهيّأ مزود نموذج على الخادم",
       },
     })
+  }
+
+  if (!localHasEvidence && !canUseTools && noEvidenceMode === "direct_unverified" && !verificationQuote && (level === "A" || level === "B") && selection) {
+    try {
+      const direct = await generateWithAIProvider(selection,
+        `سؤال المستخدم: ${question.slice(0, 1000)}\nأجب بشرح عام موجز فقط من معرفتك. لا تنسب آية أو حديثاً أو حكماً إلى مصدر، ولا تدّع التحقق أو وجود دليل. إن كان السؤال يحتاج دليلاً محدداً فاطلب تفعيل مصادر.`,
+        "أنت تِبْيَان في وضع إجابة غير متحقَّق منها. لا تنقل نصاً قرآنياً أو حديثاً أو تصدر فتوى. لا تذكر مصدراً لم تسترجعه. امتنع عند الحساسية أو الجهل.")
+      const text = direct.text.trim()
+      // Without evidence there is no basis to confirm any claimed religious quotation.
+      const hasSacredClaim = extractClaimedSacred(text).length > 0 || /(?:قال تعالى|قال رسول الله|رواه البخاري|رواه مسلم|حديث صحيح)/.test(text)
+      return finishResponse({ question, level, intent: effectiveIntent.intent, interactionType: "answer",
+        status: text && !hasSacredClaim ? "ok" : "abstain",
+        explanation: text && !hasSacredClaim
+          ? `إجابة غير متحقق منها — من معرفة النموذج فقط؛ لا تستخدمها حكماً شرعياً أو مصدراً موثقاً.\n\n${text}`
+          : "لا يمكن تأكيد هذه الإجابة دون مصدر؛ فعّل البيانات المحلية أو أدوات MCP.",
+        confidence: 0, persona, guard: { status: "low_confidence", action: text && !hasSacredClaim ? "proceed" : "abstain" },
+        metrics: { responseTime: Date.now() - startTime, retrievalSource: "model_memory_unverified", llm: `${direct.providerId}/${direct.model}` } })
+    } catch {
+      return finishResponse({ question, level, intent: effectiveIntent.intent, status: "error", action: "retry",
+        explanation: "تعذّر اتصال النموذج أثناء الإجابة غير المتحقق منها. أعد المحاولة أو اختر نموذجاً آخر.", confidence: 0, persona,
+        metrics: { responseTime: Date.now() - startTime, retrievalSource: "model_memory_unverified", llm: "error" } })
+    }
   }
 
   if (!localHasEvidence && !canUseTools) {

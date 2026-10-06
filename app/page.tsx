@@ -16,6 +16,7 @@ import AccountAccessModal from "../components/AccountAccessModal"
 import SyncOnLoginModal, { type SyncDecisionData } from "../components/SyncOnLoginModal"
 import { useAccount } from "../components/AccountProvider"
 import type { AIModelSelection, AIProviderId } from "../lib/aiProviderTypes"
+import { DEFAULT_SOURCE_MODES, parseSourceModes, parseNoEvidenceMode, type SourceMode, type NoEvidenceMode } from "../lib/sourcePreferences"
 import { Lightbulb, Menu } from "lucide-react"
 import {
   KnowledgeOption, PRESET_KNOWLEDGE, getKnowledgeIcon,
@@ -83,7 +84,25 @@ const ALL_TESTS = [
 
 export default function HomePage() {
   const router = useRouter()
-  const { user, client, authLoading } = useAccount()
+  const { user, client, authLoading, accountType } = useAccount()
+  const [sourceModes, setSourceModes] = useState<SourceMode[]>(DEFAULT_SOURCE_MODES)
+  const [mcpModelCapable, setMcpModelCapable] = useState<boolean | null>(null)
+  const [noEvidenceMode, setNoEvidenceMode] = useState<NoEvidenceMode>("request_sources")
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("tibyan.source-modes.v1")
+      if (stored) setSourceModes(parseSourceModes(JSON.parse(stored)))
+      setNoEvidenceMode(parseNoEvidenceMode(window.localStorage.getItem("tibyan.no-evidence-mode.v1")))
+    } catch { /* optional local preferences */ }
+  }, [])
+  const changeSourceModes = (value: SourceMode[]) => {
+    setSourceModes(value)
+    try { window.localStorage.setItem("tibyan.source-modes.v1", JSON.stringify(value)) } catch { /* optional */ }
+  }
+  const changeNoEvidenceMode = (value: NoEvidenceMode) => {
+    setNoEvidenceMode(value)
+    try { window.localStorage.setItem("tibyan.no-evidence-mode.v1", value) } catch { /* optional */ }
+  }
   const [showSplash, setShowSplash] = useState(true)
   const [accountAccessOpen, setAccountAccessOpen] = useState(false)
   const [syncModalOpen, setSyncModalOpen] = useState(false)
@@ -110,6 +129,19 @@ export default function HomePage() {
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
   const [modelSelection, setModelSelection] = useState<AIModelSelection | null>(null)
   const [modelFallbackSelection, setModelFallbackSelection] = useState<AIModelSelection | null>(null)
+  useEffect(() => {
+    let active = true
+    fetch("/api/models").then((response) => response.json()).then((catalog) => {
+      if (!active) return
+      const primary = modelSelection || catalog?.defaultSelection
+      const fallback = modelFallbackSelection
+      const lookup = (selection: AIModelSelection | null | undefined) => catalog?.providers?.find((provider: any) => provider.id === selection?.providerId)?.models?.find((model: any) => model.id === selection?.modelId)?.supportsTools
+      const supports = lookup(primary)
+      const fallbackSupports = lookup(fallback)
+      setMcpModelCapable(supports === false && (!fallback || fallbackSupports === false) ? false : null)
+    }).catch(() => { if (active) setMcpModelCapable(null) })
+    return () => { active = false }
+  }, [modelSelection, modelFallbackSelection])
   const [modelSelectionReady, setModelSelectionReady] = useState(false)
   const [storageWarning, setStorageWarning] = useState(false)
 
@@ -700,6 +732,8 @@ export default function HomePage() {
             modelId: modelSelection?.modelId,
             fallbackProviderId: modelFallbackSelection?.providerId,
             fallbackModelId: modelFallbackSelection?.modelId,
+            sourceModes: mcpModelCapable === false ? sourceModes.filter((mode) => mode !== "mcp") : sourceModes,
+            noEvidenceMode,
           }),
         })
         const json = await res.json().catch(() => null)
@@ -795,7 +829,7 @@ export default function HomePage() {
       requestLockRef.current = false
       if (activeSessionId === sessionId) scrollToBottom()
     },
-    [activeSessionId, appendToSession, historyReady, knowledge, modelFallbackSelection, modelSelection, pending, scrollToBottom, sessions, syncLocked]
+    [activeSessionId, appendToSession, historyReady, knowledge, modelFallbackSelection, modelSelection, pending, scrollToBottom, sessions, syncLocked, sourceModes, noEvidenceMode, mcpModelCapable]
   )
 
   const isEmpty = thread.length === 0 && !pendingForActiveSession
@@ -1181,6 +1215,9 @@ export default function HomePage() {
             <ChatComposer
               ref={composerRef}
               onSend={handleAsk}
+              sourceModes={sourceModes}
+              mcpModelCapable={mcpModelCapable}
+              onSourceModesChange={changeSourceModes}
               disabled={!historyReady || !!pending || !appVisible || syncLocked}
               initialValue={splashDraft}
             />
@@ -1195,6 +1232,9 @@ export default function HomePage() {
         sessions={sessions}
         modelSelection={modelSelection}
         fallbackSelection={modelFallbackSelection}
+        noEvidenceMode={noEvidenceMode}
+        onNoEvidenceModeChange={changeNoEvidenceMode}
+        isResearcher={!!user && accountType === "researcher"}
         onOpenModels={openModelSettings}
         onClose={closeSettings}
       />
