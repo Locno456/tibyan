@@ -56,7 +56,13 @@ export async function searchApprovedWeb(question: string, fetchImpl: typeof fetc
       const bytes = new Uint8Array(total)
       let offset = 0
       for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
-      const text = plainText(new TextDecoder().decode(bytes))
+      const html = new TextDecoder().decode(bytes)
+      // Search forms, menus and filter lists are NOT results. Fail closed if a
+      // site's result markup changes instead of presenting navigation as proof.
+      const resultBlocks = Array.from(html.matchAll(/<article\b[^>]*>[\s\S]*?<\/article>|<(?:div|section)\b[^>]*class=["'][^"']*\b(?:hadith-item|result-item)\b[^"']*["'][^>]*>[\s\S]*?<\/(?:div|section)>/gi))
+        .slice(0, 12).map((match) => plainText(match[0])).filter((item) => item.length >= 60)
+      if (!resultBlocks.length) return null
+      const text = resultBlocks.join(" ").slice(0, 10_000)
       const normalized = text.replace(/[\u064B-\u065F\u0640]/g, "").replace(/[أإآ]/g, "ا")
       const hits = terms.filter((term) => normalized.includes(term))
       if (!hits.length) return null

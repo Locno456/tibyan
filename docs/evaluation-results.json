@@ -1,7 +1,16 @@
 {
   "summary": {
-    "generated_at": "2026-10-06T13:22:32.515Z",
-    "runs": 1,
+    "generated_at": "2026-10-06T18:28:07.307Z",
+    "runs": 5,
+    "stable_decisions_across_runs": true,
+    "level_routing_range": [
+      11,
+      11
+    ],
+    "expected_sources_range": [
+      10,
+      10
+    ],
     "total_cases": 12,
     "level_routing_correct": 11,
     "level_routing_rate": 91.7,
@@ -11,8 +20,55 @@
     "guard_behaviour_correct": 12,
     "guard_probes_passed": 3,
     "guard_probes_total": 4,
-    "avg_latency_ms": 124.5
+    "avg_latency_ms": 83.58
   },
+  "perRun": [
+    {
+      "run": 1,
+      "level_routing_correct": 11,
+      "expected_sources_hit": 10,
+      "expected_sources_total": 18,
+      "guard_behaviour_correct": 12,
+      "avg_latency_ms": 85.17,
+      "decision_signature": "01:B:shubha_kaaba_001,quran-11-109,quran-37-22,quran-34-40,quran-2-144:ok|02:A:shubha_quran_authorship_001,hadith-330110,hadith-317180,hadith-372340,hadith-318810:ok|03:B:shubha_sword_001,hadith_arkan_islam,hadith-301200,shubha_takhalluf_001,hadith-301080:ok|04:C:quran-20-110,quran-65-12,fiqh_khilaf_001,quran-7-89,hadith-370660:ok|05:D::blocked|06:A:hadith-350840,hadith-317531,hadith-303180,hadith-315260,hadith-140480:ok|07:A:jamhara_tawhid_en,concept_tawhid_def,hadith-303360,hadith-113210,hadith-126580:ok|08:B:jamhara_tawhid_en,concept_tawhid_def,quran-40-44,quran-2-207,quran-4-135:ok|09:B:hadith-110840,quran-26-152,quran-27-48,shubha_takhalluf_001,hadith-181120:ok|10:C:quran-16-76,fiqh_ijma_khilaf_001,quran-13-16,quran-39-62,quran-27-91:ok|11:A:quran-3-85,hadith-133340,hadith-338920,hadith-139970,hadith-163850:ok|12:B:concept_karma_tawtin,hadith-181120,hadith-113210,hadith-100500,hadith-174640:ok"
+    },
+    {
+      "run": 2,
+      "level_routing_correct": 11,
+      "expected_sources_hit": 10,
+      "expected_sources_total": 18,
+      "guard_behaviour_correct": 12,
+      "avg_latency_ms": 84.83,
+      "decision_signature": "01:B:shubha_kaaba_001,quran-11-109,quran-37-22,quran-34-40,quran-2-144:ok|02:A:shubha_quran_authorship_001,hadith-330110,hadith-317180,hadith-372340,hadith-318810:ok|03:B:shubha_sword_001,hadith_arkan_islam,hadith-301200,shubha_takhalluf_001,hadith-301080:ok|04:C:quran-20-110,quran-65-12,fiqh_khilaf_001,quran-7-89,hadith-370660:ok|05:D::blocked|06:A:hadith-350840,hadith-317531,hadith-303180,hadith-315260,hadith-140480:ok|07:A:jamhara_tawhid_en,concept_tawhid_def,hadith-303360,hadith-113210,hadith-126580:ok|08:B:jamhara_tawhid_en,concept_tawhid_def,quran-40-44,quran-2-207,quran-4-135:ok|09:B:hadith-110840,quran-26-152,quran-27-48,shubha_takhalluf_001,hadith-181120:ok|10:C:quran-16-76,fiqh_ijma_khilaf_001,quran-13-16,quran-39-62,quran-27-91:ok|11:A:quran-3-85,hadith-133340,hadith-338920,hadith-139970,hadith-163850:ok|12:B:concept_karma_tawtin,hadith-181120,hadith-113210,hadith-100500,hadith-174640:ok"
+    },
+    {
+      "run": 3,
+      "level_routing_correct": 11,
+      "expected_sources_hit": 10,
+      "expected_sources_total": 18,
+      "guard_behaviour_correct": 12,
+      "avg_latency_ms": 88.17,
+      "decision_signature": "01:B:shubha_kaaba_001,quran-11-109,quran-37-22,quran-34-40,quran-2-144:ok|02:A:shubha_quran_authorship_001,hadith-330110,hadith-317180,hadith-372340,hadith-318810:ok|03:B:shubha_sword_001,hadith_arkan_islam,hadith-301200,shubha_takhalluf_001,hadith-301080:ok|04:C:quran-20-110,quran-65-12,fiqh_khilaf_001,quran-7-89,hadith-370660:ok|05:D::blocked|06:A:hadith-350840,hadith-317531,hadith-303180,hadith-315260,hadith-140480:ok|07:A:jamhara_tawhid_en,concept_tawhid_def,hadith-303360,hadith-113210,hadith-126580:ok|08:B:jamhara_tawhid_en,concept_tawhid_def,quran-40-44,quran-2-207,quran-4-135:ok|09:B:hadith-110840,quran-26-152,quran-27-48,shubha_takhalluf_001,hadith-181120:ok|10:C:quran-16-76,fiqh_ijma_khilaf_001,quran-13-16,quran-39-62,quran-27-91:ok|11:A:quran-3-85,hadith-133340,hadith-338920,hadith-139970,hadith-163850:ok|12:B:concept_karma_tawtin,hadith-181120,hadith-113210,hadith-100500,hadith-174640:ok"
+    },
+    {
+      "run": 4,
+      "level_routing_correct": 11,
+      "expected_sources_hit": 10,
+      "expected_sources_total": 18,
+      "guard_behaviour_correct": 12,
+      "avg_latency_ms": 85.33,
+      "decision_signature": "01:B:shubha_kaaba_001,quran-11-109,quran-37-22,quran-34-40,quran-2-144:ok|02:A:shubha_quran_authorship_001,hadith-330110,hadith-317180,hadith-372340,hadith-318810:ok|03:B:shubha_sword_001,hadith_arkan_islam,hadith-301200,shubha_takhalluf_001,hadith-301080:ok|04:C:quran-20-110,quran-65-12,fiqh_khilaf_001,quran-7-89,hadith-370660:ok|05:D::blocked|06:A:hadith-350840,hadith-317531,hadith-303180,hadith-315260,hadith-140480:ok|07:A:jamhara_tawhid_en,concept_tawhid_def,hadith-303360,hadith-113210,hadith-126580:ok|08:B:jamhara_tawhid_en,concept_tawhid_def,quran-40-44,quran-2-207,quran-4-135:ok|09:B:hadith-110840,quran-26-152,quran-27-48,shubha_takhalluf_001,hadith-181120:ok|10:C:quran-16-76,fiqh_ijma_khilaf_001,quran-13-16,quran-39-62,quran-27-91:ok|11:A:quran-3-85,hadith-133340,hadith-338920,hadith-139970,hadith-163850:ok|12:B:concept_karma_tawtin,hadith-181120,hadith-113210,hadith-100500,hadith-174640:ok"
+    },
+    {
+      "run": 5,
+      "level_routing_correct": 11,
+      "expected_sources_hit": 10,
+      "expected_sources_total": 18,
+      "guard_behaviour_correct": 12,
+      "avg_latency_ms": 83.58,
+      "decision_signature": "01:B:shubha_kaaba_001,quran-11-109,quran-37-22,quran-34-40,quran-2-144:ok|02:A:shubha_quran_authorship_001,hadith-330110,hadith-317180,hadith-372340,hadith-318810:ok|03:B:shubha_sword_001,hadith_arkan_islam,hadith-301200,shubha_takhalluf_001,hadith-301080:ok|04:C:quran-20-110,quran-65-12,fiqh_khilaf_001,quran-7-89,hadith-370660:ok|05:D::blocked|06:A:hadith-350840,hadith-317531,hadith-303180,hadith-315260,hadith-140480:ok|07:A:jamhara_tawhid_en,concept_tawhid_def,hadith-303360,hadith-113210,hadith-126580:ok|08:B:jamhara_tawhid_en,concept_tawhid_def,quran-40-44,quran-2-207,quran-4-135:ok|09:B:hadith-110840,quran-26-152,quran-27-48,shubha_takhalluf_001,hadith-181120:ok|10:C:quran-16-76,fiqh_ijma_khilaf_001,quran-13-16,quran-39-62,quran-27-91:ok|11:A:quran-3-85,hadith-133340,hadith-338920,hadith-139970,hadith-163850:ok|12:B:concept_karma_tawtin,hadith-181120,hadith-113210,hadith-100500,hadith-174640:ok"
+    }
+  ],
   "guardProbes": [
     {
       "name": "آية مُختلَقة داخل ﴿﴾",
@@ -75,7 +131,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 164
+      "ms": 81
     },
     {
       "id": "02",
@@ -104,7 +160,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 135
+      "ms": 81
     },
     {
       "id": "03",
@@ -131,7 +187,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 123
+      "ms": 95
     },
     {
       "id": "04",
@@ -158,7 +214,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 106
+      "ms": 65
     },
     {
       "id": "05",
@@ -208,7 +264,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 101
+      "ms": 91
     },
     {
       "id": "07",
@@ -238,7 +294,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 131
+      "ms": 86
     },
     {
       "id": "08",
@@ -265,7 +321,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 149
+      "ms": 112
     },
     {
       "id": "09",
@@ -292,7 +348,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 160
+      "ms": 107
     },
     {
       "id": "10",
@@ -321,7 +377,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 114
+      "ms": 75
     },
     {
       "id": "11",
@@ -350,7 +406,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 172
+      "ms": 125
     },
     {
       "id": "12",
@@ -379,7 +435,7 @@
       "guard_action": "proceed",
       "guard_expected": "ok",
       "guard_ok": true,
-      "ms": 140
+      "ms": 85
     }
   ]
 }
