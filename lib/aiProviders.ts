@@ -261,7 +261,7 @@ async function listOpenAIModels(apiKey: string): Promise<AIModelInfo[]> {
 async function listOpenRouterModels(apiKey: string): Promise<AIModelInfo[]> {
   const response = await fetchJson("https://openrouter.ai/api/v1/models/user", {
     ...bearer(apiKey),
-    "HTTP-Referer": "https://tibyan.app",
+    "HTTP-Referer": "https://tibyan-demo.vercel.app/",
     "X-Title": "Tibyan",
   })
   return dedupeAndSort(rowsFrom(response)

@@ -236,7 +236,7 @@
 | كل الأصول العشرة المُشار إليها في HTML | **كلها 200** (favicon.svg، favicon.ico، manifest.json، الأيقونات، الشعار، زخرفتا brand-kit) |
 | `POST /api/ask` حالة 05 (مستوى د) | HTTP 200 — `status: abstain`، `action: refer`، `blueCards: []` — **مطابق للحزمة العلمية ص2** ✅ |
 | `POST /api/ask` حالة 01 (الكعبة) | HTTP 200 في 13ms — 5 بطاقات زرقاء + شرح |
-| Live Demo `tibyan-mvp.vercel.app` | **يعمل فعلاً** ويعرض الواجهة |
+| Live Demo [تِبْيَان | Tibyan - نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ](https://tibyan-demo.vercel.app/) | النطاق المعتمد حالياً؛ اختبر الوظائف قبل التسليم |
 | المجالات الثمانية في `lib/sources.ts` | مطابقة للحزمة العلمية ص3–4 ✅ |
 | الحالات الـ12 في `data/test_cases.json` | مطابقة للحزمة العلمية ص6 ✅ |
 | المستويات أ/ب/ج/د في `lib/levelRouter.ts` | مطابقة لص2 ✅ |
@@ -356,7 +356,7 @@ ls: cannot access 'VIDEO_SCRIPT.md': No such file or directory
 | README سطر 105 و216: «مرآة محلية 10k نص» | `verified_texts.json` فيه **21 نصاً**. سطر 183 يوضح أنها عينة — لكن 105 و216 لا |
 | `FIXES.md`: «بعد التبسيط 45.5kB» | القياس الفعلي **46.5kB** |
 | README شارات GitHub | `github.com/YOUR_USERNAME/tibyan-mvp` — placeholder |
-| `homepage` في GitHub | `null` — رابط Live Demo غير مضبوط على المستودع |
+| `homepage` في GitHub | https://tibyan-demo.vercel.app/ |
 
 ---
 
@@ -365,7 +365,7 @@ ls: cannot access 'VIDEO_SCRIPT.md': No such file or directory
 ### الأولوية 1 — مانع استبعاد (اليوم)
 1. **تحويل المستودع إلى عام** — `gh repo edit Locno456/Tibyan --visibility public`
 2. تصحيح شارات README: `Locno456/Tibyan` بدل `YOUR_USERNAME`
-3. ضبط `homepage` على رابط Live Demo
+3. التحقق من تطابق `homepage` مع رابط Live Demo المعتمد
 
 ### الأولوية 2 — معيار 25% + 15% (45% من الدرجة)
 4. **إصلاح استرجاع الحالة 01 و 06 و 07** — آية القبلة وحديث الفجر يجب أن يظهرا. الخلل في `bm25_search` / `vector_search` في `lib/rag.ts`
