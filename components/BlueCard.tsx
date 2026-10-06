@@ -1,5 +1,6 @@
 "use client"
 import { motion } from "framer-motion"
+import { isDorarSearchUrl, normalizeSourceUrl } from "../lib/sourceLinks"
 
 interface BlueCardProps {
   text: string
@@ -42,7 +43,7 @@ export default function BlueCard({ text, source, sourceUrl, grade, type = "conce
 
   const safeSource = source || "مصدر موثق"
   const safeText = text || ""
-  const safeSourceUrl = sourceUrl || "#"
+  const safeSourceUrl = sourceUrl ? normalizeSourceUrl(sourceUrl) : "#"
 
   return (
     <motion.div
@@ -100,7 +101,7 @@ export default function BlueCard({ text, source, sourceUrl, grade, type = "conce
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] font-bold bg-white border border-[#C9DFE1] text-[#14529E] hover:bg-[#EEF6F6] transition-all"
             >
-              <span>تحقق من المصدر</span>
+              <span>{isDorarSearchUrl(safeSourceUrl) ? "نتائج البحث (ليس رابط الحديث المباشر)" : "افتح المرجع"}</span>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path d="M3 9L9 3M9 3H4.5M9 3V7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

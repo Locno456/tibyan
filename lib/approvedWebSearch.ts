@@ -3,8 +3,8 @@ import type { RetrievedChunk } from "./rag"
 // Only reviewed, public search endpoints from the competition's source list.
 // Adding a site means reviewing its URL template, terms of use and citation quality.
 const SEARCH_ENDPOINTS = [
-  { id: "dorar_hadith", label: "الدرر السنية — بحث الحديث", origin: "https://dorar.net", path: "/hadith/search", parameter: "s" },
-  { id: "dorar_tafsir", label: "الدرر السنية — بحث التفسير", origin: "https://dorar.net", path: "/tafseer", parameter: "s" },
+  { id: "dorar_hadith", label: "الدرر السنية — بحث الحديث", origin: "https://dorar.net", path: "/hadith/search", parameter: "q" },
+  { id: "dorar_tafsir", label: "الدرر السنية — بحث التفسير", origin: "https://dorar.net", path: "/tafseer", parameter: "q" },
 ] as const
 const MAX_BYTES = 100_000
 const MAX_QUERY = 160
@@ -60,23 +60,31 @@ export async function searchApprovedWeb(question: string, fetchImpl: typeof fetc
       // Search forms, menus and filter lists are NOT results. Fail closed if a
       // site's result markup changes instead of presenting navigation as proof.
       const resultBlocks = Array.from(html.matchAll(/<article\b[^>]*>[\s\S]*?<\/article>|<(?:div|section)\b[^>]*class=["'][^"']*\b(?:hadith-item|result-item)\b[^"']*["'][^>]*>[\s\S]*?<\/(?:div|section)>/gi))
-        .slice(0, 12).map((match) => plainText(match[0])).filter((item) => item.length >= 60)
-      if (!resultBlocks.length) return null
-      const text = resultBlocks.join(" ").slice(0, 10_000)
-      const normalized = text.replace(/[\u064B-\u065F\u0640]/g, "").replace(/[أإآ]/g, "ا")
-      const hits = terms.filter((term) => normalized.includes(term))
-      if (!hits.length) return null
-      const first = normalized.indexOf(hits[0])
-      const excerpt = text.slice(Math.max(0, first - 100), first + 800).trim()
-      if (excerpt.length < 60) return null
-      return {
-        id: `web-${site.id}`, score: 1.5, relevance: 0.3,
-        payload: {
-          id: `web-${site.id}`, type: "concept", level: "B", text: excerpt,
-          source: `${site.label} — مقتطف بحث مباشر؛ لم يتحقق تِبْيَان من صحة النسبة أو الإسناد`,
-          source_url: url.toString(),
-        },
-      } as RetrievedChunk
+        .slice(0, 12).map((match) => match[0])
+      // Match the excerpt and citation URL INSIDE the same result block. Never
+      // attach an unrelated result's link (or a search-form navigation link).
+      for (const block of resultBlocks) {
+        const text = plainText(block)
+        if (text.length < 60) continue
+        const normalized = text.replace(/[\u064B-\u065F\u0640]/g, "").replace(/[أإآ]/g, "ا")
+        const hit = terms.find((term) => normalized.includes(term))
+        if (!hit) continue
+        const first = normalized.indexOf(hit)
+        const excerpt = text.slice(Math.max(0, first - 100), first + 800).trim()
+        if (excerpt.length < 60) continue
+        const directHref = site.id === "dorar_hadith"
+          ? block.match(/href\s*=\s*["'](?:https:\/\/dorar\.net)?(\/h\/[a-zA-Z0-9]{4,30})(?:\?[^"']*)?["']/i)?.[1]
+          : undefined
+        return {
+          id: `web-${site.id}`, score: 1.5, relevance: 0.3,
+          payload: {
+            id: `web-${site.id}`, type: "concept", level: "B", text: excerpt,
+            source: `${site.label} — مقتطف بحث مباشر؛ لم يتحقق تِبْيَان من صحة النسبة أو الإسناد${directHref ? "" : "؛ الرابط يعرض نتائج البحث وليس الدليل المحدد"}`,
+            source_url: directHref ? `https://dorar.net${directHref}` : url.toString(),
+          },
+        } as RetrievedChunk
+      }
+      return null
     } catch { return null }
   }))
   return results.filter((item): item is RetrievedChunk => item !== null)

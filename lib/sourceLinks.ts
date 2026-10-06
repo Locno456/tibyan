@@ -1,13 +1,32 @@
 // بناء روابط مصادر حقيقية تعمل فعلاً (بدل الروابط المُختلَقة التي كانت تعطي 404).
 // المبدأ: لا نخمّن معرّفات غير موجودة. نبني الرابط من حقول موثوقة:
 //  - القرآن/التفسير المرتبط بسورة (وآية): رابط عميق دقيق يصل للموضع حرفياً.
-//  - الحديث: بحث في «الدرر السنية» بنص الحديث (يهبط على نتائج البحث، لا 404).
-//  - باقي الأنواع: صفحة القسم المعتمدة (لا 404 أبداً).
+//  - الحديث المحلي: بحث في «الدرر السنية» بنص الحديث (ليس رابط سجل الحديث المباشر).
+//  - باقي الأنواع: صفحة القسم أو نتائج بحث؛ لا ندّعي أنها رابط مباشر للدليل.
 //
 // الأنماط أدناه تم التحقق منها فعلياً:
 //  - https://quran.com/{سورة}:{آية}  → يفتح الآية المطلوبة (تم التحقق: 2:255).
-//  - https://dorar.net/hadith/search?s={نص} → بحث الأحاديث (تم التحقق).
+//  - https://dorar.net/hadith/search?q={نص} → بحث الأحاديث (تم التحقق).
 //  - https://dorar.net/tafseer/{سورة} → تفسير السورة (تم التحقق).
+
+/** Fix older saved Dorar search links; label search results honestly, not as a specific citation. */
+export function normalizeSourceUrl(value: string): string {
+  try {
+    const url = new URL(value)
+    if (url.protocol !== "https:" || url.hostname !== "dorar.net") return value
+    if (!/^\/(?:hadith\/search|tafseer)$/.test(url.pathname) || !url.searchParams.has("s") || url.searchParams.has("q")) return value
+    url.searchParams.set("q", url.searchParams.get("s") || "")
+    url.searchParams.delete("s")
+    return url.toString()
+  } catch { return value }
+}
+
+export function isDorarSearchUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.hostname === "dorar.net" && /^\/(?:hadith\/search|tafseer)$/.test(url.pathname) && (url.searchParams.has("q") || url.searchParams.has("s"))
+  } catch { return false }
+}
 
 export interface SourceLinkable {
   type?: string
@@ -40,7 +59,7 @@ export function buildSourceUrl(payload: SourceLinkable | null | undefined): stri
   if (type === "tafsir") {
     if (hasSurah && hasAyah) return `https://quran.com/${surah}:${ayah}/tafsirs`
     if (hasSurah) return `https://dorar.net/tafseer/${surah}`
-    return `https://dorar.net/tafseer?s=${searchSnippet(payload.text, payload.title)}`
+    return `https://dorar.net/tafseer?q=${searchSnippet(payload.text, payload.title)}`
   }
 
   // أي نص مرتبط بآية محددة (قرآن/مفهوم/...) → رابط الآية الدقيق
@@ -51,7 +70,7 @@ export function buildSourceUrl(payload: SourceLinkable | null | undefined): stri
 
   switch (type) {
     case "hadith":
-      return `https://dorar.net/hadith/search?s=${snippet}`
+      return `https://dorar.net/hadith/search?q=${snippet}`
     case "fiqh":
       return `https://dorar.net/feqhia`
     case "sira":
@@ -60,9 +79,9 @@ export function buildSourceUrl(payload: SourceLinkable | null | undefined): stri
       return "https://dawa.center"
     case "concept":
       // المفاهيم: إن وُجد نص نبحث عنه في الأحاديث، وإلا صفحة الدليل
-      return snippet ? `https://dorar.net/hadith/search?s=${snippet}` : "https://dorar.net"
+      return snippet ? `https://dorar.net/hadith/search?q=${snippet}` : "https://dorar.net"
     default:
-      return snippet ? `https://dorar.net/hadith/search?s=${snippet}` : "https://dorar.net"
+      return snippet ? `https://dorar.net/hadith/search?q=${snippet}` : "https://dorar.net"
   }
 }
 

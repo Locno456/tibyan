@@ -19,6 +19,7 @@ import {
 import VerifiedTextCard from "./VerifiedTextCard"
 import CircularProgress from "./CircularProgress"
 import SourcesModal from "./SourcesModal"
+import { isDorarSearchUrl, normalizeSourceUrl } from "../lib/sourceLinks"
 import QuranAudioPlayer from "./QuranAudioPlayer"
 import QuranAudioRequestCard from "./QuranAudioRequestCard"
 import { Level } from "../lib/levelRouter"
@@ -467,12 +468,12 @@ export default function ChatMessage({
                           {card.source && <span className="text-[11px] text-[#647C83]">{card.source}</span>}
                           {(card.source_url || card.sourceUrl) && (
                             <a
-                              href={card.source_url || card.sourceUrl}
+                              href={normalizeSourceUrl(card.source_url || card.sourceUrl)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0A8F94] hover:underline hover:underline-offset-4"
                             >
-                              تحقق من المصدر <ExternalLink size={12} aria-hidden="true" />
+                              {isDorarSearchUrl(card.source_url || card.sourceUrl) ? "اعرض نتائج البحث (ليس رابط الدليل المباشر)" : "افتح المرجع"} <ExternalLink size={12} aria-hidden="true" />
                             </a>
                           )}
                         </div>

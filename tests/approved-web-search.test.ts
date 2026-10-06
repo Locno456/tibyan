@@ -15,10 +15,19 @@ test("web search only requests fixed approved search hosts and marks excerpts as
   }
   const docs = await searchApprovedWeb("ما معنى التوحيد؟", fakeFetch)
   assert.equal(urls.length, 2)
+  assert.ok(urls.every((url) => new URL(url).searchParams.has("q") && !new URL(url).searchParams.has("s")))
   assert.equal(docs.length, 2)
   assert.ok(docs.every((doc) => doc.payload.source.includes("لم يتحقق")))
   assert.ok(docs.every((doc) => !doc.payload.text.includes("IGNORE")))
   assert.ok(docs.every((doc) => new URL(doc.payload.source_url).hostname === "dorar.net"))
+})
+
+test("links to a specific hadith only when its URL is inside the matching result block", async () => {
+  const text = "إنما الأعمال بالنيات وهذا مقتطف واضح من نتيجة الحديث التي تطابق استعلام الباحث في النص المعروض."
+  const html = `<nav><a href="/h/WRONG123">إنما الأعمال</a></nav><article>${text}<a href="/h/AbC12345">عرض الحديث</a></article>`
+  const docs = await searchApprovedWeb("إنما الأعمال بالنيات", async () => new Response(html, { headers: { "content-type": "text/html" } }))
+  assert.equal(docs.find((doc) => doc.id === "web-dorar_hadith")?.payload.source_url, "https://dorar.net/h/AbC12345")
+  assert.ok(docs.every((doc) => !doc.payload.source_url.includes("WRONG123")))
 })
 
 test("a search form with matching navigation but no result entries never becomes evidence", async () => {

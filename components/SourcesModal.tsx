@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
-import { buildSourceUrl, sourceDomain } from "../lib/sourceLinks"
+import { buildSourceUrl, sourceDomain, normalizeSourceUrl, isDorarSearchUrl } from "../lib/sourceLinks"
 
 interface SourceDetail {
   id: string
@@ -155,7 +155,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                   safeSources.map((src, idx) => {
                     if (!src) return null
                     const colors = getTypeColor(src.type || "")
-                    const link = src.source_url || buildSourceUrl(src)
+                    const link = normalizeSourceUrl(src.source_url || buildSourceUrl(src))
                     const domain = sourceDomain(link)
                     const isQuran = src.type === "quran"
                     const isHadith = src.type === "hadith"
@@ -217,8 +217,8 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                           {sacredText}
                         </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="text-[12.5px] text-[#4B6A72] flex-1">
+                        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                          <div className="min-w-0 flex-1 break-words text-[12.5px] text-[#4B6A72]">
                             <div className="font-bold text-[#0A2A33]">{src.source || ""}</div>
                             {domain && <div className="text-[11.5px] text-[#8FB0B6] mt-0.5">{domain}</div>}
                           </div>
@@ -227,9 +227,9 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                               href={link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="shrink-0 px-3 py-1.5 rounded-full bg-[#0A8F94] text-white text-[12.5px] font-bold hover:bg-[#05495A] transition-colors flex items-center gap-1"
+                              className="max-w-full rounded-full bg-[#0A8F94] px-3 py-1.5 text-center text-[11.5px] font-bold text-white transition-colors hover:bg-[#05495A] flex items-center gap-1"
                             >
-                              تحقق
+                              {isDorarSearchUrl(link) ? "اعرض نتائج البحث (ليس رابط الدليل المباشر)" : "افتح المرجع"}
                               <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                                 <path d="M3 9L9 3M9 3H4.5M9 3V7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                               </svg>

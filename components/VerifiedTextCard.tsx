@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 import { BookOpen, Check, Copy, ExternalLink } from "lucide-react"
+import { isDorarSearchUrl, normalizeSourceUrl } from "../lib/sourceLinks"
 
 export type VerifiedTextKind = "quran" | "hadith"
 
@@ -87,7 +88,8 @@ export default function VerifiedTextCard({
     surahName ? `سورة ${surahName}` : surah ? `سورة ${surah}` : "",
     ayah ? `الآية ${ayah}` : "",
   ].filter(Boolean).join(" · ")
-  const domain = getDomain(sourceUrl)
+  const usableUrl = sourceUrl ? normalizeSourceUrl(sourceUrl) : undefined
+  const domain = getDomain(usableUrl)
   const accent = isQuran ? "#14529E" : "#18794E"
   const surface = isQuran ? "#F4F8FF" : "#F3FAF5"
   const border = isQuran ? "#D8E4F4" : "#D6E8DA"
@@ -159,13 +161,13 @@ export default function VerifiedTextCard({
             )}
             {sourceUrl && (
               <a
-                href={sourceUrl}
+                href={usableUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex shrink-0 items-center gap-1 text-[11.5px] font-semibold transition-colors hover:underline hover:underline-offset-4"
                 style={{ color: accent }}
               >
-                {isQuran ? "تحقق من الآية" : "تحقق من المصدر"}
+                {isQuran ? "تحقق من الآية" : usableUrl && isDorarSearchUrl(usableUrl) ? "اعرض نتائج البحث عن النص (ليس رابط الحديث المباشر)" : "تحقق من المصدر"}
                 {domain && <span className="font-normal opacity-75">· {domain}</span>}
                 <ExternalLink size={12} aria-hidden="true" />
               </a>
