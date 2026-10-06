@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import { generateWithAIProvider, type AIProviderSelection } from "../lib/aiRuntime"
 import type { BoundMcpTool, McpCallRecord } from "../lib/mcp"
+import { buildMcpSourceCards, hasUsableMcpEvidence } from "../lib/mcpEvidence"
 
 function jsonResponse(value: unknown): Response {
   return new Response(JSON.stringify(value), { status: 200, headers: { "Content-Type": "application/json" } })
@@ -198,4 +199,34 @@ test("redacts provider credentials from upstream error text", async () => {
       return true
     },
   )
+})
+
+test("upstream provider outage is an error, not a fabricated source-backed answer", async () => {
+  // Error status, not a successful JSON envelope.
+  const errorFetch: typeof fetch = async () => new Response(JSON.stringify({ error: { message: "Service unavailable" } }), {
+    status: 503, headers: { "Content-Type": "application/json" },
+  })
+  await assert.rejects(() => withMockedFetch(errorFetch, () => generateWithAIProvider(
+    selection("openai"), "سؤال", "تعليمات", [tool],
+  )), /503|Service unavailable/)
+})
+
+test("failed MCP call remains a recorded error and cannot become evidence", async () => {
+  let count = 0
+  const fakeFetch: typeof fetch = async () => {
+    count += 1
+    return count === 1
+      ? jsonResponse({ choices: [{ message: { role: "assistant", content: null, tool_calls: [{
+        id: "failed_call", type: "function", function: { name: tool.alias, arguments: JSON.stringify({ query: "حديث" }) },
+      }] } }] })
+      : jsonResponse({ choices: [{ message: { role: "assistant", content: "لم أجد دليلاً موثقاً." } }] })
+  }
+  const result = await withMockedFetch(fakeFetch, () => generateWithAIProvider(
+    selection("openai"), "ابحث", "تعليمات", [tool], async () => { throw new Error("MCP timeout") },
+    { maxCalls: 1, maxRounds: 1, requireToolCall: true },
+  ))
+  assert.equal(result.toolCalls.length, 1)
+  assert.match(String(result.toolCalls[0].error), /MCP timeout/)
+  assert.equal(hasUsableMcpEvidence(result.toolCalls), false)
+  assert.deepEqual(buildMcpSourceCards(result.toolCalls, "حديث"), [])
 })

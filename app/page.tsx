@@ -88,6 +88,14 @@ export default function HomePage() {
   const router = useRouter()
   const { user, client, authLoading, accountType } = useAccount()
   const [sourceModes, setSourceModes] = useState<SourceMode[]>(DEFAULT_SOURCE_MODES)
+  const [agentEnabled, setAgentEnabled] = useState(false)
+  useEffect(() => {
+    let active = true
+    fetch("/api/agent/config", { cache: "no-store" }).then((response) => response.json())
+      .then((config) => { if (active) setAgentEnabled(config.enabled === true) })
+      .catch(() => { if (active) setAgentEnabled(false) })
+    return () => { active = false }
+  }, [])
   const [mcpModelCapable, setMcpModelCapable] = useState<boolean | null>(null)
   const [noEvidenceMode, setNoEvidenceMode] = useState<NoEvidenceMode>("request_sources")
   useEffect(() => {
@@ -736,8 +744,8 @@ export default function HomePage() {
             modelId: modelSelection?.modelId,
             fallbackProviderId: modelFallbackSelection?.providerId,
             fallbackModelId: modelFallbackSelection?.modelId,
-            sourceModes: mcpModelCapable === false ? sourceModes.filter((mode) => mode !== "mcp") : sourceModes,
-            noEvidenceMode,
+            sourceModes: agentEnabled ? (mcpModelCapable === false ? sourceModes.filter((mode) => mode !== "mcp") : sourceModes) : undefined,
+            noEvidenceMode: agentEnabled ? noEvidenceMode : undefined,
           }),
         })
         const json = await readAnswerStream(res, (stage) => setProgressStages((previous) => previous.at(-1) === stage ? previous : [...previous, stage]))
@@ -834,7 +842,7 @@ export default function HomePage() {
       requestLockRef.current = false
       if (activeSessionId === sessionId) scrollToBottom()
     },
-    [activeSessionId, appendToSession, historyReady, knowledge, modelFallbackSelection, modelSelection, pending, scrollToBottom, sessions, syncLocked, sourceModes, noEvidenceMode, mcpModelCapable]
+    [activeSessionId, appendToSession, historyReady, knowledge, modelFallbackSelection, modelSelection, pending, scrollToBottom, sessions, syncLocked, sourceModes, noEvidenceMode, mcpModelCapable, agentEnabled]
   )
 
   const isEmpty = thread.length === 0 && !pendingForActiveSession
@@ -1222,7 +1230,7 @@ export default function HomePage() {
               onSend={handleAsk}
               sourceModes={sourceModes}
               mcpModelCapable={mcpModelCapable}
-              onSourceModesChange={changeSourceModes}
+              onSourceModesChange={agentEnabled ? changeSourceModes : undefined}
               disabled={!historyReady || !!pending || !appVisible || syncLocked}
               initialValue={splashDraft}
             />
@@ -1237,8 +1245,9 @@ export default function HomePage() {
         sessions={sessions}
         modelSelection={modelSelection}
         fallbackSelection={modelFallbackSelection}
-        noEvidenceMode={noEvidenceMode}
-        onNoEvidenceModeChange={changeNoEvidenceMode}
+        noEvidenceMode={agentEnabled ? noEvidenceMode : "request_sources"}
+        onNoEvidenceModeChange={agentEnabled ? changeNoEvidenceMode : undefined}
+        agentEnabled={agentEnabled}
         isResearcher={!!user && accountType === "researcher"}
         onOpenModels={openModelSettings}
         onClose={closeSettings}

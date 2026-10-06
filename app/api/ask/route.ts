@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { detectIntent, LEVELS, type Level } from "../../../lib/levelRouter"
-import { parseSourceModes, parseNoEvidenceMode } from "../../../lib/sourcePreferences"
+import { isAgentModeEnabled, resolveAgentPreferences } from "../../../lib/agentRollout"
 import { searchApprovedWeb } from "../../../lib/approvedWebSearch"
 import { planEvidenceSearch } from "../../../lib/agentPolicy"
 import { reportAnswerStage, withAnswerProgress } from "../../../lib/answerProgress"
@@ -225,11 +225,11 @@ async function runAsk(request: NextRequest) {
   if (question.length < 2) return NextResponse.json({ error: "السؤال مطلوب" }, { status: 400 })
 
   const startTime = Date.now()
-  const sourceModes = parseSourceModes(body.sourceModes)
+  const agentEnabled = isAgentModeEnabled()
+  const { sourceModes, noEvidenceMode } = resolveAgentPreferences(body, agentEnabled)
   const useLocal = sourceModes.includes("local")
   const useMcp = sourceModes.includes("mcp")
   const useWeb = sourceModes.includes("web")
-  const noEvidenceMode = parseNoEvidenceMode(body.noEvidenceMode)
   const personaOptions = new Set(["general", "new_muslim", "non_muslim", "teen", "researcher"])
   const persona = typeof body.persona === "string" && personaOptions.has(body.persona) ? body.persona : "general"
   const background = typeof body.background === "string" && body.background.trim()
@@ -667,7 +667,7 @@ async function runAsk(request: NextRequest) {
       `${systemInstruction}${quotePolicy}${mcpPolicy}${webPolicy}`,
       mcpCatalog.tools,
       mcpCatalog.runTool,
-      { maxCalls: agentPlan.maxCalls, maxRounds: agentPlan.maxRounds, requireToolCall: agentPlan.requireToolCall },
+      { maxCalls: agentEnabled ? agentPlan.maxCalls : 8, maxRounds: agentEnabled ? agentPlan.maxRounds : 4, requireToolCall: agentPlan.requireToolCall },
     )
     if (!result.text.trim()) throw new Error("لم يُرجع مزود النموذج نصاً قابلاً للعرض")
     return result

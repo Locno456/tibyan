@@ -16,6 +16,7 @@ interface ChatSettingsModalProps {
   modelSelection?: AIModelSelection | null
   fallbackSelection?: AIModelSelection | null
   noEvidenceMode?: NoEvidenceMode
+  agentEnabled?: boolean
   onNoEvidenceModeChange?: (value: NoEvidenceMode) => void
   isResearcher?: boolean
   onOpenModels: () => void
@@ -28,6 +29,7 @@ export default function ChatSettingsModal({
   modelSelection,
   fallbackSelection,
   noEvidenceMode = "request_sources",
+  agentEnabled = true,
   onNoEvidenceModeChange,
   isResearcher = false,
   onOpenModels,
@@ -150,13 +152,14 @@ export default function ChatSettingsModal({
               <section className="rounded-[14px] border border-[#C9DFE1]/70 bg-white p-4" aria-labelledby="advanced-mode-title">
                 <h3 id="advanced-mode-title" className="text-sm font-bold text-[#0A2A33]">الوضع المتقدم</h3>
                 <p className="mt-1 text-xs text-[#54747A]">عندما لا يجد تِبْيَان دليلاً محلياً أو أداة بحث قابلة للاستخدام:</p>
-                <select aria-label="سلوك الإجابة بلا مصادر" value={noEvidenceMode}
+                <select aria-label="سلوك الإجابة بلا مصادر" disabled={!agentEnabled} value={noEvidenceMode}
                   onChange={(event) => onNoEvidenceModeChange?.(event.target.value as NoEvidenceMode)}
-                  className="mt-2 w-full rounded-lg border border-[#91BEC2] bg-white p-2 text-sm font-medium text-[#0A2A33]">
+                  className="mt-2 w-full rounded-lg border border-[#91BEC2] bg-white p-2 text-sm font-medium text-[#0A2A33] disabled:cursor-not-allowed disabled:bg-[#F4F6F5]">
                   <option value="request_sources">توقف واطلب تفعيل مصادر (الافتراضي)</option>
                   <option value="direct_unverified">أجب مباشرة مع تحذير: غير متحقق منها</option>
                 </select>
                 <p className="mt-2 text-xs text-[#856514]">الإجابة المباشرة ليست دليلاً شرعياً ولا تسمح باختلاق نص أو فتوى شخصية.</p>
+                {!agentEnabled && <p className="mt-2 text-xs font-bold text-[#6B4B0C]">عطّل المسؤول وضع الوكيل مؤقتاً؛ يستمر تِبْيَان بمصادره الافتراضية.</p>}
                 {isResearcher && <p className="mt-2 text-xs text-[#54747A]">إضافة مواقع الباحث ستتاح بعد تفعيل البحث الآمن على الخادم؛ لم تُفعّل بعد.</p>}
               </section>
 
