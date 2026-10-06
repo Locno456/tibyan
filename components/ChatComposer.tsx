@@ -1,6 +1,7 @@
 "use client"
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { motion } from "framer-motion"
+import { createPortal } from "react-dom"
 import { BookOpenText, Check, ChevronUp, Globe2, Network, SlidersHorizontal } from "lucide-react"
 import type { SourceMode } from "../lib/sourcePreferences"
 
@@ -26,6 +27,14 @@ const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
     const [value, setValue] = useState(initialValue || "")
     const [focused, setFocused] = useState(false)
     const [sourcesOpen, setSourcesOpen] = useState(false)
+    const [mounted, setMounted] = useState(false)
+    useEffect(() => setMounted(true), [])
+    useEffect(() => {
+      if (!sourcesOpen) return
+      const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setSourcesOpen(false) }
+      window.addEventListener("keydown", onKey)
+      return () => window.removeEventListener("keydown", onKey)
+    }, [sourcesOpen])
 
     useImperativeHandle(ref, () => inner.current as HTMLTextAreaElement)
 
@@ -103,7 +112,7 @@ const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
             disabled={disabled}
             placeholder={placeholder ?? "اسأل تِبْيَان… مثال: ما معنى التوحيد؟"}
             aria-label="اكتب سؤالك"
-            className="body-font flex-1 min-h-[52px] sm:min-h-[56px] max-h-[180px] px-4 sm:px-5 py-3.5 bg-transparent border-none outline-none focus-visible:outline-none resize-none text-[15.5px] sm:text-[17px] leading-[1.75] text-[#0A2A33] placeholder:text-[#8FB0B6] disabled:opacity-60 tb-scroll"
+            className="body-font min-w-0 flex-1 min-h-[52px] sm:min-h-[56px] max-h-[180px] px-2 sm:px-5 py-3.5 bg-transparent border-none outline-none focus-visible:outline-none resize-none text-[15.5px] sm:text-[17px] leading-[1.75] text-[#0A2A33] placeholder:text-[#8FB0B6] disabled:opacity-60 tb-scroll"
           />
 
           {/* عدّاد الأحرف */}
@@ -121,14 +130,14 @@ const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
           {onSourceModesChange && (
             <div className="relative shrink-0 self-center">
               <button type="button" aria-label="اختيار مصادر البحث" aria-expanded={sourcesOpen}
-                aria-controls="tibyan-source-menu" onClick={() => setSourcesOpen(!sourcesOpen)}
+                onClick={() => setSourcesOpen(!sourcesOpen)}
                 className="flex min-h-10 items-center gap-1.5 rounded-full border border-[#91BEC2] bg-[#EFF9F7] px-3 py-2 text-xs font-bold text-[#064C50] shadow-sm transition-colors hover:bg-[#DDF3F0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A8F94]">
                 <SlidersHorizontal size={15} aria-hidden="true" /> <span className="hidden sm:inline">المصادر</span>
                 <span className="rounded-full bg-[#0A8F94] px-1.5 text-[10px] text-white">{sourceModes.filter((mode) => mode !== "mcp" || mcpModelCapable !== false).length}</span>
                 <ChevronUp size={13} aria-hidden="true" />
               </button>
               {sourcesOpen && (
-                <div id="tibyan-source-menu" className="absolute bottom-full left-0 z-50 mb-3 w-[min(19rem,85vw)] rounded-2xl border border-[#91BEC2] bg-white p-3 text-right text-[#0A2A33] shadow-[0_18px_50px_rgba(10,42,51,.2)]" dir="rtl">
+                <div id="tibyan-source-menu" className="hidden sm:block absolute bottom-full left-0 z-50 mb-3 w-[19rem] max-w-[calc(100vw-2rem)] max-h-[70dvh] overflow-y-auto rounded-2xl border border-[#91BEC2] bg-white p-3 text-right text-[#0A2A33] shadow-[0_18px_50px_rgba(10,42,51,.2)]" dir="rtl">
                   <div className="mb-2 flex items-center gap-2 border-b border-[#C9DFE1] pb-2 text-sm font-extrabold text-[#0A2A33]"><SlidersHorizontal size={16} /> مصادر الإجابة</div>
                   {([ ["local", "البيانات المحلية", BookOpenText, "النصوص المحفوظة داخل تِبْيَان"], ["mcp", "أدوات MCP", Network, "بحث مباشر في الخدمات المتصلة"], ["web", "مواقع موثوقة", Globe2, "مقتطفات بحث الدرر؛ ليست توثيقاً"] ] as const).map(([id, label, Icon, description]) => {
                     const unavailable = id === "mcp" && mcpModelCapable === false
@@ -136,7 +145,7 @@ const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
                     return (
                       <label key={id} className={`mb-1 flex items-center gap-3 rounded-xl border px-3 py-2.5 ${unavailable ? "cursor-not-allowed border-[#D7E1E1] bg-[#F4F6F5] text-[#4B666B]" : selected ? "cursor-pointer border-[#0A8F94] bg-[#EFF9F7] text-[#0A2A33]" : "cursor-pointer border-[#D7E1E1] bg-white text-[#0A2A33] hover:bg-[#F6FAF9]"}`}>
                         <input type="checkbox" className="sr-only" disabled={unavailable} checked={selected}
-                          onChange={() => onSourceModesChange(sourceModes.includes(id) ? sourceModes.filter((item) => item !== id) : [...sourceModes, id])} />
+                          onChange={() => onSourceModesChange?.(sourceModes.includes(id) ? sourceModes.filter((item) => item !== id) : [...sourceModes, id])} />
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#087A7F]"><Icon size={17} aria-hidden="true" /></span>
                         <span className="min-w-0 flex-1"><span className="block text-xs font-bold">{label}</span><span className="block text-[11px] leading-relaxed text-[#35545B]">{description}</span></span>
                         <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${selected ? "border-[#0A8F94] bg-[#0A8F94] text-white" : "border-[#779DA2] bg-white"}`}>{selected && <Check size={14} />}</span>
@@ -149,6 +158,30 @@ const ChatComposer = forwardRef<HTMLTextAreaElement, ChatComposerProps>(
                 </div>
               )}
             </div>
+          )}
+          {sourcesOpen && mounted && createPortal(
+            <div className="fixed inset-0 z-[190] flex min-w-0 items-center justify-center overflow-y-auto p-3 sm:hidden" dir="rtl">
+              <button type="button" aria-label="إغلاق قائمة المصادر" onClick={() => setSourcesOpen(false)} className="absolute inset-0 bg-[#071F27]/55" />
+                <div id="tibyan-source-menu-mobile" className="relative z-[1] mx-auto my-auto w-full max-w-md max-h-[min(75dvh,32rem)] overflow-y-auto overscroll-contain rounded-2xl border border-[#91BEC2] bg-white p-3 text-right text-[#0A2A33] shadow-[0_18px_50px_rgba(10,42,51,.2)]" dir="rtl">
+                  <div className="mb-2 flex items-center gap-2 border-b border-[#C9DFE1] pb-2 text-sm font-extrabold text-[#0A2A33]"><SlidersHorizontal size={16} /> مصادر الإجابة</div>
+                  {([ ["local", "البيانات المحلية", BookOpenText, "النصوص المحفوظة داخل تِبْيَان"], ["mcp", "أدوات MCP", Network, "بحث مباشر في الخدمات المتصلة"], ["web", "مواقع موثوقة", Globe2, "مقتطفات بحث الدرر؛ ليست توثيقاً"] ] as const).map(([id, label, Icon, description]) => {
+                    const unavailable = id === "mcp" && mcpModelCapable === false
+                    const selected = sourceModes.includes(id) && !unavailable
+                    return (
+                      <label key={id} className={`mb-1 flex items-center gap-3 rounded-xl border px-3 py-2.5 ${unavailable ? "cursor-not-allowed border-[#D7E1E1] bg-[#F4F6F5] text-[#4B666B]" : selected ? "cursor-pointer border-[#0A8F94] bg-[#EFF9F7] text-[#0A2A33]" : "cursor-pointer border-[#D7E1E1] bg-white text-[#0A2A33] hover:bg-[#F6FAF9]"}`}>
+                        <input type="checkbox" className="sr-only" disabled={unavailable} checked={selected}
+                          onChange={() => onSourceModesChange?.(sourceModes.includes(id) ? sourceModes.filter((item) => item !== id) : [...sourceModes, id])} />
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#087A7F]"><Icon size={17} aria-hidden="true" /></span>
+                        <span className="min-w-0 flex-1"><span className="block text-xs font-bold">{label}</span><span className="block text-[11px] leading-relaxed text-[#35545B]">{description}</span></span>
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${selected ? "border-[#0A8F94] bg-[#0A8F94] text-white" : "border-[#779DA2] bg-white"}`}>{selected && <Check size={14} />}</span>
+                      </label>
+                    )
+                  })}
+                  {mcpModelCapable === false && <p className="rounded-lg bg-[#FFF7E5] p-2 text-[11px] font-medium text-[#6B4B0C]">النموذج الحالي لا يدعم الأدوات؛ اختر نموذجاً يدعمها لتفعيل MCP.</p>}
+                  <p className="mt-2 text-[11px] font-medium leading-relaxed text-[#35545B]">يمكن الجمع بين المصادر. مواقع الباحث المخصصة قيد التطوير.</p>
+                  <button type="button" onClick={() => setSourcesOpen(false)} className="mt-2 w-full rounded-lg bg-[#0A2A33] py-2 text-xs font-bold text-white">تم</button>
+                </div>
+            </div>, document.body
           )}
           <motion.button
             type="button"

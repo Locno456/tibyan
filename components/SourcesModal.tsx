@@ -1,6 +1,7 @@
 "use client"
 import { motion, AnimatePresence } from "framer-motion"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { buildSourceUrl, sourceDomain } from "../lib/sourceLinks"
 
 interface SourceDetail {
@@ -42,13 +43,13 @@ function getSurahReference(source: string, surah?: number, ayah?: number) {
 }
 
 export default function SourcesModal({ isOpen, onClose, sources, question, confidence }: SourcesModalProps) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => { document.body.style.overflow = 'unset' }
+    if (!isOpen) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = previous }
   }, [isOpen])
 
   // إغلاق بـ Esc
@@ -83,7 +84,8 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
     return { bg: "#EEF6F6", border: "#C9DFE1", text: "#0A2A33", dot: "#0A8F94" }
   }
 
-  return (
+  if (!mounted) return null
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -100,19 +102,19 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.98 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-0 z-[101] flex items-end sm:items-center justify-center p-0 sm:p-4"
+            className="pointer-events-none fixed inset-0 z-[101] flex min-w-0 items-end justify-center p-0 sm:items-center sm:p-4"
           >
             <div
               role="dialog"
               aria-modal="true"
               aria-label="تفاصيل المواد والمراجع"
-              className="bg-white rounded-t-[20px] sm:rounded-[16px] w-full max-w-[700px] max-h-[85vh] sm:max-h-[80vh] flex flex-col shadow-[0_20px_60px_rgba(10,42,51,0.2)] border border-[#C9DFE1]/50 overflow-hidden"
+              className="pointer-events-auto bg-white rounded-t-[20px] sm:rounded-[16px] w-full min-w-0 max-w-[700px] max-h-[90dvh] sm:max-h-[min(85dvh,780px)] flex flex-col shadow-[0_20px_60px_rgba(10,42,51,0.2)] border border-[#C9DFE1]/50 overflow-hidden"
             >
               {/* Header */}
-              <div className="shrink-0 p-5 border-b border-[#C9DFE1]/50 bg-gradient-to-r from-[#EEF6F6] to-white">
+              <div className="shrink-0 min-w-0 p-4 sm:p-5 border-b border-[#C9DFE1]/50 bg-gradient-to-r from-[#EEF6F6] to-white">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2.5 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <div className="w-8 h-8 rounded-[10px] bg-[#0A8F94] text-white flex items-center justify-center text-[15px]">📚</div>
                       <h3 className="text-[16px] font-extrabold text-[#0A2A33]" style={{ fontFamily: 'Tajawal, sans-serif' }}>
                         تفاصيل المواد والمراجع
@@ -121,10 +123,10 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
                         {safeSources.length} مواد
                       </span>
                     </div>
-                    <p className="text-[13px] text-[#4B6A72] leading-relaxed">
+                    <p className="max-h-20 overflow-y-auto break-words text-[13px] text-[#4B6A72] leading-relaxed">
                       السؤال: <span className="font-bold text-[#0A2A33]">{question || ""}</span>
                     </p>
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className="text-[12.5px] text-[#4B6A72]">مؤشر استرجاع داخلي:</span>
                       <span className="rounded-full border border-[#C9DFE1] bg-white px-2 py-0.5 text-[12.5px] font-bold text-[#4B6A72]">
                         {(safeConfidence * 100).toFixed(0)}% · غير مُعاير
@@ -144,7 +146,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
               </div>
 
               {/* Sources list */}
-              <div className="flex-1 overflow-y-auto tb-scroll p-4 space-y-3">
+              <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto tb-scroll p-3 sm:p-4 space-y-3 break-words">
                 {safeSources.length === 0 ? (
                   <div className="text-center py-8 text-[#8FB0B6] text-[14px]">
                     لا يوجد مصادر - تم الامتناع لعدم وجود مرجعية كافية
@@ -249,7 +251,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
               </div>
 
               {/* Footer */}
-              <div className="shrink-0 p-4 border-t border-[#C9DFE1]/50 bg-[#EEF6F6]/50">
+              <div className="shrink-0 border-t border-[#C9DFE1]/50 bg-[#EEF6F6]/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <div className="flex items-center justify-between text-[11.5px] text-[#8FB0B6]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#0A8F94]" />
@@ -262,6 +264,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

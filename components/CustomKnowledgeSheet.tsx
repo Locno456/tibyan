@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
+import { createPortal } from "react-dom"
 import { Loader2, Save, X, Wand2 } from "lucide-react"
 import {
   KnowledgeOption, getKnowledgeIcon, ICON_CHOICES, keywordToIcon, suggestLabel,
@@ -18,7 +19,17 @@ interface Props {
  * تُحفظ النتيجة في localStorage فلا يُعاد إدخالها.
  */
 export default function CustomKnowledgeSheet({ open, onClose, onSave }: Props) {
+  const [mounted, setMounted] = useState(false)
   const [text, setText] = useState("")
+  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose() }
+    window.addEventListener("keydown", onKey)
+    return () => { document.body.style.overflow = previous; window.removeEventListener("keydown", onKey) }
+  }, [open, onClose])
   const [icon, setIcon] = useState("Lightbulb")
   const [analyzing, setAnalyzing] = useState(false)
   const [source, setSource] = useState<"gemini" | "heuristic" | null>(null)
@@ -81,7 +92,8 @@ export default function CustomKnowledgeSheet({ open, onClose, onSave }: Props) {
     setSource(null)
   }
 
-  return (
+  if (!mounted) return null
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -102,7 +114,7 @@ export default function CustomKnowledgeSheet({ open, onClose, onSave }: Props) {
             role="dialog"
             aria-modal="true"
             aria-label="إضافة معرفة مخصصة"
-            className="relative w-full sm:max-w-md bg-white sm:rounded-[28px] rounded-t-[28px] border border-[#C9DFE1]/70 shadow-[0_-10px_60px_rgba(10,42,51,0.25)] p-5 sm:p-6 max-h-[86vh] overflow-y-auto tb-scroll"
+            className="relative w-full sm:max-w-md bg-white sm:rounded-[28px] rounded-t-[28px] border border-[#C9DFE1]/70 shadow-[0_-10px_60px_rgba(10,42,51,0.25)] p-5 sm:p-6 max-h-[90dvh] overflow-y-auto overscroll-contain tb-scroll"
           >
             {/* مقبض السحب للجوال */}
             <div className="sm:hidden mx-auto mb-4 w-12 h-1.5 rounded-full bg-[#C9DFE1]" aria-hidden />
@@ -208,6 +220,6 @@ export default function CustomKnowledgeSheet({ open, onClose, onSave }: Props) {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>, document.body
   )
 }

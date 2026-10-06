@@ -9,6 +9,7 @@ import type { NoEvidenceMode } from "../lib/sourcePreferences"
 import type { ChatSession } from "../lib/chatHistory"
 import { downloadChatHistory } from "../lib/chatHistory"
 import ProviderLogo from "./ProviderLogo"
+import { parseThemeChoice, saveTheme, THEME_STORAGE_KEY, type ThemeChoice } from "../lib/theme"
 
 interface ChatSettingsModalProps {
   open: boolean
@@ -37,6 +38,11 @@ export default function ChatSettingsModal({
 }: ChatSettingsModalProps) {
   const [mounted, setMounted] = useState(false)
   const [exportState, setExportState] = useState<"idle" | "done" | "error">("idle")
+  const [theme, setTheme] = useState<ThemeChoice>("system")
+  useEffect(() => {
+    if (!open) return
+    try { setTheme(parseThemeChoice(localStorage.getItem(THEME_STORAGE_KEY))) } catch { setTheme("system") }
+  }, [open])
 
   useEffect(() => setMounted(true), [])
 
@@ -91,10 +97,10 @@ export default function ChatSettingsModal({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 320, damping: 30 }}
-            className="relative z-[1] w-full max-w-[520px] overflow-hidden rounded-t-[22px] border border-[#C9DFE1]/80 bg-[#FBFEFD] shadow-[0_24px_70px_rgba(10,42,51,0.22)] sm:rounded-[20px]"
+            className="relative z-[1] flex max-h-[100dvh] min-h-0 w-full max-w-[520px] flex-col overflow-hidden rounded-t-[22px] sm:max-h-[calc(100dvh-2rem)] border border-[#C9DFE1]/80 bg-[#FBFEFD] shadow-[0_24px_70px_rgba(10,42,51,0.22)] sm:rounded-[20px]"
           >
             <div className="h-1 w-full bg-gradient-to-l from-[#19D6C4] via-[#0A8F94] to-[#14529E]" />
-            <div className="flex items-start justify-between gap-4 border-b border-[#C9DFE1]/60 px-5 py-4 sm:px-6">
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[#C9DFE1]/60 px-5 py-4 sm:px-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#EAF6F5] text-[#0A8F94]">
                   <HardDrive size={19} />
@@ -114,7 +120,14 @@ export default function ChatSettingsModal({
               </button>
             </div>
 
-            <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+            <div className="tb-scroll min-h-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
+              <section className="rounded-[14px] border border-[#C9DFE1]/70 bg-white p-4" aria-labelledby="theme-settings-title">
+                <h3 id="theme-settings-title" className="text-sm font-bold text-[#0A2A33]">المظهر</h3>
+                <label htmlFor="tibyan-theme" className="mt-2 block text-xs text-[#4B6A72]">اختر سمة الواجهة</label>
+                <select id="tibyan-theme" value={theme} onChange={(event) => { const next = parseThemeChoice(event.target.value); setTheme(next); saveTheme(next) }} className="mt-2 w-full rounded-lg border border-[#91BEC2] bg-white p-2 text-sm text-[#0A2A33]">
+                  <option value="system">تلقائي حسب الجهاز</option><option value="light">فاتح</option><option value="dark">داكن</option>
+                </select>
+              </section>
               <section className="rounded-[14px] border border-[#C9DFE1]/70 bg-white p-4" aria-labelledby="model-settings-title">
                 <div className="flex items-start gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#EAF6F5] text-[#0A8F94]">
