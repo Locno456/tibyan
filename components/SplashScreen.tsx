@@ -135,7 +135,7 @@ export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 0.995 }}
       transition={{ duration: reduceMotion ? 0.18 : 0.72, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-0 z-[9999] overflow-hidden"
+      className="tb-splash-screen fixed inset-0 z-[9999] overflow-hidden"
       aria-label="بداية تِبْيَان"
       onPointerDownCapture={(event) => {
         if (event.target instanceof Element && event.target.closest("[data-splash-interactive]")) return

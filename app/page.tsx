@@ -760,6 +760,7 @@ export default function HomePage() {
             question,
             persona: knowledge.persona,
             accountType,
+            referralEnabled: profile?.referral_enabled === true,
             referralContactComplete: !!(user?.id && profile?.display_name && user.email && (() => {
               try { const saved = JSON.parse(localStorage.getItem(`tibyan.referral.contact.${user.id}`) || "{}"); return saved.country && saved.language } catch { return false }
             })()),
@@ -867,7 +868,7 @@ export default function HomePage() {
       requestLockRef.current = false
       if (activeSessionId === sessionId) scrollToBottom()
     },
-    [activeSessionId, appendToSession, historyReady, knowledge, modelFallbackSelection, modelSelection, pending, scrollToBottom, sessions, syncLocked, sourceModes, noEvidenceMode, mcpModelCapable, agentEnabled, accountType, profile?.display_name, user?.id, user?.email]
+    [activeSessionId, appendToSession, historyReady, knowledge, modelFallbackSelection, modelSelection, pending, scrollToBottom, sessions, syncLocked, sourceModes, noEvidenceMode, mcpModelCapable, agentEnabled, accountType, profile?.display_name, profile?.referral_enabled, user?.id, user?.email]
   )
 
   const isEmpty = thread.length === 0 && !pendingForActiveSession
@@ -998,7 +999,8 @@ export default function HomePage() {
                   aria-haspopup="menu"
                   aria-expanded={pickerOpen}
                   title="معرفة خلفية السائل"
-                  className="relative flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-[12.5px] sm:text-[14px] font-bold border transition-colors"
+                  data-active={pickerOpen}
+                  className="tb-header-control relative flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full text-[12.5px] sm:text-[14px] font-bold border transition-colors"
                   style={{
                     background: pickerOpen ? "#0A8F94" : "#fff",
                     color: pickerOpen ? "#fff" : "#0A2A33",
@@ -1035,7 +1037,8 @@ export default function HomePage() {
                 disabled={syncLocked}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.95 }}
-                className="relative px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[12.5px] sm:text-[14px] font-bold border transition-colors"
+                data-active={showTests}
+                className="tb-header-control relative px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[12.5px] sm:text-[14px] font-bold border transition-colors"
                 style={{
                   background: showTests ? "#0A8F94" : "#fff",
                   color: showTests ? "#fff" : "#0A8F94",
@@ -1057,7 +1060,7 @@ export default function HomePage() {
         {/* منطقة المحادثة */}
         <div ref={scrollerRef} className="flex-1 overflow-y-auto tb-scroll relative">
           <div className="max-w-[940px] mx-auto px-4 pt-6 pb-4">
-            <AnimatePresence initial={false} mode="popLayout">
+            <>
               {isEmpty && (
                 <motion.section
                   key="empty"
@@ -1126,11 +1129,11 @@ export default function HomePage() {
                   </div>
                 </motion.section>
               )}
-            </AnimatePresence>
+            </>
 
             {/* خيط المحادثة */}
             <div className="space-y-5 pb-2">
-              <AnimatePresence initial={false}>
+              <>
                 {thread.map((item, index) => {
                   const precedingMessage = index > 0 ? thread[index - 1] : undefined
                   const canRetry = item.role === "tibyan" && index === thread.length - 1 && precedingMessage?.role === "user" && precedingMessage.question === item.response.question
@@ -1179,7 +1182,7 @@ export default function HomePage() {
                     </motion.div>
                   )
                 })}
-              </AnimatePresence>
+              </>
 
               {pendingForActiveSession && pending && <ThinkingStages key={`${pending.sessionId}:${pending.question}`} question={pending.question} stages={progressStages} />}
             </div>

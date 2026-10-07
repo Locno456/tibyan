@@ -353,3 +353,31 @@ body {
   background:#193945 !important; color:#e0f4ee !important; border-color:#345360 !important;
 }
 :root[data-theme="dark"] .tb-legacy-evidence-title { color:#b1d7f4 !important; }
+/* High-contrast dark surfaces, including inline-colored splash and header controls. */
+:root[data-theme="dark"] .tb-splash-screen { background-color:#071a23 !important; }
+:root[data-theme="dark"] .tb-header-control[data-active="false"] {
+  background:#122b36 !important; color:#eef7f7 !important; border-color:#345360 !important;
+}
+:root[data-theme="dark"] .tb-header-control[data-active="false"]:hover,
+:root[data-theme="dark"] .tb-header-control[data-active="false"]:focus-visible {
+  background:#193945 !important; color:#eef7f7 !important;
+}
+:root[data-theme="dark"] .tb-thinking-card { background:#122b36 !important; border-color:#345360 !important; }
+:root[data-theme="dark"] .tb-thinking-motif { background:#193945 !important; border-color:#345360 !important; }
+:root[data-theme="dark"] :is([class~="bg-[#FAFEFD]"],[class~="bg-white/96"],[class~="bg-[#E5F5F2]"]) {
+  background-color:#122b36 !important;
+}
+:root[data-theme="dark"] :is([class~="text-[#075F65]"],[class~="text-[#6840B5]"]) { color:#c7eeef !important; }
+:root[data-theme="dark"] :is(
+  [class~="hover:bg-[#EEF6F6]"],[class~="hover:bg-[#EEF6F6]/50"],
+  [class~="hover:bg-[#EFF9F7]"],[class~="hover:bg-[#E2F5F2]"],
+  [class~="hover:bg-[#F6FAF9]"],[class~="hover:bg-[#F7FBFA]"],
+  [class~="hover:bg-[#F2F8F7]"],[class~="hover:bg-white/80"]
+):hover { background-color:#254752 !important; color:#eef7f7 !important; }
+:root[data-theme="dark"] .group:hover [class~="group-hover:text-[#0A8F94]"] { color:#63d8cd !important; }
+:root[data-theme="dark"] :is(
+  [class~="hover:bg-[#DDF3F0]"],[class~="hover:bg-[#DEF3F0]"],
+  [class~="hover:bg-[#EEF8F7]"],[class~="hover:bg-[#F8F5FF]"],
+  [class~="hover:bg-[#F5FAF9]"],[class~="hover:bg-[#C9DFE1]/60"],
+  [class~="hover:bg-white"],[class~="hover:bg-white/70"]
+):hover { background-color:#254752 !important; color:#eef7f7 !important; }

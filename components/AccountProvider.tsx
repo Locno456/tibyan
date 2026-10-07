@@ -104,11 +104,22 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
     setProfileLoading(true)
     setProfileError(null)
-    const { data, error } = await client
+    let { data, error } = await client
       .from("profiles")
-      .select("id, display_name, account_type, created_at")
+      .select("id, display_name, account_type, referral_enabled, created_at")
       .eq("id", user.id)
       .maybeSingle()
+    // Older Supabase installations must keep account access while the additive SQL
+    // migration is pending. Referral remains disabled until the new column exists.
+    if (error && /referral_enabled/i.test(error.message)) {
+      const legacy = await client.from("profiles")
+        .select("id, display_name, account_type, created_at").eq("id", user.id).maybeSingle()
+      if (!legacy.error) {
+        data = legacy.data as typeof data
+        error = null
+        setProfileError("فعّل إعداد الإحالة بتشغيل أحدث supabase/schema.sql في مشروع Supabase.")
+      }
+    }
 
     if (error) {
       setProfileError(profileTableError(error))
@@ -118,6 +129,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         id: String(data.id),
         display_name: typeof data.display_name === "string" ? data.display_name : null,
         account_type: data.account_type,
+        referral_enabled: data.referral_enabled === true,
         created_at: typeof data.created_at === "string" ? data.created_at : null,
       })
     } else {

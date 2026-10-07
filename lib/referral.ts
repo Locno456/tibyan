@@ -1,4 +1,9 @@
-export type ReferralReason = "personal_fatwa" | "inheritance" | "conversion" | null
+export type ReferralReason = "personal_fatwa" | "inheritance" | "conversion" | "specialist_request" | null
+
+/** Explicit requests are referrals, not religious questions requiring retrieval. */
+export function explicitSpecialistRequest(question: string): boolean {
+  return /(?:أريد|اريد|أحتاج|احتاج|أبغى|ابغى|أرغب|ارغب|هل يمكنك|ممكن|كيف|وصلني|حولني|حولوني|دلني|أحِلني|احلني|ارجو|أطلب|اطلب|طلب)\s+.{0,65}(?:مختص|متخصص|خبير|عالم|مفتي|شيخ|إحالتي|احالتي|تحويل|الإحالة|الاحالة)|(?:أحال|احال|حوّل|حول)\w*\s*.{0,40}(?:مختص|متخصص|عالم|مفتي|شيخ)|(?:connect|refer|speak|talk)\s+.{0,40}(?:specialist|scholar|imam)/i.test(question)
+}
 
 /** High recall safety fallback; model may broaden these cases but cannot cancel a confirmed referral. */
 export function referralFallback(question: string, audience: string, personal: boolean): ReferralReason {
@@ -10,12 +15,14 @@ export function referralFallback(question: string, audience: string, personal: b
 }
 
 export function parseReferralClassification(text: string): ReferralReason {
-  const match = text.trim().match(/^\{\s*"reason"\s*:\s*"(personal_fatwa|inheritance|conversion|none)"\s*\}$/)
+  const match = text.trim().match(/^\{\s*"reason"\s*:\s*"(personal_fatwa|inheritance|conversion|specialist_request|none)"\s*\}$/)
   return match && match[1] !== "none" ? match[1] as ReferralReason : null
 }
 
 export function referralExplanation(reason: Exclude<ReferralReason, null>, complete: boolean): string {
-  const why = reason === "conversion"
+  const why = reason === "specialist_request"
+    ? "طلبت التحدث إلى مختص؛ يمكنني مساعدتك في تجهيز طلب إحالة دون إيراد أدلة لا تتعلق بسؤالك. توفر المختص يعتمد على جهة الاتصال المضبوطة."
+    : reason === "conversion"
     ? "يبدو أنك ترغب فعلاً في الدخول في الإسلام وتحتاج إرشاداً شخصياً؛ يمكنك نطق الشهادتين دون انتظار أي مختص، والتواصل معه اختياري للمساعدة في الخطوات التالية."
     : reason === "inheritance"
       ? "تقسيم الميراث في واقعة محددة يحتاج مراجعة جميع الورثة والديون والوصايا لدى مختص مؤهل، ولا يمكنني تحديد أنصبة حالتك هنا."

@@ -31,6 +31,7 @@ export interface AccountProfile {
   id: string
   display_name: string | null
   account_type: AccountType
+  referral_enabled: boolean
   created_at: string | null
 }
 

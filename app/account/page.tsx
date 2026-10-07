@@ -13,8 +13,18 @@ const CATEGORY_ICONS = { Globe, Sprout, Moon, BookOpen } as const
 
 export default function AccountPage() {
   const router = useRouter()
-  const { user, accountType, profile, profileError, authLoading, profileLoading, isConfigured, signOut } = useAccount()
+  const { user, client, accountType, profile, profileError, authLoading, profileLoading, isConfigured, signOut, refreshProfile } = useAccount()
+  const [referralBusy, setReferralBusy] = useState(false)
+  const [referralError, setReferralError] = useState("")
   const [signOutBusy, setSignOutBusy] = useState(false)
+  const toggleReferral = async () => {
+    if (!client || !user || !profile || referralBusy) return
+    setReferralBusy(true); setReferralError("")
+    const { error } = await client.from("profiles").update({ referral_enabled: !profile.referral_enabled }).eq("id", user.id)
+    if (error) setReferralError("تعذّر حفظ الاختيار. تأكد من تطبيق أحدث supabase/schema.sql وسياسات RLS.")
+    else await refreshProfile()
+    setReferralBusy(false)
+  }
   const [signOutError, setSignOutError] = useState<string | null>(null)
   const accountMeta = getAccountTypeMeta(accountType)
   const CategoryIcon = accountMeta ? CATEGORY_ICONS[accountMeta.icon as keyof typeof CATEGORY_ICONS] : UserRound
@@ -102,6 +112,18 @@ export default function AccountPage() {
                     {profileLoading && <span className="mt-1 h-4 w-4 animate-spin rounded-full border-2 border-[#D1E3E2] border-t-[#0A8F94]" aria-label="جارٍ تحميل الملف" />}
                   </div>
                 </div>
+
+                {(accountType === "muslim" || accountType === "researcher") && (
+                  <section className="rounded-2xl border border-[#D8E8E7] bg-[#F8FBFA] p-4 sm:p-5" aria-label="تفضيل الإحالة إلى مختص">
+                    <h2 className="text-sm font-extrabold text-[#0A2A33]">الإحالة إلى مختص</h2>
+                    <p className="mt-1 text-xs leading-6 text-[#4B6A72]">فعّل اقتراح الإحالة تلقائياً لأسئلتك الشخصية الحساسة. طلبك الصريح لمختص أو سؤال فتوى شخصية يُحال حتى لو كان هذا الخيار مغلقاً. لا تُرسل المحادثة أو بياناتك إلا بموافقتك في نموذج الإحالة.</p>
+                    <button type="button" role="switch" aria-checked={profile?.referral_enabled === true} disabled={!profile || referralBusy} onClick={() => void toggleReferral()} className="mt-3 rounded-xl border border-[#0A8F94] bg-white px-4 py-2 text-sm font-bold text-[#0A737C] disabled:opacity-50">
+                      {referralBusy ? "جارٍ الحفظ…" : profile?.referral_enabled ? "الإحالة الاستباقية مفعّلة — إيقاف" : "تفعيل الإحالة الاستباقية"}
+                    </button>
+                    {!profile && <p className="mt-2 text-xs text-[#735D29]">يلزم تهيئة الملف الشخصي وقاعدة Supabase أولاً.</p>}
+                    {referralError && <p role="alert" className="mt-2 text-xs text-rose-700">{referralError}</p>}
+                  </section>
+                )}
 
                 {profileError && (
                   <p role="status" className="rounded-xl border border-[#E0B450]/35 bg-[#FFF9E9] px-3.5 py-3 text-[11.5px] leading-5 text-[#735D29]">{profileError}</p>

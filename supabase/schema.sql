@@ -13,6 +13,9 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+-- Opt-in for proactive specialist referral on personal/sensitive questions.
+alter table public.profiles add column if not exists referral_enabled boolean not null default false;
+
 create table if not exists public.tibyan_user_data (
   user_id uuid primary key references auth.users (id) on delete cascade,
   state jsonb not null default '{}'::jsonb,

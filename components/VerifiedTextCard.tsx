@@ -52,7 +52,7 @@ async function copyText(value: string) {
     } catch {
       // تجاهل فشل النسخ في المتصفحات التي تمنعه.
     }
-    document.body.removeChild(textarea)
+    textarea.remove()
   }
 }
 

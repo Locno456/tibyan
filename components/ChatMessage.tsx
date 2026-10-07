@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import {
   BookOpen,
@@ -42,33 +42,8 @@ interface ChatMessageProps {
   retryDisabled?: boolean
 }
 
-/* كشف تدريجي للشرح مع احترام إعداد تقليل الحركة في الجهاز. */
-function useReveal(text: string, enabled = true) {
-  const words = useMemo(() => text.split(/(\s+)/), [text])
-  const total = words.length
-  const [shown, setShown] = useState(enabled ? 0 : total)
-
-  useEffect(() => {
-    if (!enabled) {
-      setShown(total)
-      return
-    }
-
-    setShown(0)
-    let index = 0
-    const step = total > 220 ? 7 : total > 90 ? 4 : 2
-    const timer = window.setInterval(() => {
-      index += step
-      setShown(index)
-      if (index >= total) window.clearInterval(timer)
-    }, 26)
-
-    return () => window.clearInterval(timer)
-  }, [text, total, enabled])
-
-  return { out: words.slice(0, shown).join(""), done: shown >= total }
-}
-
+/* Keep the response as one stable text node. Replacing individual word nodes while
+ * a browser translator/extension touches the DOM can trigger React insertBefore errors. */
 function prefersReducedMotion() {
   if (typeof window === "undefined") return false
   return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
@@ -154,7 +129,6 @@ export default function ChatMessage({
   const isAudioInteraction = !!audioCard || !!audioRequest || interactionType === "quran_audio"
   const isConversational = interactionType === "conversation"
   const showEvidenceFooter = !isAudioInteraction && !isConversational && (safeBlueCards.length > 0 || (status !== "error" && safeConfidence > 0))
-  const { out, done } = useReveal(mainExplanation, !reduce && status !== "error")
 
   const quranCards = safeBlueCards.filter((card) => card.type === "quran")
   const hadithCards = safeBlueCards.filter((card) => card.type === "hadith")
@@ -271,7 +245,7 @@ export default function ChatMessage({
       } catch {
         // تجاهل فشل النسخ في المتصفحات التي تمنعه.
       }
-      document.body.removeChild(textarea)
+      textarea.remove()
     }
     setCopiedNote(true)
     window.setTimeout(() => setCopiedNote(false), 1800)
@@ -353,11 +327,10 @@ export default function ChatMessage({
                     aria-live="polite"
                     className={`body-font whitespace-pre-wrap text-[14.5px] leading-[1.9] sm:text-[15px] ${status === "error" ? "text-rose-950" : "text-[#302847]"}`}
                   >
-                    {out}
-                    {!done && !reduce && <span className="tb-caret" aria-hidden="true" />}
+                    {mainExplanation}
                   </p>
 
-                  {done && (
+                  {(
                     <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
                       <button
                         type="button"

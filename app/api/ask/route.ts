@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { detectIntent, LEVELS, type Level } from "../../../lib/levelRouter"
-import { referralFallback, parseReferralClassification, referralExplanation } from "../../../lib/referral"
+import { referralFallback, explicitSpecialistRequest, parseReferralClassification, referralExplanation } from "../../../lib/referral"
 import { isAgentModeEnabled, resolveAgentPreferences } from "../../../lib/agentRollout"
 import { searchApprovedWeb } from "../../../lib/approvedWebSearch"
 import { planEvidenceSearch } from "../../../lib/agentPolicy"
@@ -254,17 +254,20 @@ async function runAsk(request: NextRequest) {
   const initialIntent = detectIntent(question)
   const referralPersona = persona === "non_muslim" || persona === "new_muslim" ? persona
     : body.accountType === "non_muslim" || body.accountType === "new_muslim" ? body.accountType : persona
-  const referralAudience = referralPersona === "non_muslim" || referralPersona === "new_muslim"
-  let referralReason = referralFallback(question, referralPersona, initialIntent.level === "D")
+  const referralAudience = referralPersona === "non_muslim" || referralPersona === "new_muslim" ||
+    ((body.accountType === "muslim" || body.accountType === "researcher") && body.referralEnabled === true)
+  const userRequestedSpecialist = explicitSpecialistRequest(question)
+  let referralReason = userRequestedSpecialist ? "specialist_request" as const
+    : referralAudience ? referralFallback(question, "new_muslim", initialIntent.level === "D") : null
   // An additional, constrained model classification for relevant questions only. Fail closed to
   // the deterministic safety route when a provider is unavailable; no model-generated fatwa.
-  if (referralAudience && /(?:اسلام|إسلام|أسلم|مسلم|فتوى|حكم|يجوز|ميراث|ورث|تركة|زوج|طلاق|حالة|شخص|inherit|convert|muslim|islam|fatwa)/i.test(question.slice(0, 1200))) {
+  if (!referralReason && referralAudience && /(?:اسلام|إسلام|أسلم|مسلم|فتوى|حكم|يجوز|ميراث|ورث|تركة|زوج|طلاق|حالة|شخص|مختص|عالم|مفتي|inherit|convert|muslim|islam|fatwa|specialist)/i.test(question.slice(0, 1200))) {
     try {
       const referralModel = await resolveAISelection({ providerId: body.providerId, modelId: body.modelId })
       if (!referralModel) throw new Error("No configured referral classifier")
       const classified = await generateWithAIProvider(referralModel,
         question.slice(0, 1200),
-        'Classify the USER intent only. Return exactly one JSON object: {"reason":"personal_fatwa"}, {"reason":"inheritance"}, {"reason":"conversion"}, or {"reason":"none"}. conversion only for explicit personal desire to become Muslim and need for help; inheritance only for a specific family estate; personal_fatwa only for a personal case requiring a qualified human. General factual questions are none. Do not ask for private information. Do not answer the question.', [])
+        'Classify the USER intent only. Return exactly one JSON object with reason equal to personal_fatwa, inheritance, conversion, specialist_request, or none. specialist_request only when the user explicitly asks to speak to a qualified human; conversion only for explicit personal desire to become Muslim and need for help; inheritance only for a specific family estate; personal_fatwa only for a personal case requiring a qualified human. General factual questions are none. Do not ask for private information. Do not answer the question.', [])
       referralReason = referralReason || parseReferralClassification(classified.text)
     } catch { /* keep the deterministic referral; never fabricate a successful model check */ }
   }

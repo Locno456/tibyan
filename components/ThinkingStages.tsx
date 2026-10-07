@@ -38,13 +38,13 @@ export default function ThinkingStages({ question, stages = [] }: ThinkingStages
 
   return (
     <div className="mx-auto w-full max-w-[800px]" dir="rtl" aria-label="حالة إعداد الرد">
-      <div className="relative overflow-hidden rounded-[22px] border border-[#A9D6D6] bg-[#FAFEFD] p-4 shadow-[0_12px_34px_rgba(10,42,51,0.1)] sm:p-5">
+      <div className="tb-thinking-card relative overflow-hidden rounded-[22px] border border-[#A9D6D6] bg-[#FAFEFD] p-4 shadow-[0_12px_34px_rgba(10,42,51,0.1)] sm:p-5">
         <div aria-hidden="true" className="pointer-events-none absolute -left-12 -top-16 h-40 w-40 rounded-full bg-[#19D6C4]/10 blur-2xl" />
         <div className="relative flex items-start gap-4">
           <button type="button" onClick={() => setMotifIndex((index) => (index + 1) % MOTIFS.length)}
             aria-label="تغيير زخرفة تِبْيَان أثناء الانتظار"
             title="المس الزخرفة لتغيير شكلها؛ لا يغيّر ذلك البحث"
-            className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-[20px] border border-[#A9D6D6] bg-gradient-to-br from-[#E8F8F5] to-white shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087A7F] sm:h-24 sm:w-24">
+            className="tb-thinking-motif group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-[20px] border border-[#A9D6D6] bg-gradient-to-br from-[#E8F8F5] to-white shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087A7F] sm:h-24 sm:w-24">
             {!reduceMotion && <motion.span aria-hidden="true" className="absolute inset-1 rounded-[17px] border border-[#19D6C4]/40"
               animate={{ scale: [0.94, 1.04, 0.94], opacity: [0.45, 0.9, 0.45] }} transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }} />}
             <AnimatePresence mode="wait">
