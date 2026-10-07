@@ -66,7 +66,7 @@ export default function BlueCard({ text, source, sourceUrl, grade, type = "conce
               <span className="text-[16px]">{getIcon()}</span>
             </div>
             <div>
-              <div className="text-[13px] font-extrabold" style={{ color: '#14529E', fontFamily: 'Tajawal, sans-serif' }}>{getLabel()}</div>
+              <div className="tb-legacy-evidence-title text-[13px] font-extrabold" style={{ color: '#14529E', fontFamily: 'Tajawal, sans-serif' }}>{getLabel()}</div>
               <div className="text-[11.5px] text-[#4B6A72] mt-0.5 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#14529E]" />
                 {safeSource}
@@ -80,7 +80,7 @@ export default function BlueCard({ text, source, sourceUrl, grade, type = "conce
 
         <div className="relative">
           <div
-            className="sacred text-[18px] leading-[1.9] p-4 rounded-[12px] border"
+            className="tb-legacy-evidence-quote sacred text-[18px] leading-[1.9] p-4 rounded-[12px] border"
             style={{
               color: '#0A2A33',
               background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(238,246,246,0.7) 100%)',

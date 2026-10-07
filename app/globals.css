@@ -314,3 +314,42 @@ body {
   background-color:#193945 !important;
 }
 :root[data-theme="dark"] [class~="bg-white/72"] { background-color:rgba(18,43,54,.94) !important; }
+/* Additional legacy surfaces encountered in account, sources, history and auth views. */
+:root[data-theme="dark"] :is(
+  [class~="bg-white/70"],[class~="bg-white/90"],
+  [class~="bg-[#F4F9F8]"],[class~="bg-[#F8FBFA]"],[class~="bg-[#FAFCFC]"],
+  [class~="bg-[#F7FAFA]"],[class~="bg-[#F7FBFA]"],[class~="bg-[#F5FAF9]"],
+  [class~="bg-[#F4F6F5]"]
+) { background-color:#122b36 !important; }
+:root[data-theme="dark"] :is([class~="bg-[#EAF8F6]"],[class~="bg-[#F3FAF5]"],[class~="bg-[#E8F7F5]"]) {
+  background-color:#193945 !important;
+}
+:root[data-theme="dark"] :is(
+  [class~="text-[#183F47]"],[class~="text-[#263D43]"],[class~="text-[#35575E]"],
+  [class~="text-[#45616A]"]
+) { color:#eef7f7 !important; }
+:root[data-theme="dark"] :is(
+  [class~="text-[#718B90]"],[class~="text-[#8AA6AB]"],[class~="text-[#536B73]"],
+  [class~="text-[#647C83]"],[class~="text-[#72858A]"],[class~="text-[#789095]"],
+  [class~="text-[#82999D]"],[class~="text-[#8AA1A5]"],[class~="text-[#789196]"]
+) { color:#b2cdd0 !important; }
+:root[data-theme="dark"] :is(
+  [class~="text-[#0A8F94]"],[class~="text-[#087A7F]"],
+  [class~="text-[#0A737A]"],[class~="text-[#0A737C]"],
+  [class~="text-[#176A6C]"],[class~="text-[#18794E]"]
+) { color:#63d8cd !important; }
+:root[data-theme="dark"] [class~="from-[#EAF8F6]"][class~="bg-gradient-to-l"] {
+  background-image:none !important; background-color:#193945 !important;
+}
+:root[data-theme="dark"] .tb-verified-quote,
+:root[data-theme="dark"] .tb-source-quote {
+  background-color:#193945 !important; border-color:#345360 !important;
+  color:#e0f4ee !important;
+}
+:root[data-theme="dark"] .tb-verified-quote p { color:#e0f4ee !important; }
+:root[data-theme="dark"] :is([class~="text-[#302847]"],[class~="text-[#263D43]"]) { color:#e8eff7 !important; }
+:root[data-theme="dark"] :is([class~="text-[#6840B5]"],[class~="text-[#7B4FD6]"]) { color:#c7adff !important; }
+:root[data-theme="dark"] .tb-legacy-evidence-quote {
+  background:#193945 !important; color:#e0f4ee !important; border-color:#345360 !important;
+}
+:root[data-theme="dark"] .tb-legacy-evidence-title { color:#b1d7f4 !important; }

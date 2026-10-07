@@ -135,7 +135,7 @@ export default function VerifiedTextCard({
 
       <div className="px-3.5 pb-3.5 sm:px-4 sm:pb-4">
         <div
-          className="relative rounded-xl border px-3.5 py-3 sm:px-4 sm:py-3.5"
+          className="tb-verified-quote relative rounded-xl border px-3.5 py-3 sm:px-4 sm:py-3.5"
           style={{ backgroundColor: surface, borderColor: border }}
         >
           {isQuran && ornament && (

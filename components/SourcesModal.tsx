@@ -206,7 +206,7 @@ export default function SourcesModal({ isOpen, onClose, sources, question, confi
 
                         <div
                           dir="rtl"
-                          className="mb-2.5 whitespace-pre-wrap rounded-[10px] border p-3 text-[16px] leading-[1.9]"
+                          className="tb-source-quote mb-2.5 whitespace-pre-wrap rounded-[10px] border p-3 text-[16px] leading-[1.9]"
                           style={{
                             fontFamily: isQuran || isHadith ? "Amiri, serif" : "IBM Plex Sans Arabic, sans-serif",
                             color: isQuran ? "#14529E" : isHadith ? "#18794E" : "#0A2A33",

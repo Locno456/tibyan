@@ -41,6 +41,7 @@ import {
   type TibyanAccountData,
 } from "../lib/accountData"
 import { accountSyncErrorMessage, fetchAccountData, saveAccountData } from "../lib/accountSync"
+import { readLocalDatabase, writeLocalDatabase } from "../lib/localDatabase"
 import { isSyncDeferred, readDeletedSessionIds, readLocalOnlySessionIds, readSyncOwner, setSyncDeferred, writeDeletedSessionIds, writeLocalOnlySessionIds, writeSyncOwner } from "../lib/accountStorage"
 
 type AskResponse = StoredAskResponse
@@ -88,7 +89,7 @@ const ALL_TESTS = [
 
 export default function HomePage() {
   const router = useRouter()
-  const { user, client, authLoading, accountType, profile } = useAccount()
+  const { user, client, authLoading, accountType, profile, isConfigured } = useAccount()
   const [sourceModes, setSourceModes] = useState<SourceMode[]>(DEFAULT_SOURCE_MODES)
   const [agentEnabled, setAgentEnabled] = useState(false)
   useEffect(() => {
@@ -184,6 +185,7 @@ export default function HomePage() {
     sidebarCollapsed,
   }), [sessions, deletedSessionIds, customKnowledge, knowledgePreferenceId, modelSelection, modelFallbackSelection, activeSessionId, sidebarCollapsed])
   const localAccountSnapshotRef = useRef(localAccountSnapshot)
+  const localWriteQueueRef = useRef<Promise<void>>(Promise.resolve())
   localAccountSnapshotRef.current = localAccountSnapshot
 
   const finishSplash = useCallback((draft?: string) => {
@@ -191,27 +193,35 @@ export default function HomePage() {
     setShowSplash(false)
   }, [])
 
-  // استعادة سجل المحادثات والتفضيلات محلياً عند أول تحميل (من دون أي طلب للخادم).
+  // Prefer the browser-local database; import existing localStorage history on first use.
+  // A failed/blocked IndexedDB leaves the original localStorage path intact.
   useEffect(() => {
-    const customs = loadCustomKnowledge()
-    setCustomKnowledge(customs)
-    const selectedKnowledgeId = loadSelectedKnowledgeId()
-    setKnowledgePreferenceId(selectedKnowledgeId)
-    if (selectedKnowledgeId) {
-      const found =
-        customs.find((option) => option.id === selectedKnowledgeId) ||
-        PRESET_KNOWLEDGE.find((option) => option.id === selectedKnowledgeId)
-      if (found) setKnowledge(found)
+    let active = true
+    const restore = async () => {
+      const stored = await readLocalDatabase().catch(() => null)
+      if (!active) return
+      if (stored?.modelSelection) setModelSelection((current) => current || stored.modelSelection)
+      if (stored?.modelFallbackSelection) setModelFallbackSelection((current) => current || stored.modelFallbackSelection)
+      const customs = stored?.customKnowledge?.length ? stored.customKnowledge : loadCustomKnowledge()
+      setCustomKnowledge(customs)
+      const selectedKnowledgeId = stored?.selectedKnowledgeId || loadSelectedKnowledgeId()
+      setKnowledgePreferenceId(selectedKnowledgeId)
+      if (selectedKnowledgeId) {
+        const found = customs.find((option) => option.id === selectedKnowledgeId) ||
+          PRESET_KNOWLEDGE.find((option) => option.id === selectedKnowledgeId)
+        if (found) setKnowledge(found)
+      }
+      const storedSessions = stored?.sessions?.length ? stored.sessions : loadChatSessions()
+      const preferredId = stored?.activeSessionId || loadActiveChatId()
+      const selectedSession = storedSessions.find((session) => session.id === preferredId) || storedSessions[0]
+      const initialSessions = storedSessions.length ? storedSessions : [createChatSession()]
+      setSessions(initialSessions)
+      setActiveSessionId(selectedSession?.id || initialSessions[0].id)
+      setSidebarCollapsed(stored?.sidebarCollapsed ?? loadSidebarCollapsed())
+      setHistoryReady(true)
     }
-
-    const storedSessions = loadChatSessions()
-    const preferredId = loadActiveChatId()
-    const selectedSession = storedSessions.find((session) => session.id === preferredId) || storedSessions[0]
-    const initialSessions = storedSessions.length > 0 ? storedSessions : [createChatSession()]
-    setSessions(initialSessions)
-    setActiveSessionId(selectedSession?.id || initialSessions[0].id)
-    setSidebarCollapsed(loadSidebarCollapsed())
-    setHistoryReady(true)
+    void restore()
+    return () => { active = false }
   }, [])
 
   useEffect(() => {
@@ -276,9 +286,13 @@ export default function HomePage() {
   }, [modelFallbackSelection, modelSelectionReady])
 
   useEffect(() => {
-    if (!historyReady) return
-    setStorageWarning(!saveChatSessions(sessions))
-  }, [sessions, historyReady])
+    if (!historyReady || !modelSelectionReady) return
+    // Save after state has been restored, never overwrite the database with empty initial state.
+    const localStorageSaved = saveChatSessions(sessions)
+    localWriteQueueRef.current = localWriteQueueRef.current.catch(() => {}).then(() =>
+      writeLocalDatabase(localAccountSnapshotRef.current)
+    ).then(() => setStorageWarning(false)).catch(() => setStorageWarning(!localStorageSaved))
+  }, [localAccountSnapshot, historyReady, modelSelectionReady, sessions])
 
   useEffect(() => {
     if (historyReady) saveCustomKnowledge(customKnowledge)
@@ -592,7 +606,7 @@ export default function HomePage() {
   const syncLocked = syncStatus === "checking" || syncModalOpen
 
   const startNewChat = useCallback(() => {
-    if (!historyReady || pending || syncLocked || !canCreateGuestConversation(sessions.length, !!user)) return
+    if (!historyReady || pending || syncLocked || (isConfigured && !canCreateGuestConversation(sessions.length, !!user))) return
     const fresh = createChatSession()
     setSessions((previous) => [fresh, ...previous])
     setActiveSessionId(fresh.id)
@@ -600,7 +614,7 @@ export default function HomePage() {
     setShowTests(false)
     setMobileSidebarOpen(false)
     setAtBottom(true)
-  }, [historyReady, pending, sessions.length, syncLocked, user])
+  }, [historyReady, pending, sessions.length, syncLocked, user, isConfigured])
 
   const selectChat = useCallback((sessionId: string) => {
     setActiveSessionId(sessionId)
@@ -860,7 +874,7 @@ export default function HomePage() {
   const answeredCount = thread.filter((message) => message.role === "tibyan").length
   const appVisible = historyReady && !showSplash
   const splashVisible = showSplash || !historyReady
-  const guestLimitReached = !user && sessions.length >= MAX_GUEST_CONVERSATIONS
+  const guestLimitReached = isConfigured && !user && sessions.length >= MAX_GUEST_CONVERSATIONS
   const syncMessage = !user
     ? "وضع الضيف؛ لن تُرفع التغييرات دون موافقتك."
     : syncStatus === "active"
@@ -929,6 +943,7 @@ export default function HomePage() {
           disabled={!historyReady || !!pending || !appVisible || syncLocked}
           storageWarning={storageWarning}
           guestMode={!user}
+          localDatabaseMode={!isConfigured}
           guestConversationCount={sessions.length}
           guestLimitReached={guestLimitReached}
           isAuthenticated={!!user}

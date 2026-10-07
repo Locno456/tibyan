@@ -18,6 +18,7 @@ interface ChatSidebarProps {
   disabled?: boolean
   storageWarning?: boolean
   guestMode?: boolean
+  localDatabaseMode?: boolean
   guestConversationCount?: number
   guestLimitReached?: boolean
   isAuthenticated?: boolean
@@ -53,6 +54,7 @@ function SidebarContents({
   disabled,
   storageWarning = false,
   guestMode = false,
+  localDatabaseMode = false,
   guestConversationCount = sessions.length,
   guestLimitReached = false,
   isAuthenticated = false,
@@ -162,7 +164,7 @@ function SidebarContents({
           <>
             <h2 className="text-[12px] font-extrabold text-[#4B6A72]">سجل المحادثات</h2>
             <span className="min-w-6 rounded-full border border-[#C9DFE1]/70 bg-white/80 px-1.5 py-0.5 text-center text-[10.5px] font-bold tabular-nums text-[#6D8A90]">
-              {guestMode ? `${guestConversationCount}/5` : sessions.filter((session) => session.messages.length > 0).length}
+              {guestMode ? (localDatabaseMode ? guestConversationCount : `${guestConversationCount}/5`) : sessions.filter((session) => session.messages.length > 0).length}
             </span>
           </>
         )}

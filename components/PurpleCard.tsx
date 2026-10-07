@@ -56,7 +56,7 @@ export default function PurpleCard({ explanation, persona = "general", level = "
               <span className="text-[15px]">✦</span>
             </div>
             <div>
-              <div className="text-[13px] font-extrabold flex items-center gap-2" style={{ color: '#7B4FD6', fontFamily: 'Tajawal, sans-serif' }}>
+              <div className="tb-legacy-evidence-title text-[13px] font-extrabold flex items-center gap-2" style={{ color: '#7B4FD6', fontFamily: 'Tajawal, sans-serif' }}>
                 <span>الشرح والتنظيم</span>
                 <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold border" style={{ background: levelInfo.bg, color: levelInfo.color, borderColor: `${levelInfo.color}20` }}>
                   {level} • {levelInfo.label}
@@ -76,7 +76,7 @@ export default function PurpleCard({ explanation, persona = "general", level = "
 
         <div className="relative">
           <div
-            className="body-font text-[15px] leading-[1.85] p-4 rounded-[12px] border"
+            className="tb-legacy-evidence-quote body-font text-[15px] leading-[1.85] p-4 rounded-[12px] border"
             style={{
               color: '#0A2A33',
               background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(245,243,255,0.7) 100%)',

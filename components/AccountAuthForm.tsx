@@ -99,13 +99,15 @@ export default function AccountAuthForm({
 
       {!isConfigured && (
         <div className="mb-4 rounded-2xl border border-[#E0B450]/40 bg-[#FFF9E9] p-3.5 text-[12px] leading-6 text-[#735D29]">
-          الحساب اختياري، لكن تسجيل الدخول والمزامنة يحتاجان إعداد مشروع Supabase. أضف
+          يمكنك مواصلة استخدام تِبْيَان بقاعدة بيانات محلية على هذا المتصفح دون حساب؛ تسجيل الدخول والمزامنة وروابط المشاركة العامة تحتاج Supabase. أضف
           <code className="mx-1 rounded bg-white/80 px-1.5 py-0.5 font-mono text-[11px]">NEXT_PUBLIC_SUPABASE_URL</code>
           و
           <code className="mx-1 rounded bg-white/80 px-1.5 py-0.5 font-mono text-[11px]">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>
           وطبّق ملف <code className="font-mono text-[11px]">supabase/schema.sql</code>.
         </div>
       )}
+
+      {!isConfigured && <a href="/" className="mb-4 inline-flex rounded-xl bg-[#0A737C] px-4 py-2 text-sm font-bold text-white">متابعة المحادثة محلياً دون حساب</a>}
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {mode === "signup" && (

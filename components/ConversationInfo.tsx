@@ -89,7 +89,7 @@ export default function ConversationInfo({ session, knowledge, customKnowledge, 
           <p className="mt-2 text-xs text-[#527078]">مخصص للحساب المسجل. ينشر نسخة ثابتة من الرسائل والمعرفة المختارة فقط، ولا يتجدد تلقائياً. إيقافه يلغي الرابط فوراً؛ إعادة تفعيله تولّد رابطاً جديداً. لا تشارك بيانات حساسة.</p>
           {published && link && <button type="button" onClick={() => navigator.clipboard.writeText(link).then(() => setError("تم نسخ الرابط")).catch(() => setError("تعذر النسخ"))} className="mt-3 break-all rounded-lg border px-3 py-2 text-xs text-[#0A737C]">نسخ رابط القراءة: {link}</button>}
           {published && !link && <p className="mt-2 text-xs">الرابط أُنشئ على جهاز آخر. أوقف المشاركة وأعد تفعيلها لإنشاء رابط جديد.</p>}
-          {!userId && <p className="mt-2 text-xs">سجّل الدخول لتفعيل الرابط العام.</p>}
+          {!userId && <p className="mt-2 text-xs">الرابط العام يتطلب حساباً وخادماً دائماً مثل Supabase؛ قاعدة البيانات المحلية لا تنشر محادثاتك على الإنترنت. يمكنك تنزيلها من الزر أعلاه.</p>}
           {error && <p role="status" className="mt-2 text-xs text-rose-700">{error}</p>}
         </div>
       </section>
