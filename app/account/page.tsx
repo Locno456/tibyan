@@ -68,7 +68,7 @@ export default function AccountPage() {
                   <p className="mt-1.5 text-[12.5px] leading-6 text-[#718B90]">يمكنك مواصلة استخدام تِبْيَان محلياً كضيف، أو تسجيل الدخول لمزامنة البيانات بعد موافقتك.</p>
                 </div>
                 <AccountAuthForm compact />
-                {!isConfigured && <p className="mt-5 text-center text-[11px] leading-5 text-[#718B90]">تظل المحادثة المحلية متاحة حتى إعداد Supabase.</p>}
+                {!authLoading && !isConfigured && <p className="mt-5 text-center text-[11px] leading-5 text-[#718B90]">تظل المحادثة المحلية متاحة حتى إعداد Supabase.</p>}
               </div>
             ) : (
               <div className="space-y-5">

@@ -16,7 +16,7 @@ export default function AccountAuthForm({
   onAuthenticated?: () => void
   compact?: boolean
 }) {
-  const { isConfigured, signIn, signUp } = useAccount()
+  const { isConfigured, authLoading, signIn, signUp } = useAccount()
   const [mode, setMode] = useState<AuthMode>("signin")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -97,17 +97,17 @@ export default function AccountAuthForm({
         </button>
       </div>
 
-      {!isConfigured && (
-        <div className="mb-4 rounded-2xl border border-[#E0B450]/40 bg-[#FFF9E9] p-3.5 text-[12px] leading-6 text-[#735D29]">
-          يمكنك مواصلة استخدام تِبْيَان بقاعدة بيانات محلية على هذا المتصفح دون حساب؛ تسجيل الدخول والمزامنة وروابط المشاركة العامة تحتاج Supabase. أضف
+      {!authLoading && !isConfigured && (
+        <div role="status" className="mb-4 rounded-2xl border border-[#E0B450]/40 bg-[#FFF9E9] p-3.5 text-[12px] leading-6 text-[#735D29]">
+          لم يتلقّ المتصفح إعداد Supabase في نسخة الموقع الحالية. تحقق من اسمَي
           <code className="mx-1 rounded bg-white/80 px-1.5 py-0.5 font-mono text-[11px]">NEXT_PUBLIC_SUPABASE_URL</code>
           و
           <code className="mx-1 rounded bg-white/80 px-1.5 py-0.5 font-mono text-[11px]">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>
-          وطبّق ملف <code className="font-mono text-[11px]">supabase/schema.sql</code>.
+          في بيئة النشر الصحيحة على Vercel، ثم أعد بناء الموقع ونشره. إعداد SQL وحده لا يحل غياب المتغيرات. يمكنك الاستمرار محلياً دون حساب.
         </div>
       )}
 
-      {!isConfigured && <a href="/" className="mb-4 inline-flex rounded-xl bg-[#0A737C] px-4 py-2 text-sm font-bold text-white">متابعة المحادثة محلياً دون حساب</a>}
+      {!authLoading && !isConfigured && <a href="/" className="mb-4 inline-flex rounded-xl bg-[#0A737C] px-4 py-2 text-sm font-bold text-white">متابعة المحادثة محلياً دون حساب</a>}
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {mode === "signup" && (
