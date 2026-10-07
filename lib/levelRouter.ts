@@ -72,11 +72,23 @@ export function detectIntent(query: string): {intent: string, level: Level, keyw
   const q = query.toLowerCase()
   
   // Level D — فتوى شخصية (أعلى أولوية — يجب كشفه أولاً)
-  const personalKeywords = ["أنا في", "زوجي", "زوجتي", "هل يجوز لي", "حكمي", "طلقت", "زواجي", "في دولتي", "حالة شخصية", "أنا متزوج", "أعيش في"]
+  const personalKeywords = ["أنا في", "زوجي", "زوجتي", "هل يجوز لي", "حكمي", "صلاتي", "صومي", "صيامي", "وضوئي", "طهارتي", "عقدي", "طلقت", "زواجي", "في دولتي", "حالة شخصية", "أنا متزوج", "أعيش في"]
   if (personalKeywords.some(k => query.includes(k))) {
     return {intent: "personal_fatwa", level: "D", keywords: personalKeywords.filter(k => query.includes(k))}
   }
   
+  // General rulings are a first-class intent; personal cases were referred above.
+  const generalRulingPattern = /(?:ما\s+(?:هو\s+)?(?:حكم|الحكم)(?:\s+الشرعي)?|(?:^|\s)حكم\s+(?:الشرعي\s+)?[\u0621-\u064A]+|هل\s+(?:يجوز|يحل|يحرم|يصح|تجب|يجب|يلزم)|هل\s+.{2,90}\s+(?:حلال|حرام|جائز|مكروه|واجب|مستحب|مباح)|هل\s+(?:هذا|هذه|هو|هي)\s+(?:حلال|حرام|جائز)|حلال\s+أم\s+حرام|فتوى\s+عامة|مشروعية\s+\S+|القول\s+الراجح\s+(?:في|بشأن)|ما\s+(?:أقوال|اقوال|قول|رأي|راي|آراء|اراء)\s+(?:العلماء|الفقهاء))/i
+  if (generalRulingPattern.test(query)) {
+    const contestedPattern = /(?:خلاف|مختلف|اختلف|المذاهب|الراجح|(?:أقوال|اقوال|قول|رأي|راي|آراء|اراء)\s+(?:العلماء|الفقهاء)|إجماع)/i
+    const level: Level = contestedPattern.test(query) ? "C" : "B"
+    return {
+      intent: "general_ruling",
+      level,
+      keywords: ["حكم عام", ...(contestedPattern.test(query) ? ["خلاف أو أقوال علماء"] : [])],
+    }
+  }
+
   // Level A — معلومات أصلية (أولوية عالية)
   const quranKeywords = ["آية", "سورة", "﴿", "قرآن", "ما معنى قوله تعالى", "ما معنى التوحيد", "ما هو التوحيد", "تعريف التوحيد", "معنى التوحيد"]
   const hadithKeywords = ["حديث", "قال رسول الله", "صحيح البخاري", "صحيح مسلم"]
@@ -94,9 +106,12 @@ export function detectIntent(query: string): {intent: string, level: Level, keyw
     return {intent: "shubha_or_concept", level: "B", keywords: [...shubhaKeywords, ...conceptKeywords].filter(k => query.includes(k))}
   }
   
-  // Level C — خلافية
-  const khilafKeywords = ["اختلاف العلماء", "خلاف فقهي", "هل كل المسلمين يتفقون", "مسألة خلافية", "عقيدة تفصيلية", "تاريخ جدلي"]
-  if (khilafKeywords.some(k => query.includes(k))) {
+  // Level C — خلافية. Include common inflections, not only one exact phrase.
+  const khilafKeywords = ["اختلاف العلماء", "خلاف فقهي", "هل كل المسلمين يتفقون", "مسألة خلافية", "عقيدة تفصيلية", "تاريخ جدلي", "بين العلماء", "المذاهب"]
+  if (
+    khilafKeywords.some(k => query.includes(k)) ||
+    /(?:احكام|اراء|اقوال)\s+(?:مختلفه|متباينه)|(?:لماذا|سبب)\s+.{0,20}(?:مختلف|اختلاف).{0,24}(?:العلماء|الاحكام|المذاهب)|(?:اختلاف|خلاف)\s+.{0,24}(?:العلماء|المذاهب)/i.test(q)
+  ) {
     return {intent: "khilaf", level: "C", keywords: khilafKeywords.filter(k => query.includes(k))}
   }
   

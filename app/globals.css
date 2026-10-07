@@ -36,16 +36,54 @@
   --hairline: rgba(10,143,148,0.14);
 }
 
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --tb-bg:#061A21;--tb-card:#0C2832;--tb-line:#17414D;--tb-text:#E6F4F4;--tb-muted:#8FB0B6;--tb-accent:#19D6C4;
-    --bg:#061A21; --bg-light:#0C2832; --text:#E6F4F4; --text-sec:#8FB0B6;
-  }
+/* Effective theme is set before hydration and follows OS changes in automatic mode. */
+:root[data-theme="dark"] {
+  --tb-bg:#071a23;--tb-card:#122b36;--tb-line:#345360;--tb-text:#eef7f7;--tb-muted:#b2cdd0;--tb-accent:#53d4d0;
+  --bg:#071a23;--bg-light:#122b36;--text:#eef7f7;--text-sec:#b2cdd0;
+  --surface:#122b36;--surface-sunken:#0d242e;--hairline:#345360;
+  --border-light:#345360;--shadow-soft:0 8px 28px rgba(0,0,0,.18);
+  --grad-mesh:radial-gradient(700px 450px at 0% 0%,rgba(25,214,196,.09),transparent 65%);
 }
+:root[data-theme="dark"] body,
+:root[data-theme="dark"] .mesh-bg { background:var(--grad-mesh),#071a23; color:var(--tb-text); }
+:root[data-theme="dark"] .glass,
+:root[data-theme="dark"] .glass-blue,
+:root[data-theme="dark"] .glass-purple,
+:root[data-theme="dark"] .glass-turquoise,
+:root[data-theme="dark"] .glass-gold { background:#122b36; border-color:#345360; color:#eef7f7; }
+/* Map legacy Tailwind palette classes to accessible dark surfaces without tinting brand CTA buttons. */
+:root[data-theme="dark"] :is(
+  [class~="bg-white"],[class~="bg-white/72"],[class~="bg-white/80"],[class~="bg-white/85"],[class~="bg-white/95"],
+  [class~="bg-[#FBFEFD]"],[class~="bg-[#FBFDFD]"],[class~="bg-[#FCFAFF]"],
+  [class~="bg-[#F8FAFA]"],[class~="bg-[#F6FAF9]"]
+) { background-color:#122b36 !important; }
+:root[data-theme="dark"] :is(
+  [class~="bg-[#EEF6F6]"],[class~="bg-[#EFF9F7]"],[class~="bg-[#EAF6F5]"],
+  [class~="bg-[#F4FAF9]"],[class~="bg-[#F5F3FF]"],[class~="bg-[#F1EAFC]"]
+) { background-color:#193945 !important; }
+:root[data-theme="dark"] :is(
+  [class~="text-[#0A2A33]"],[class~="text-[#35545B]"],[class~="text-[#14529E]"],
+  [class~="text-[#064C50]"]
+) { color:#eef7f7 !important; }
+:root[data-theme="dark"] :is(
+  [class~="text-[#4B6A72]"],[class~="text-[#6D8A90]"],[class~="text-[#8FB0B6]"],
+  [class~="text-[#54747A]"],[class~="text-[#527078]"],[class~="text-[#7B969B]"],
+  [class~="text-[#35545B]"]
+) { color:#b2cdd0 !important; }
+:root[data-theme="dark"] :is([class~="border-[#C9DFE1]"],[class~="border-[#C9DFE1]/70"],[class~="border-[#C9DFE1]/80"],[class~="border-[#DCE7E8]"]) { border-color:#345360 !important; }
+:root[data-theme="dark"] :is(input,textarea,select) { color-scheme:dark; }
+:root[data-theme="dark"] :is(input:not([type="checkbox"]),textarea,select) { color:#eef7f7; }
+:root[data-theme="dark"] :is(input,textarea)::placeholder { color:#a6c4c9; }
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  /* أساس متجاوب: 16px على الجوال حتى 17px على الشاشات الكبيرة (+6%)
+     كل ما هو مبني على rem (خطوط Tailwind الافتراضية والمسافات) يتدرّج معه */
+  font-size: clamp(16px, 0.25vw + 15px, 17px);
+}
 
 body {
   margin: 0;
@@ -271,3 +309,75 @@ body {
   }
   .tb-orb { animation: none !important; }
 }
+:root[data-theme="dark"] [class~="from-[#EEF6F6]"][class~="bg-gradient-to-r"] {
+  background-image:none !important;
+  background-color:#193945 !important;
+}
+:root[data-theme="dark"] [class~="bg-white/72"] { background-color:rgba(18,43,54,.94) !important; }
+/* Additional legacy surfaces encountered in account, sources, history and auth views. */
+:root[data-theme="dark"] :is(
+  [class~="bg-white/70"],[class~="bg-white/90"],
+  [class~="bg-[#F4F9F8]"],[class~="bg-[#F8FBFA]"],[class~="bg-[#FAFCFC]"],
+  [class~="bg-[#F7FAFA]"],[class~="bg-[#F7FBFA]"],[class~="bg-[#F5FAF9]"],
+  [class~="bg-[#F4F6F5]"]
+) { background-color:#122b36 !important; }
+:root[data-theme="dark"] :is([class~="bg-[#EAF8F6]"],[class~="bg-[#F3FAF5]"],[class~="bg-[#E8F7F5]"]) {
+  background-color:#193945 !important;
+}
+:root[data-theme="dark"] :is(
+  [class~="text-[#183F47]"],[class~="text-[#263D43]"],[class~="text-[#35575E]"],
+  [class~="text-[#45616A]"]
+) { color:#eef7f7 !important; }
+:root[data-theme="dark"] :is(
+  [class~="text-[#718B90]"],[class~="text-[#8AA6AB]"],[class~="text-[#536B73]"],
+  [class~="text-[#647C83]"],[class~="text-[#72858A]"],[class~="text-[#789095]"],
+  [class~="text-[#82999D]"],[class~="text-[#8AA1A5]"],[class~="text-[#789196]"]
+) { color:#b2cdd0 !important; }
+:root[data-theme="dark"] :is(
+  [class~="text-[#0A8F94]"],[class~="text-[#087A7F]"],
+  [class~="text-[#0A737A]"],[class~="text-[#0A737C]"],
+  [class~="text-[#176A6C]"],[class~="text-[#18794E]"]
+) { color:#63d8cd !important; }
+:root[data-theme="dark"] [class~="from-[#EAF8F6]"][class~="bg-gradient-to-l"] {
+  background-image:none !important; background-color:#193945 !important;
+}
+:root[data-theme="dark"] .tb-verified-quote,
+:root[data-theme="dark"] .tb-source-quote {
+  background-color:#193945 !important; border-color:#345360 !important;
+  color:#e0f4ee !important;
+}
+:root[data-theme="dark"] .tb-verified-quote p { color:#e0f4ee !important; }
+:root[data-theme="dark"] :is([class~="text-[#302847]"],[class~="text-[#263D43]"]) { color:#e8eff7 !important; }
+:root[data-theme="dark"] :is([class~="text-[#6840B5]"],[class~="text-[#7B4FD6]"]) { color:#c7adff !important; }
+:root[data-theme="dark"] .tb-legacy-evidence-quote {
+  background:#193945 !important; color:#e0f4ee !important; border-color:#345360 !important;
+}
+:root[data-theme="dark"] .tb-legacy-evidence-title { color:#b1d7f4 !important; }
+/* High-contrast dark surfaces, including inline-colored splash and header controls. */
+:root[data-theme="dark"] .tb-splash-screen { background-color:#071a23 !important; }
+:root[data-theme="dark"] .tb-header-control[data-active="false"] {
+  background:#122b36 !important; color:#eef7f7 !important; border-color:#345360 !important;
+}
+:root[data-theme="dark"] .tb-header-control[data-active="false"]:hover,
+:root[data-theme="dark"] .tb-header-control[data-active="false"]:focus-visible {
+  background:#193945 !important; color:#eef7f7 !important;
+}
+:root[data-theme="dark"] .tb-thinking-card { background:#122b36 !important; border-color:#345360 !important; }
+:root[data-theme="dark"] .tb-thinking-motif { background:#193945 !important; border-color:#345360 !important; }
+:root[data-theme="dark"] :is([class~="bg-[#FAFEFD]"],[class~="bg-white/96"],[class~="bg-[#E5F5F2]"]) {
+  background-color:#122b36 !important;
+}
+:root[data-theme="dark"] :is([class~="text-[#075F65]"],[class~="text-[#6840B5]"]) { color:#c7eeef !important; }
+:root[data-theme="dark"] :is(
+  [class~="hover:bg-[#EEF6F6]"],[class~="hover:bg-[#EEF6F6]/50"],
+  [class~="hover:bg-[#EFF9F7]"],[class~="hover:bg-[#E2F5F2]"],
+  [class~="hover:bg-[#F6FAF9]"],[class~="hover:bg-[#F7FBFA]"],
+  [class~="hover:bg-[#F2F8F7]"],[class~="hover:bg-white/80"]
+):hover { background-color:#254752 !important; color:#eef7f7 !important; }
+:root[data-theme="dark"] .group:hover [class~="group-hover:text-[#0A8F94]"] { color:#63d8cd !important; }
+:root[data-theme="dark"] :is(
+  [class~="hover:bg-[#DDF3F0]"],[class~="hover:bg-[#DEF3F0]"],
+  [class~="hover:bg-[#EEF8F7]"],[class~="hover:bg-[#F8F5FF]"],
+  [class~="hover:bg-[#F5FAF9]"],[class~="hover:bg-[#C9DFE1]/60"],
+  [class~="hover:bg-white"],[class~="hover:bg-white/70"]
+):hover { background-color:#254752 !important; color:#eef7f7 !important; }

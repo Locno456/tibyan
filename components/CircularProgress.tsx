@@ -9,7 +9,7 @@ interface CircularProgressProps {
 }
 
 /**
- * دائرة الموثوقية — تعدّ تصاعدياً عند الظهور بدل القفز إلى القيمة.
+ * مؤشر درجة الاسترجاع — قيمة داخلية غير مُعايرة، وليست احتمالاً لصحة الإجابة.
  */
 export default function CircularProgress({ value, size = 44, showLabel = true }: CircularProgressProps) {
   const safeValue = Math.max(0, Math.min(100, Number(value) || 0))
@@ -43,7 +43,7 @@ export default function CircularProgress({ value, size = 44, showLabel = true }:
   }
 
   const getLabel = () => {
-    if (safeValue >= 90) return "ممتاز"
+    if (safeValue >= 90) return "مرتفع"
     if (safeValue >= 70) return "جيد"
     if (safeValue >= 50) return "متوسط"
     return "منخفض"
@@ -54,7 +54,7 @@ export default function CircularProgress({ value, size = 44, showLabel = true }:
   return (
     <div
       className="relative flex items-center gap-2"
-      title={`الموثوقية: ${safeValue.toFixed(0)}% - ${getLabel()}`}
+      title={`مؤشر استرجاع داخلي: ${safeValue.toFixed(0)}% - ${getLabel()}؛ لا يقيس صحة الإجابة`}
     >
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="rotate-[-90deg]">
@@ -78,18 +78,18 @@ export default function CircularProgress({ value, size = 44, showLabel = true }:
           aria-hidden
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <motion.span className="text-[11px] font-extrabold leading-none tabular-nums" style={{ color }}>
+          <motion.span className="text-[12.5px] font-extrabold leading-none tabular-nums" style={{ color }}>
             {label}
           </motion.span>
-          {showLabel && <span className="text-[7px] text-[#8FB0B6] leading-none mt-0.5">موثوقية</span>}
+          {showLabel && <span className="text-[7px] text-[#8FB0B6] leading-none mt-0.5">بحث</span>}
         </div>
       </div>
       {showLabel && (
         <div className="hidden sm:flex flex-col">
-          <span className="text-[10px] font-bold" style={{ color }}>
+          <span className="text-[11.5px] font-bold" style={{ color }}>
             {getLabel()}
           </span>
-          <span className="text-[8px] text-[#8FB0B6]">من المصادر المعتمدة</span>
+          <span className="text-[8px] text-[#8FB0B6]">مؤشر استرجاع غير مُعاير</span>
         </div>
       )}
     </div>

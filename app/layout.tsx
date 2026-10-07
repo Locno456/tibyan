@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { AccountProvider } from '../components/AccountProvider'
+import ThemeController from '../components/ThemeController'
 
 export const metadata: Metadata = {
-  title: 'تِبْيَان | Tibyan - محرك الحوار المعرفي الموثق',
-  description: 'منصة تِبْيَان - محرك الحوار المعرفي والاستدلال الشرعي الموثق - هوية بصرية حقيقية: علامة صح ✓ = موثوقية، كتاب مفتوح = قرآن، نقطتان ذهبيتان = تاء تِبْيَان - تحدي باذل 2026 - ألوان #19D6C4 #0A8F94 #14529E #E0B450 - مع Gemini Flash Lite مجاني',
+  title: 'تِبْيَان | Tibyan - نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ',
+  description: 'تِبْيَان: نَصٌّ يَسْتَنِدُ لِدَلِيلٍ يعْتَمَدٍ. أداة مدعومة بالذكاء الاصطناعي وتستند إجاباتها إلى المصادر المعتمدة.',
   keywords: ['تِبْيَان', 'Tibyan', 'باذل', 'الحوار المعرفي', 'RAG', 'القرآن', 'الحديث', 'بينات', 'الجمهرة', 'هوية بصرية', 'Gemini Flash Lite'],
   icons: {
     icon: [
@@ -25,13 +27,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `try{var c=localStorage.getItem('tibyan.theme.v1');var d=c==='dark'||(c!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.dataset.themeChoice=c==='light'||c==='dark'?c:'system';document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}` }} />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon-180.png" />
         <meta name="theme-color" content="#0A8F94" />
       </head>
-      <body>{children}</body>
+      <body><ThemeController /><AccountProvider>{children}</AccountProvider></body>
     </html>
   )
 }

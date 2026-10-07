@@ -1,247 +1,341 @@
 "use client"
-import { useEffect, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
+import { ArrowUp } from "lucide-react"
 
 interface SplashScreenProps {
-  onFinish: () => void
-  duration?: number // ms - brand kit animation is ~5.5s, but we use 2.8s for MVP
+  onFinish: (draft?: string) => void
+  onAsk: (question: string) => void | Promise<void>
 }
 
-export default function SplashScreen({ onFinish, duration = 2800 }: SplashScreenProps) {
-  const [progress, setProgress] = useState(0)
-  const [isExiting, setIsExiting] = useState(false)
-  const [useReducedMotion, setUseReducedMotion] = useState(false)
+type SplashPhase = "intro" | "lifting" | "ready" | "sending"
+
+// توقيت متزامن مع CSS الموجود داخل أصل Brand Kit نفسه:
+// اللمعان يبدأ عند 1.35ث، والدوران يبدأ عند 2.45ث.
+const LIFT_START_MS = 1850
+const LIFT_DURATION_MS = 550
+const UI_READY_MS = 2500
+const INTRO_FINISH_MS = 5750
+const REDUCED_MOTION_FINISH_MS = 1800
+export default function SplashScreen({ onFinish, onAsk }: SplashScreenProps) {
+  const [phase, setPhase] = useState<SplashPhase>("intro")
+  const [question, setQuestion] = useState("")
+  const [sentQuestion, setSentQuestion] = useState("")
+  const [logoLoaded, setLogoLoaded] = useState(false)
+  const [logoFailed, setLogoFailed] = useState(false)
+  const [animationSrc, setAnimationSrc] = useState<string | null>(null)
+  const reduceMotion = useReducedMotion()
+
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const questionDraftRef = useRef("")
+  const phaseRef = useRef(phase)
+  phaseRef.current = phase
+  const didSendRef = useRef(false)
+  const pendingFinishRef = useRef(false)
+  const didFinishRef = useRef(false)
+  const timerIdsRef = useRef<number[]>([])
+  const onFinishRef = useRef(onFinish)
 
   useEffect(() => {
-    // Check prefers-reduced-motion - brand kit requirement
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
-    setUseReducedMotion(mediaQuery.matches)
-    
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          return 100
-        }
-        return prev + Math.random() * 18 + 4
-      })
-    }, 120)
+    onFinishRef.current = onFinish
+  }, [onFinish])
 
-    const timer = setTimeout(() => {
-      setIsExiting(true)
-      setTimeout(() => {
-        onFinish()
-      }, 600)
-    }, duration)
-
-    return () => {
-      clearInterval(interval)
-      clearTimeout(timer)
+  // لا نحمّل SVG المتحرك قبل hydration؛ وإلا قد يبدأ وينتهي قبل أن تُسجّل React onLoad والمؤقتات.
+  // query فريد يضمن بدء دورة CSS جديدة مع كل فتح/إعادة تحميل حتى لو كان الملف في cache المتصفح.
+  useEffect(() => {
+    if (reduceMotion === null) return
+    if (reduceMotion) {
+      setAnimationSrc(null)
+      setLogoLoaded(true)
+      return
     }
-  }, [onFinish, duration])
+
+    setLogoLoaded(false)
+    setLogoFailed(false)
+    const runId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    setAnimationSrc(`/tibyan-brand-kit/animation/tibyan-intro-color.svg?intro=${runId}`)
+  }, [reduceMotion])
+
+  const clearTimelineTimers = useCallback(() => {
+    timerIdsRef.current.forEach((timer) => window.clearTimeout(timer))
+    timerIdsRef.current = []
+  }, [])
+
+  const finishSplash = useCallback((draft?: string) => {
+    if (didFinishRef.current) return
+    if (phaseRef.current === "sending" && !didSendRef.current) {
+      pendingFinishRef.current = true
+      return
+    }
+    didFinishRef.current = true
+    clearTimelineTimers()
+    const cleanDraft = draft?.trim()
+    onFinishRef.current(cleanDraft || undefined)
+  }, [clearTimelineTimers])
+
+  useEffect(() => {
+    if (!logoLoaded || reduceMotion === null) return
+    clearTimelineTimers()
+
+    if (reduceMotion || logoFailed) {
+      setPhase("ready")
+      timerIdsRef.current = [
+        window.setTimeout(() => finishSplash(questionDraftRef.current), REDUCED_MOTION_FINISH_MS),
+      ]
+    } else {
+      timerIdsRef.current = [
+        window.setTimeout(() => setPhase("lifting"), LIFT_START_MS),
+        window.setTimeout(() => setPhase("ready"), UI_READY_MS),
+        window.setTimeout(() => finishSplash(questionDraftRef.current), INTRO_FINISH_MS),
+      ]
+    }
+
+    return clearTimelineTimers
+  }, [logoLoaded, logoFailed, reduceMotion, clearTimelineTimers, finishSplash])
+
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    textarea.style.height = "0px"
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 144)}px`
+  }, [question, phase])
+
+  const submitQuestion = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const clean = question.trim()
+    if (!clean || phase !== "ready") return
+
+    setSentQuestion(clean)
+    setQuestion("")
+    questionDraftRef.current = ""
+    setPhase("sending")
+  }
+
+  const finishSending = () => {
+    if (didSendRef.current || !sentQuestion) return
+    didSendRef.current = true
+    void onAsk(sentQuestion)
+    if (pendingFinishRef.current) finishSplash()
+  }
+
+  const updateQuestion = (value: string) => {
+    const next = value.slice(0, 500)
+    setQuestion(next)
+    questionDraftRef.current = next
+  }
+
+  const showStaticLogo = reduceMotion === true || logoFailed
+  const logoSrc = showStaticLogo || !animationSrc ? "/tibyan-logo-color.svg" : animationSrc
+  const logoKey = showStaticLogo ? "static-logo" : animationSrc || "waiting-logo"
 
   return (
-    <AnimatePresence>
-      {!isExiting ? (
+    <motion.section
+      key="tibyan-splash"
+      initial={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 0.995 }}
+      transition={{ duration: reduceMotion ? 0.18 : 0.72, ease: [0.22, 1, 0.36, 1] }}
+      className="tb-splash-screen fixed inset-0 z-[9999] overflow-hidden"
+      aria-label="بداية تِبْيَان"
+      onPointerDownCapture={(event) => {
+        if (event.target instanceof Element && event.target.closest("[data-splash-interactive]")) return
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      onClickCapture={(event) => {
+        if (event.target instanceof Element && event.target.closest("[data-splash-interactive]")) return
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+      style={{ backgroundColor: "#F8FCFB" }}
+    >
+      {/* العلامة وحدها تماماً في افتتاح الشاشة */}
+      <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-[min(64vw,280px)] w-[min(64vw,280px)] -translate-x-1/2 -translate-y-1/2">
         <motion.div
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
-          style={{
-            background: `
-              radial-gradient(700px 500px at 10% 10%, rgba(25,214,196,0.12) 0%, transparent 60%),
-              radial-gradient(600px 500px at 90% 90%, rgba(10,143,148,0.14) 0%, transparent 60%),
-              radial-gradient(500px 400px at 80% 20%, rgba(123,79,214,0.10) 0%, transparent 60%),
-              linear-gradient(180deg, #EEF6F6 0%, #FFFFFF 50%, #EEF6F6 100%)
-            `
+          animate={{
+            y: phase === "intro" ? "0vh" : phase === "sending" ? "-33vh" : "-30vh",
+            scale: phase === "intro" ? 1 : phase === "sending" ? 0.84 : 0.9,
+            opacity: phase === "sending" ? 0.62 : 1,
           }}
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.05, filter: "blur(12px)" }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
+          transition={{
+            y: { duration: reduceMotion ? 0 : LIFT_DURATION_MS / 1000, ease: [0.2, 0.75, 0.2, 1] },
+            scale: { duration: reduceMotion ? 0 : 0.55, ease: [0.2, 0.75, 0.2, 1] },
+            opacity: { duration: reduceMotion ? 0.12 : 0.45 },
+          }}
+          className="h-full w-full"
+          style={{ willChange: "transform, opacity" }}
         >
-          {/* Mesh orbs background - true brand colors */}
-          <motion.div
-            className="absolute w-[420px] h-[420px] rounded-full blur-[60px] opacity-30 pointer-events-none"
-            style={{ background: "linear-gradient(135deg, #19D6C4, #0A8F94)", top: "10%", left: "15%" }}
-            animate={{ scale: [1, 1.2, 1], x: [0, 30, 0], y: [0, -20, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute w-[360px] h-[360px] rounded-full blur-[60px] opacity-25 pointer-events-none"
-            style={{ background: "linear-gradient(135deg, #14529E, #0A8F94)", bottom: "15%", right: "10%" }}
-            animate={{ scale: [1, 1.15, 1], x: [0, -25, 0], y: [0, 15, 0] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-          />
-
-          {/* Motif accent - true brand kit motif chain-3 */}
-          <motion.img
-            src="/tibyan-brand-kit/motif/shapes/tibyan-shape-01-chain-3.svg"
+          <img
+            key={logoKey}
+            src={logoSrc}
             alt=""
-            className="absolute top-[12%] right-[8%] w-[120px] h-auto opacity-[0.12] pointer-events-none hidden lg:block"
-            initial={{ opacity: 0, rotate: -10 }}
-            animate={{ opacity: 0.12, rotate: 0 }}
-            transition={{ delay: 0.8, duration: 1 }}
+            aria-hidden="true"
+            draggable={false}
+            loading="eager"
+            fetchPriority="high"
+            onLoad={() => {
+              if (showStaticLogo || animationSrc) setLogoLoaded(true)
+            }}
+            onError={() => {
+              setLogoFailed(true)
+              setLogoLoaded(true)
+            }}
+            className="h-full w-full object-contain"
           />
-          <motion.img
-            src="/tibyan-brand-kit/motif/shapes/tibyan-shape-05-hub.svg"
-            alt=""
-            className="absolute bottom-[15%] left-[10%] w-[100px] h-auto opacity-[0.10] pointer-events-none hidden lg:block"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 0.10, scale: 1 }}
-            transition={{ delay: 1, duration: 1 }}
-          />
-
-          {/* Content */}
-          <div className="relative z-10 flex flex-col items-center">
-            {/* True brand animated intro */}
-            <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 120, damping: 15, delay: 0.1 }}
-              className="relative"
-            >
-              {useReducedMotion ? (
-                // Fallback for prefers-reduced-motion - brand kit requirement
-                <img 
-                  src="/tibyan-logo-color.svg" 
-                  alt="تِبْيَان" 
-                  className="w-[160px] h-[160px] object-contain bg-white rounded-[22%] p-4 shadow-[0_12px_36px_rgba(10,143,148,0.18)]"
-                />
-              ) : (
-                // True brand animated intro - CSS animation inside SVG, no JS
-                <div className="w-[180px] h-[180px] bg-white rounded-[22%] p-3 shadow-[0_12px_36px_rgba(10,143,148,0.18)] flex items-center justify-center">
-                  <img 
-                    src="/tibyan-intro-color.svg" 
-                    alt="تِبْيَان - intro animation" 
-                    className="w-full h-full object-contain"
-                    // Replay by re-creating element or ?v=n - brand kit technique
-                    key={Date.now()}
-                  />
-                </div>
-              )}
-
-              {/* Gold dots glow */}
-              <motion.div
-                className="absolute -top-2 -right-2 w-6 h-6 rounded-[6px] rotate-45"
-                style={{ background: "linear-gradient(180deg, #FFF0B8 0%, #E0B450 100%)", boxShadow: "0 0 20px rgba(224,180,80,0.5)" }}
-                animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
-                transition={{ duration: 1.8, repeat: Infinity }}
-              />
-            </motion.div>
-
-            <motion.div
-              className="mt-8 text-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-            >
-              <h1 className="text-[36px] font-extrabold tracking-tight" style={{ fontFamily: 'Tajawal, sans-serif', color: '#0A2A33' }}>
-                تِبْيَان
-              </h1>
-              <motion.p
-                className="text-[13px] tracking-[0.22em] font-bold mt-1"
-                style={{ color: '#4B6A72' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8 }}
-              >
-                TIBYAN
-              </motion.p>
-
-              <motion.div
-                className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass text-[12px] font-bold"
-                style={{ background: "rgba(255,255,255,0.9)", border: "1px solid rgba(10,143,148,0.12)" }}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1, duration: 0.5 }}
-              >
-                <span className="w-2 h-2 rounded-full bg-[#0A8F94] animate-pulse" />
-                <span style={{ color: '#0A8F94' }}>الحوار المعرفي الموثق</span>
-                <span className="w-px h-3 bg-[#C9DFE1] mx-1" />
-                <span style={{ color: '#14529E' }}>✓ موثق • كتاب مفتوح</span>
-              </motion.div>
-
-              <motion.p
-                className="mt-4 text-[13px] leading-relaxed max-w-[360px] mx-auto"
-                style={{ color: '#4B6A72', fontFamily: 'IBM Plex Sans Arabic, Tajawal, sans-serif' }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.1 }}
-              >
-                محرك الحوار المعرفي والاستدلال الشرعي الموثق<br />
-                <span className="text-[11px] text-[#8FB0B6]">تحدي باذل 2026 • المسار الأول • علامة الصح + كتاب + نقطتا التاء</span>
-              </motion.p>
-            </motion.div>
-
-            {/* Progress bar - true brand gradient */}
-            <motion.div
-              className="mt-10 w-[220px] h-1.5 rounded-full overflow-hidden"
-              style={{ background: "rgba(10,143,148,0.08)", border: "1px solid rgba(10,143,148,0.06)" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              <motion.div
-                className="h-full rounded-full"
-                style={{ background: "linear-gradient(90deg, #19D6C4 0%, #0A8F94 50%, #05495A 100%)" }}
-                initial={{ width: "0%" }}
-                animate={{ width: `${Math.min(progress, 100)}%` }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              />
-            </motion.div>
-
-            <motion.div
-              className="mt-3 flex items-center gap-1.5"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              <div className="flex gap-1">
-                <motion.span className="w-1.5 h-1.5 rounded-full bg-[#0A8F94]" animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} />
-                <motion.span className="w-1.5 h-1.5 rounded-full bg-[#19D6C4]" animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} />
-                <motion.span className="w-1.5 h-1.5 rounded-full bg-[#E0B450]" animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} />
-              </div>
-              <span className="text-[10px] text-[#8FB0B6] mr-2 font-medium">جاري تهيئة المصادر الموثقة...</span>
-            </motion.div>
-
-            {/* Footer identity colors - true brand */}
-            <motion.div
-              className="mt-12 flex items-center gap-3 flex-wrap justify-center"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.3 }}
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#0A8F94] shadow-[0_0_12px_rgba(10,143,148,0.4)]" />
-                <span className="text-[10px] font-bold text-[#4B6A72]">#0A8F94 إسلام</span>
-              </div>
-              <span className="w-px h-3 bg-[#C9DFE1]" />
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#14529E] shadow-[0_0_12px_rgba(20,82,158,0.4)]" />
-                <span className="text-[10px] font-bold text-[#4B6A72]">#14529E موثوقية</span>
-              </div>
-              <span className="w-px h-3 bg-[#C9DFE1]" />
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#E0B450] shadow-[0_0_12px_rgba(224,180,80,0.4)] rotate-45" />
-                <span className="text-[10px] font-bold text-[#4B6A72]">#E0B450 نور المعرفة</span>
-              </div>
-              <span className="w-px h-3 bg-[#C9DFE1] hidden sm:block" />
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#7B4FD6] shadow-[0_0_12px_rgba(123,79,214,0.4)]" />
-                <span className="text-[10px] font-bold text-[#4B6A72]">#7B4FD6 ذكاء (اختياري)</span>
-              </div>
-            </motion.div>
-
-            {/* Brand story */}
-            <motion.div
-              className="mt-6 px-4 py-2 rounded-full bg-[#EEF6F6] border border-[#C9DFE1]/50 text-[10px] text-[#4B6A72] max-w-[420px] text-center leading-relaxed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5 }}
-            >
-              ✓ علامة صح = موثوقية • كتاب مفتوح = القرآن • نقطتان ذهبيتان = تاء تِبْيَان ونور المعرفة
-            </motion.div>
-          </div>
         </motion.div>
-      ) : null}
-    </AnimatePresence>
+      </div>
+
+      {/* زخرفة واحدة من دليل الهوية لا تدخل إلا بعد صعود الشعار */}
+      {phase === "ready" && (
+        <motion.img
+          src="/tibyan-brand-kit/motif/shapes/tibyan-shape-01-chain-3.svg"
+          alt=""
+          aria-hidden="true"
+          initial={{ opacity: 0, rotate: -4, scale: 0.94 }}
+          animate={{ opacity: 0.075, rotate: 0, scale: 1 }}
+          transition={{ duration: reduceMotion ? 0.2 : 1.1, ease: "easeOut" }}
+          className="pointer-events-none absolute bottom-[17%] left-[5%] z-0 w-[72px] sm:bottom-[16%] sm:left-[8%] sm:w-[100px]"
+        />
+      )}
+
+      {/* يظهر حقل السؤال بعد أن يستقر الشعار في موضعه المرتفع */}
+      <AnimatePresence mode="wait">
+        {phase === "ready" && (
+          <motion.form
+            key="splash-question"
+            data-splash-interactive="true"
+            onSubmit={submitQuestion}
+            initial={{ opacity: 0, x: "-50%", y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
+            exit={{ opacity: 0, x: "-50%", y: -10, scale: 0.98 }}
+            transition={{ duration: reduceMotion ? 0.2 : 0.88, delay: reduceMotion ? 0 : 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute left-1/2 top-[63%] z-20 w-[min(90vw,720px)]"
+            dir="rtl"
+          >
+            <div className="relative flex items-end gap-2 rounded-[28px] border border-white/90 bg-white/96 p-2.5 shadow-[0_12px_30px_rgba(10,42,51,0.12),0_2px_10px_rgba(10,143,148,0.08)] sm:rounded-[34px] sm:p-3">
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-[inherit] border border-[#C9DFE1]/60" />
+              <textarea
+                ref={textareaRef}
+                value={question}
+                onChange={(event) => updateQuestion(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault()
+                    event.currentTarget.form?.requestSubmit()
+                  }
+                }}
+                rows={1}
+                maxLength={500}
+                placeholder="اسأل تِبْيَان…"
+                aria-label="اكتب سؤالك لتِبْيَان"
+                autoComplete="off"
+                className="body-font relative z-[1] max-h-[144px] min-h-[54px] flex-1 resize-none bg-transparent px-4 py-3.5 text-[15px] leading-[1.8] text-[#0A2A33] outline-none placeholder:text-[#8FB0B6] focus-visible:outline-none sm:min-h-[60px] sm:px-5 sm:text-[16px]"
+              />
+              <motion.button
+                type="submit"
+                disabled={!question.trim()}
+                whileHover={{ scale: question.trim() ? 1.06 : 1 }}
+                whileTap={{ scale: 0.93 }}
+                aria-label="إرسال السؤال"
+                className="relative z-[1] flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#19D6C4] via-[#0A8F94] to-[#05495A] text-white shadow-[0_7px_18px_rgba(10,143,148,0.25)] transition-shadow disabled:cursor-not-allowed disabled:opacity-40 sm:h-[52px] sm:w-[52px]"
+              >
+                <ArrowUp size={21} strokeWidth={2.2} />
+              </motion.button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
+
+      {/* خروج السؤال بانطلاقة وتوهج ومسار صاعد قبل دخوله المحادثة */}
+      <AnimatePresence>
+        {phase === "sending" && sentQuestion && (
+          <>
+            <motion.div
+              aria-hidden="true"
+              initial={{ opacity: 0, x: "-50%", y: "0vh", scale: 0.62 }}
+              animate={{
+                opacity: reduceMotion ? [0, 0.18, 0] : [0, 0.5, 0],
+                x: "-50%",
+                y: reduceMotion ? "-50vh" : ["0vh", "-2vh", "-50vh"],
+                scale: reduceMotion ? [0.8, 1.15, 1.35] : [0.62, 1.12, 1.55],
+              }}
+              transition={{ duration: reduceMotion ? 0.22 : 0.74, times: [0, 0.18, 1], ease: [0.18, 0.82, 0.25, 1] }}
+              className="pointer-events-none absolute left-1/2 top-[63%] z-20 w-[min(90vw,720px)]"
+              dir="rtl"
+            >
+              <div className="flex justify-start">
+                <div
+                  className="h-12 w-[62%] rounded-full opacity-80 sm:h-16"
+                  style={{ background: "radial-gradient(ellipse at center, rgba(25,214,196,0.3), rgba(20,82,158,0.12) 48%, transparent 76%)" }}
+                />
+              </div>
+            </motion.div>
+            <motion.div
+              key="question-flight"
+              initial={{ opacity: 1, x: "-50%", y: "0vh", scale: 1, rotate: 0 }}
+              animate={{
+                opacity: [1, 1, 0],
+                x: "-50%",
+                y: reduceMotion ? "-50vh" : ["0vh", "-2vh", "-50vh"],
+                scale: reduceMotion ? 0.94 : [1, 1.07, 0.9],
+                rotate: reduceMotion ? 0 : [0, -1.2, 0],
+              }}
+              transition={{ duration: reduceMotion ? 0.24 : 0.74, times: [0, 0.18, 1], ease: [0.18, 0.82, 0.25, 1] }}
+              onAnimationComplete={finishSending}
+              className="pointer-events-none absolute left-1/2 top-[63%] z-30 w-[min(90vw,720px)]"
+              dir="rtl"
+            >
+              <div className="flex justify-start">
+                <div className="max-w-[86%] rounded-[18px] rounded-br-[6px] bg-[#0A2A33] px-4 py-3 text-[14px] font-medium leading-relaxed text-white shadow-[0_10px_28px_rgba(10,42,51,0.2)] sm:px-5 sm:text-[15px]">
+                  {sentQuestion}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* آية الهوية مع الأقواس القرآنية والزخرفة */}
+      <AnimatePresence>
+        {phase === "ready" && (
+          <motion.div
+            key="splash-verse"
+            initial={{ opacity: 0, x: "-50%", y: 18, scale: 0.98 }}
+            animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: reduceMotion ? 0.2 : 0.95, delay: reduceMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute bottom-[max(18px,env(safe-area-inset-bottom))] left-1/2 z-10 w-[min(94vw,1120px)] px-2 text-center sm:bottom-7 sm:px-4"
+            dir="rtl"
+          >
+            <div className="flex items-center justify-center gap-1.5 sm:gap-3">
+              <motion.span
+                aria-hidden="true"
+                initial={{ opacity: 0, scale: 0.5, rotate: -35 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                whileHover={{ scale: 1.16, rotate: 12 }}
+                transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.35 }}
+                className="shrink-0 text-[13px] text-[#E0B450] sm:text-lg"
+              >۞</motion.span>
+              <p className="body-font max-w-full text-[11.5px] font-bold leading-[1.9] text-[#14529E] sm:text-[14px] lg:text-[16px]">
+                <span className="px-1 text-[1.2em] text-[#E0B450]">﴿</span>
+                وَنَزَّلۡنَا عَلَيۡكَ ٱلۡكِتَٰبَ تِبۡيَٰنٗا لِّكُلِّ شَيۡءٖ وَهُدٗى وَرَحۡمَةٗ وَبُشۡرَىٰ لِلۡمُسۡلِمِينَ
+                <span className="px-1 text-[1.2em] text-[#E0B450]">﴾</span>
+              </p>
+              <motion.span
+                aria-hidden="true"
+                initial={{ opacity: 0, scale: 0.5, rotate: 35 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                whileHover={{ scale: 1.16, rotate: -12 }}
+                transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.35 }}
+                className="shrink-0 text-[13px] text-[#E0B450] sm:text-lg"
+              >۞</motion.span>
+            </div>
+            <p className="mt-0.5 text-[9.5px] font-semibold tracking-wide text-[#6D8A90] sm:text-[10.5px]">
+              سورة النحل · الآية ٨٩
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.section>
   )
 }

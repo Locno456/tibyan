@@ -156,37 +156,51 @@ function runGuardProbes() {
 // 3) التنفيذ والطباعة
 // ------------------------------------------------------------
 async function main() {
-  let best: any = null
-  for (let i = 0; i < RUNS; i++) best = await runSuite()
+  const runResults: Awaited<ReturnType<typeof runSuite>>[] = []
+  for (let i = 0; i < RUNS; i++) runResults.push(await runSuite())
+  const last = runResults[runResults.length - 1]
+  const perRun = runResults.map((run, index) => ({
+    run: index + 1,
+    level_routing_correct: run.levelOk,
+    expected_sources_hit: run.srcHit,
+    expected_sources_total: run.srcTotal,
+    guard_behaviour_correct: run.guardOk,
+    avg_latency_ms: Number((run.latencySum / run.rows.length).toFixed(2)),
+    // Identical measured decisions across repeats are stronger than an average alone.
+    decision_signature: run.rows.map((row) => `${row.id}:${row.level_detected}:${row.retrieved_ids.join(',')}:${row.guard_status}`).join('|'),
+  }))
   const guardProbes = runGuardProbes()
 
-  const n = best.rows.length
+  const n = last.rows.length
   const summary = {
     generated_at: new Date().toISOString(),
     runs: RUNS,
+    stable_decisions_across_runs: perRun.every((run) => run.decision_signature === perRun[0].decision_signature),
+    level_routing_range: [Math.min(...perRun.map((run) => run.level_routing_correct)), Math.max(...perRun.map((run) => run.level_routing_correct))],
+    expected_sources_range: [Math.min(...perRun.map((run) => run.expected_sources_hit)), Math.max(...perRun.map((run) => run.expected_sources_hit))],
     total_cases: n,
-    level_routing_correct: best.levelOk,
-    level_routing_rate: Number(((best.levelOk / n) * 100).toFixed(1)),
-    expected_sources_hit: best.srcHit,
-    expected_sources_total: best.srcTotal,
-    source_recall_rate: Number(((best.srcHit / best.srcTotal) * 100).toFixed(1)),
-    guard_behaviour_correct: best.guardOk,
+    level_routing_correct: last.levelOk,
+    level_routing_rate: Number(((last.levelOk / n) * 100).toFixed(1)),
+    expected_sources_hit: last.srcHit,
+    expected_sources_total: last.srcTotal,
+    source_recall_rate: Number(((last.srcHit / last.srcTotal) * 100).toFixed(1)),
+    guard_behaviour_correct: last.guardOk,
     guard_probes_passed: guardProbes.filter((p: any) => p.pass).length,
     guard_probes_total: guardProbes.length,
-    avg_latency_ms: Number((best.latencySum / n).toFixed(2)),
+    avg_latency_ms: Number((last.latencySum / n).toFixed(2)),
   }
 
   console.log('\n═══ تِبْيَان — تقييم الحالات المعيارية (قياس حقيقي) ═══\n')
   console.log('| #  | المستوى متوقع/مُكتشَف | توجيه | مستندات | مصادر مُصابة | الثقة | الحارس | ms |')
   console.log('|----|----------------------|-------|---------|---------------|-------|--------|----|')
-  for (const r of best.rows) {
+  for (const r of last.rows) {
     console.log(
       `| ${r.id} | ${r.level_expected} / ${r.level_detected} | ${r.level_ok ? 'OK ' : 'XX '} | ${r.docs_returned} | ${r.sources_found}/${r.sources_expected} | ${r.confidence} | ${r.guard_ok ? 'OK ' : 'XX '} ${r.guard_status} | ${r.ms} |`
     )
   }
 
   console.log('\n— مصادر متوقعة لم تُسترجع —')
-  for (const r of best.rows) {
+  for (const r of last.rows) {
     if (r.sources_missing.length) console.log(`  ${r.id}: ${r.sources_missing.join(' ، ')}`)
   }
 
@@ -202,7 +216,7 @@ async function main() {
 
   writeFileSync(
     path.join(__dirname, '..', 'docs', 'evaluation-results.json'),
-    JSON.stringify({ summary, guardProbes, cases: best.rows }, null, 2)
+    JSON.stringify({ summary, perRun, guardProbes, cases: last.rows }, null, 2)
   )
   console.log('\n→ كُتبت النتائج في docs/evaluation-results.json')
 }

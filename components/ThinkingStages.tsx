@@ -1,155 +1,86 @@
 "use client"
 import { useEffect, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
+import { Check, Sparkles } from "lucide-react"
+import type { AnswerStage } from "../lib/answerProgress"
 
-/**
- * تصوّر حيّ لخط المعالجة الفعلي في app/api/ask/route.ts:
- *   detectIntent → hybrid_retrieve → generateWithGemini → fullGuard
- * المراحل تتقدّم زمنياً لتعطي إحساساً بالحركة وتشرح التقنية للجنة.
- */
-
-const STAGES = [
-  { key: "route", label: "توجيه المستوى", hint: "lib/levelRouter — أ / ب / ج / د", color: "#14529E" },
-  { key: "rag", label: "استرجاع هجين", hint: "BM25 حرفي + دلالي + إعادة ترتيب", color: "#0A8F94" },
-  { key: "llm", label: "توليد شرح مؤسَّس", hint: "Gemini Flash Lite أو مرآة محلية", color: "#7B4FD6" },
-  { key: "guard", label: "حارس صفر اختلاق", hint: "مطابقة حرفية مع المصادر المعتمدة", color: "#E0B450" },
+const LABELS: Record<AnswerStage, string> = {
+  classify: "تحديد نوع السؤال",
+  retrieve: "فحص البيانات المحلية المختارة",
+  web: "قراءة صفحات البحث المسموح بها",
+  mcp: "اكتشاف أدوات MCP المتاحة",
+  generate: "طلب صياغة الرد من النموذج",
+  verify: "فحص النصوص والمصادر قبل العرض",
+}
+const MOTIFS = [
+  "/tibyan-brand-kit/motif/shapes/tibyan-shape-05-hub.svg",
+  "/tibyan-brand-kit/motif/shapes/tibyan-shape-01-chain-3.svg",
+  "/tibyan-brand-kit/motif/shapes/tibyan-shape-08-ta-dots.svg",
 ]
 
 interface ThinkingStagesProps {
   question: string
+  stages?: AnswerStage[]
 }
 
-export default function ThinkingStages({ question }: ThinkingStagesProps) {
-  const [active, setActive] = useState(0)
+/** Only server-reported milestones are named; elapsed time and motif are decorative. */
+export default function ThinkingStages({ question, stages = [] }: ThinkingStagesProps) {
   const [elapsed, setElapsed] = useState(0)
+  const [motifIndex, setMotifIndex] = useState(0)
+  const reduceMotion = useReducedMotion()
+  const active = stages[stages.length - 1]
 
   useEffect(() => {
-    setActive(0)
     setElapsed(0)
-    const step = setInterval(() => setActive((a) => (a < STAGES.length - 1 ? a + 1 : a)), 420)
-    const tick = setInterval(() => setElapsed((e) => e + 100), 100)
-    return () => {
-      clearInterval(step)
-      clearInterval(tick)
-    }
+    const tick = window.setInterval(() => setElapsed((value) => value + 1), 1000)
+    return () => window.clearInterval(tick)
   }, [question])
 
   return (
-    <div className="w-full max-w-[800px] mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 14, scale: 0.985 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: "spring", stiffness: 240, damping: 24 }}
-        className="tb-live-edge rounded-[18px] bg-white/92 backdrop-blur-xl border border-[#C9DFE1]/70 shadow-[0_10px_32px_rgba(10,42,51,0.08)] p-5"
-      >
-        <div className="flex items-center gap-3 mb-5">
-          <div className="relative w-9 h-9 shrink-0">
-            <motion.span
-              className="absolute inset-0 rounded-full border-2 border-[#19D6C4]"
-              animate={{ scale: [0.85, 1.9], opacity: [0.8, 0] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
-            />
-            <div
-              className="absolute inset-0 rounded-full flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg,#19D6C4,#0A8F94)" }}
-            >
-              <img src="/tibyan-logo-white.svg" alt="" className="w-5 h-5 object-contain" />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[12.5px] font-extrabold text-[#0A2A33] flex items-center gap-2">
-              تِبْيَان يعالج سؤالك
-              <span className="inline-flex gap-[3px] items-end h-3">
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="tb-dot w-[4px] h-[4px] rounded-full bg-[#0A8F94]"
-                    style={{ animationDelay: `${i * 0.16}s` }}
-                  />
-                ))}
+    <div className="mx-auto w-full max-w-[800px]" dir="rtl" aria-label="حالة إعداد الرد">
+      <div className="tb-thinking-card relative overflow-hidden rounded-[22px] border border-[#A9D6D6] bg-[#FAFEFD] p-4 shadow-[0_12px_34px_rgba(10,42,51,0.1)] sm:p-5">
+        <div aria-hidden="true" className="pointer-events-none absolute -left-12 -top-16 h-40 w-40 rounded-full bg-[#19D6C4]/10 blur-2xl" />
+        <div className="relative flex items-start gap-4">
+          <button type="button" onClick={() => setMotifIndex((index) => (index + 1) % MOTIFS.length)}
+            aria-label="تغيير زخرفة تِبْيَان أثناء الانتظار"
+            title="المس الزخرفة لتغيير شكلها؛ لا يغيّر ذلك البحث"
+            className="tb-thinking-motif group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-[20px] border border-[#A9D6D6] bg-gradient-to-br from-[#E8F8F5] to-white shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087A7F] sm:h-24 sm:w-24">
+            {!reduceMotion && <motion.span aria-hidden="true" className="absolute inset-1 rounded-[17px] border border-[#19D6C4]/40"
+              animate={{ scale: [0.94, 1.04, 0.94], opacity: [0.45, 0.9, 0.45] }} transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }} />}
+            <AnimatePresence mode="wait">
+              <motion.img key={MOTIFS[motifIndex]} src={MOTIFS[motifIndex]} alt="" aria-hidden="true"
+                initial={reduceMotion ? false : { opacity: 0, rotate: -18, scale: 0.72 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={reduceMotion ? undefined : { opacity: 0, rotate: 14, scale: 0.8 }}
+                transition={{ duration: reduceMotion ? 0 : 0.45, ease: "easeOut" }}
+                className="relative h-14 w-14 object-contain transition-transform group-hover:scale-110 sm:h-[70px] sm:w-[70px]" />
+            </AnimatePresence>
+            <span aria-hidden="true" className="absolute -left-1 top-1 h-2 w-2 rounded-sm rotate-45 bg-[#D5A43B] shadow-[0_0_12px_#D5A43B]" />
+            <span aria-hidden="true" className="absolute left-2 -top-1 h-1.5 w-1.5 rounded-sm rotate-45 bg-[#E0B450]" />
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span role="status" aria-live="polite" className="flex items-center gap-1.5 text-[14px] font-extrabold text-[#0A2A33]">
+                <Sparkles size={16} className="text-[#087A7F]" aria-hidden="true" />
+                {active ? LABELS[active] : "انتظار بدء المعالجة على الخادم"}
               </span>
+              <span aria-hidden="true" className="rounded-full bg-[#E5F5F2] px-2 py-0.5 font-mono text-[11px] font-bold tabular-nums text-[#075F65]">{elapsed}ث</span>
             </div>
-            <div className="text-[11px] text-[#4B6A72] truncate">{question}</div>
-          </div>
-          <div className="shrink-0 text-[11px] font-bold tabular-nums text-[#0A8F94]">
-            {(elapsed / 1000).toFixed(1)}ث
+            <p className="mt-1 truncate text-xs font-medium text-[#35545B]" title={question}>{question}</p>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-[#4B6A72]">اضغط على الزخرفة لتغييرها ✦ الخطوات أدناه تصل من الخادم حين تبدأ فعلاً، ولا تعرض تفكير النموذج الداخلي.</p>
           </div>
         </div>
-
-        <ol className="relative space-y-3.5">
-          {/* الخط الرأسي المتقدّم */}
-          <div className="absolute inset-y-1 start-[13px] w-[2px] bg-[#C9DFE1]/70 rounded-full" />
-          <motion.div
-            className="absolute start-[13px] w-[2px] rounded-full"
-            style={{ background: "linear-gradient(180deg,#19D6C4,#0A8F94)" }}
-            initial={{ top: 4, height: 0 }}
-            animate={{ height: `${(active / (STAGES.length - 1)) * 100}%` }}
-            transition={{ duration: 0.45, ease: [0.2, 0.7, 0.2, 1] }}
-          />
-
-          {STAGES.map((s, i) => {
-            const done = i < active
-            const isNow = i === active
-            return (
-              <li key={s.key} className="relative flex items-start gap-3 ps-0">
-                <span className="relative z-10 shrink-0 w-[28px] h-[28px] rounded-full border-2 bg-white flex items-center justify-center transition-colors duration-300"
-                  style={{ borderColor: done || isNow ? s.color : "#C9DFE1" }}
-                >
-                  <AnimatePresence mode="wait" initial={false}>
-                    {done ? (
-                      <motion.svg
-                        key="ok"
-                        width="13" height="13" viewBox="0 0 14 14" fill="none"
-                        initial={{ scale: 0, rotate: -40 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ type: "spring", stiffness: 420, damping: 18 }}
-                      >
-                        <path d="M2.5 7.4L5.6 10.5L11.5 3.8" stroke={s.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </motion.svg>
-                    ) : isNow ? (
-                      <motion.span
-                        key="spin"
-                        className="w-[13px] h-[13px] rounded-full border-2"
-                        style={{ borderColor: `${s.color}33`, borderTopColor: s.color }}
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 0.85, repeat: Infinity, ease: "linear" }}
-                      />
-                    ) : (
-                      <motion.span key="dot" className="w-[6px] h-[6px] rounded-full bg-[#C9DFE1]" />
-                    )}
-                  </AnimatePresence>
-                </span>
-
-                <div className="flex-1 pt-1 min-w-0">
-                  <div
-                    className="text-[12.5px] font-bold transition-colors duration-300"
-                    style={{ color: done || isNow ? "#0A2A33" : "#8FB0B6" }}
-                  >
-                    {s.label}
-                  </div>
-                  <div className="text-[10.5px] text-[#8FB0B6] font-mono truncate">{s.hint}</div>
-                </div>
-
-                {isNow && (
-                  <motion.span
-                    initial={{ opacity: 0, x: 6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="shrink-0 mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold"
-                    style={{ background: `${s.color}14`, color: s.color }}
-                  >
-                    جارٍ
-                  </motion.span>
-                )}
+        {stages.length > 0 && (
+          <ol className="relative mt-4 flex flex-wrap gap-2 border-t border-[#D5E8E7] pt-3" aria-label="خطوات التنفيذ الفعلية">
+            {stages.slice(-5).map((stage, index, visible) => (
+              <li key={`${stage}-${index}`} className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${index === visible.length - 1 ? "bg-[#0A8F94] text-white" : "bg-[#EFF6F5] text-[#35545B]"}`}>
+                {index === visible.length - 1 ? <Sparkles size={12} aria-hidden="true" /> : <Check size={12} aria-hidden="true" />}
+                {LABELS[stage]}
               </li>
-            )
-          })}
-        </ol>
-
-        <div className="mt-4 pt-3 border-t border-[#C9DFE1]/50 flex items-center justify-between text-[10px] text-[#8FB0B6]">
-          <span>يُمتنع تلقائياً عند غياب المرجعية الكافية</span>
-          <span className="font-mono">min confidence 0.82</span>
-        </div>
-      </motion.div>
+            ))}
+          </ol>
+        )}
+      </div>
     </div>
   )
 }

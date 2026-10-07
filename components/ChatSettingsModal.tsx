@@ -1,0 +1,246 @@
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
+import { createPortal } from "react-dom"
+import { AnimatePresence, motion } from "framer-motion"
+import { Brain, ChevronLeft, Download, FileJson, HardDrive, ShieldCheck, X } from "lucide-react"
+import type { AIModelSelection } from "../lib/aiProviderTypes"
+import type { NoEvidenceMode } from "../lib/sourcePreferences"
+import type { ChatSession } from "../lib/chatHistory"
+import { downloadChatHistory } from "../lib/chatHistory"
+import ProviderLogo from "./ProviderLogo"
+import { parseThemeChoice, saveTheme, THEME_STORAGE_KEY, type ThemeChoice } from "../lib/theme"
+
+interface ChatSettingsModalProps {
+  open: boolean
+  sessions: ChatSession[]
+  modelSelection?: AIModelSelection | null
+  fallbackSelection?: AIModelSelection | null
+  noEvidenceMode?: NoEvidenceMode
+  agentEnabled?: boolean
+  onNoEvidenceModeChange?: (value: NoEvidenceMode) => void
+  isResearcher?: boolean
+  onOpenModels: () => void
+  onClose: () => void
+}
+
+export default function ChatSettingsModal({
+  open,
+  sessions,
+  modelSelection,
+  fallbackSelection,
+  noEvidenceMode = "request_sources",
+  agentEnabled = true,
+  onNoEvidenceModeChange,
+  isResearcher = false,
+  onOpenModels,
+  onClose,
+}: ChatSettingsModalProps) {
+  const [mounted, setMounted] = useState(false)
+  const [exportState, setExportState] = useState<"idle" | "done" | "error">("idle")
+  const [theme, setTheme] = useState<ThemeChoice>("system")
+  useEffect(() => {
+    if (!open) return
+    try { setTheme(parseThemeChoice(localStorage.getItem(THEME_STORAGE_KEY))) } catch { setTheme("system") }
+  }, [open])
+
+  useEffect(() => setMounted(true), [])
+
+  useEffect(() => {
+    if (!open) {
+      setExportState("idle")
+      return
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener("keydown", onKeyDown)
+    }
+  }, [open, onClose])
+
+  const completedSessions = useMemo(() => sessions.filter((session) => session.messages.length > 0), [sessions])
+  const messageCount = useMemo(
+    () => completedSessions.reduce((total, session) => total + session.messages.length, 0),
+    [completedSessions]
+  )
+
+  const exportHistory = () => {
+    setExportState(downloadChatHistory(sessions) ? "done" : "error")
+  }
+
+  if (!mounted) return null
+
+  return createPortal(
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[140] flex items-end justify-center sm:items-center sm:p-4" dir="rtl">
+          <motion.button
+            type="button"
+            aria-label="إغلاق نافذة الإعدادات"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-[#071F27]/40 backdrop-blur-[3px]"
+          />
+
+          <motion.section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="chat-settings-title"
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 320, damping: 30 }}
+            className="relative z-[1] flex max-h-[100dvh] min-h-0 w-full max-w-[520px] flex-col overflow-hidden rounded-t-[22px] sm:max-h-[calc(100dvh-2rem)] border border-[#C9DFE1]/80 bg-[#FBFEFD] shadow-[0_24px_70px_rgba(10,42,51,0.22)] sm:rounded-[20px]"
+          >
+            <div className="h-1 w-full bg-gradient-to-l from-[#19D6C4] via-[#0A8F94] to-[#14529E]" />
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[#C9DFE1]/60 px-5 py-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[13px] bg-[#EAF6F5] text-[#0A8F94]">
+                  <HardDrive size={19} />
+                </div>
+                <div>
+                  <h2 id="chat-settings-title" className="text-[17px] font-extrabold text-[#0A2A33]">الإعدادات</h2>
+                  <p className="mt-0.5 text-[12px] text-[#6D8A90]">إدارة سجلّك المحلي وتصديره</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="إغلاق"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#C9DFE1] bg-white text-[#4B6A72] transition-colors hover:bg-[#EEF6F6]"
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            <div className="tb-scroll min-h-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
+              <section className="rounded-[14px] border border-[#C9DFE1]/70 bg-white p-4" aria-labelledby="theme-settings-title">
+                <h3 id="theme-settings-title" className="text-sm font-bold text-[#0A2A33]">المظهر</h3>
+                <label htmlFor="tibyan-theme" className="mt-2 block text-xs text-[#4B6A72]">اختر سمة الواجهة</label>
+                <select id="tibyan-theme" value={theme} onChange={(event) => { const next = parseThemeChoice(event.target.value); setTheme(next); saveTheme(next) }} className="mt-2 w-full rounded-lg border border-[#91BEC2] bg-white p-2 text-sm text-[#0A2A33]">
+                  <option value="system">تلقائي حسب الجهاز</option><option value="light">فاتح</option><option value="dark">داكن</option>
+                </select>
+              </section>
+              <section className="rounded-[14px] border border-[#C9DFE1]/70 bg-white p-4" aria-labelledby="model-settings-title">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#EAF6F5] text-[#0A8F94]">
+                    <Brain size={18} aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 id="model-settings-title" className="text-[13px] font-bold text-[#0A2A33]">نماذج الذكاء الاصطناعي</h3>
+                    <p className="mt-1 text-[11.5px] leading-relaxed text-[#6D8A90]">اختر المزود والنموذج الأساسي، أو عيّن نموذجاً احتياطياً عند تعذّر التوليد.</p>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-2 rounded-xl bg-[#F6FAF9] p-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <ProviderLogo providerId={modelSelection?.providerId} size={23} />
+                    <p className="min-w-0 truncate text-[11.5px] text-[#35545B]" title={modelSelection ? `${modelSelection.providerName || modelSelection.providerId} · ${modelSelection.modelName || modelSelection.modelId}` : undefined}>
+                      <span className="font-bold text-[#0A2A33]">الأساسي: </span>
+                      {modelSelection ? `${modelSelection.providerName || modelSelection.providerId} · ${modelSelection.modelName || modelSelection.modelId}` : "سيُختار النموذج المهيأ تلقائياً"}
+                    </p>
+                  </div>
+                  {fallbackSelection && (
+                    <p className="truncate text-[11px] text-[#856514]" title={`${fallbackSelection.providerName || fallbackSelection.providerId} · ${fallbackSelection.modelName || fallbackSelection.modelId}`}>
+                      <span className="font-bold">الاحتياطي: </span>
+                      {fallbackSelection.providerName || fallbackSelection.providerId} · {fallbackSelection.modelName || fallbackSelection.modelId}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenModels}
+                  className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-[#0A8F94]/25 bg-[#EFF9F7] px-4 py-2.5 text-[12px] font-bold text-[#087A7F] transition-colors hover:bg-[#E2F5F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A8F94]/30"
+                >
+                  إدارة النماذج والبديل التلقائي <ChevronLeft size={15} aria-hidden="true" />
+                </button>
+              </section>
+
+              <section className="rounded-[14px] border border-[#C9DFE1]/70 bg-white p-4" aria-labelledby="advanced-mode-title">
+                <h3 id="advanced-mode-title" className="text-sm font-bold text-[#0A2A33]">الوضع المتقدم</h3>
+                <p className="mt-1 text-xs text-[#54747A]">عندما لا يجد تِبْيَان دليلاً محلياً أو أداة بحث قابلة للاستخدام:</p>
+                <select aria-label="سلوك الإجابة بلا مصادر" disabled={!agentEnabled} value={noEvidenceMode}
+                  onChange={(event) => onNoEvidenceModeChange?.(event.target.value as NoEvidenceMode)}
+                  className="mt-2 w-full rounded-lg border border-[#91BEC2] bg-white p-2 text-sm font-medium text-[#0A2A33] disabled:cursor-not-allowed disabled:bg-[#F4F6F5]">
+                  <option value="request_sources">توقف واطلب تفعيل مصادر (الافتراضي)</option>
+                  <option value="direct_unverified">أجب مباشرة مع تحذير: غير متحقق منها</option>
+                </select>
+                <p className="mt-2 text-xs text-[#856514]">الإجابة المباشرة ليست دليلاً شرعياً ولا تسمح باختلاق نص أو فتوى شخصية.</p>
+                {!agentEnabled && <p className="mt-2 text-xs font-bold text-[#6B4B0C]">عطّل المسؤول وضع الوكيل مؤقتاً؛ يستمر تِبْيَان بمصادره الافتراضية.</p>}
+                {isResearcher && <p className="mt-2 text-xs text-[#54747A]">إضافة مواقع الباحث ستتاح بعد تفعيل البحث الآمن على الخادم؛ لم تُفعّل بعد.</p>}
+              </section>
+
+              <div className="flex items-start gap-3 rounded-[14px] border border-[#0A8F94]/15 bg-[#EFF9F7] p-3.5">
+                <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[#0A8F94]" />
+                <div>
+                  <div className="text-[13px] font-bold text-[#0A2A33]">خصوصيتك أولاً</div>
+                  <p className="mt-1 text-[12px] leading-relaxed text-[#54747A]">
+                    يظل استخدام الضيف محلياً. عند تسجيل الدخول لن تُزامَن بياناتك قبل موافقتك؛ ويمكنك إبقاء محادثات محددة على هذا الجهاز أو إيقاف المزامنة من القائمة الجانبية.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 rounded-[14px] border border-[#C9DFE1]/70 bg-white px-4 py-3">
+                <div>
+                  <div className="text-[13px] font-bold text-[#0A2A33]">السجل المحفوظ</div>
+                  <div className="mt-1 text-[11.5px] text-[#7B969B]">كل المحادثات غير الفارغة على هذا الجهاز</div>
+                </div>
+                <div className="shrink-0 text-left">
+                  <div className="text-[19px] font-extrabold tabular-nums text-[#0A8F94]">{completedSessions.length}</div>
+                  <div className="text-[10.5px] text-[#8AA6AB]">محادثات • {messageCount} رسالة</div>
+                </div>
+              </div>
+
+              <div className="rounded-[14px] border border-[#C9DFE1]/70 bg-white p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#EEF6F6] text-[#14529E]">
+                    <FileJson size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-bold text-[#0A2A33]">تصدير سجل المحادثات كاملاً</div>
+                    <p className="mt-1 text-[11.5px] leading-relaxed text-[#6D8A90]">
+                      نزّل نسخة JSON تشمل عناوين المحادثات والأسئلة والإجابات والمصادر، للاحتفاظ بها أو نقلها لاحقاً.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={exportHistory}
+                  disabled={completedSessions.length === 0}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-[12px] bg-[#0A2A33] px-4 py-3 text-[13px] font-bold text-white transition-colors hover:bg-[#0A8F94] disabled:cursor-not-allowed disabled:bg-[#A9BEC1]"
+                >
+                  <Download size={16} />
+                  {exportState === "done" ? "تم تنزيل السجل" : "تنزيل جميع المحادثات (.json)"}
+                </button>
+                {exportState === "done" && (
+                  <p role="status" className="mt-2 text-center text-[11.5px] font-bold text-emerald-700">
+                    اكتمل التنزيل. الملف بقي على جهازك ولم يُرسل إلى أي خادم.
+                  </p>
+                )}
+                {exportState === "error" && (
+                  <p role="alert" className="mt-2 text-center text-[11.5px] font-bold text-rose-700">
+                    تعذّر إنشاء الملف. تحقّق من إعدادات التنزيل في المتصفح ثم أعد المحاولة.
+                  </p>
+                )}
+                {completedSessions.length === 0 && (
+                  <p className="mt-2 text-center text-[11px] text-[#8AA6AB]">ابدأ محادثة أولاً ليصبح سجلّها متاحاً للتصدير.</p>
+                )}
+              </div>
+
+              <p className="text-center text-[10.5px] leading-relaxed text-[#8AA6AB]">
+                يُحذف هذا السجل إذا مُسحت بيانات الموقع من المتصفح؛ احتفظ بنسخة مصدّرة عند الحاجة.
+              </p>
+            </div>
+          </motion.section>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body
+  )
+}
